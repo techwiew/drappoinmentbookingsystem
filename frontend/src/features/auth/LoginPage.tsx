@@ -91,7 +91,8 @@ export const LoginPage: React.FC = () => {
         {/* Feature Highlights */}
         <div className="my-10 space-y-6 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5" /> Next-Generation Clinic Management
+            <Sparkles className="w-3.5 h-3.5" /> Next-Generation Clinic
+            Management
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
@@ -101,15 +102,21 @@ export const LoginPage: React.FC = () => {
           <div className="grid grid-cols-1 gap-3.5 text-slate-300 text-sm">
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Strict multi-tenant security & zero cross-clinic leakage</span>
+              <span>
+                Strict multi-tenant security & zero cross-clinic leakage
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Doctor-specific live token queue & call-next workstation</span>
+              <span>
+                Doctor-specific live token queue & call-next workstation
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Multi-doctor assignments, duplicate check & Rx printing</span>
+              <span>
+                Multi-doctor assignments, duplicate check & Rx printing
+              </span>
             </div>
           </div>
         </div>
@@ -170,6 +177,57 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-1.5 text-sm font-bold text-emerald-950">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  Real Super Admin Account
+                </div>
+                <div className="mt-1 text-[11px] text-emerald-700">
+                  superadmin@clinicflow.com · SuperAdmin@123
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setEmail("superadmin@clinicflow.com");
+                  setPassword("SuperAdmin@123");
+                  setError("");
+                }}
+                className="shrink-0 bg-emerald-600 hover:bg-emerald-700"
+              >
+                Use Real Admin
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-1.5 text-sm font-bold text-indigo-950">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  Demo Super Admin
+                </div>
+                <div className="mt-1 text-[11px] text-indigo-700">
+                  admin@clinicflow.com · Admin@123
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() =>
+                  handleQuickLogin("admin@clinicflow.com", "Admin@123")
+                }
+                isLoading={isLoading}
+                className="shrink-0 bg-indigo-600 hover:bg-indigo-700"
+              >
+                Enter Demo
+              </Button>
+            </div>
+          </div>
+
           {/* Quick 1-Click Demo Login Bar */}
           <div className="pt-4 border-t border-slate-100">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
@@ -179,50 +237,69 @@ export const LoginPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => handleQuickLogin('admin@clinicflow.com', 'Admin@123')}
+                onClick={() =>
+                  handleQuickLogin("admin@clinicflow.com", "Admin@123")
+                }
                 className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-left transition-all group text-xs"
               >
                 <div className="font-bold text-slate-800 flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
                   Super Admin
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5 truncate">Platform Owner</div>
+                <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                  Platform Owner
+                </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('dr.raj@sharmaclinic.com', 'Doctor@123')}
+                onClick={() =>
+                  handleQuickLogin("dr.raj@sharmaclinic.com", "Doctor@123")
+                }
                 className="p-2.5 rounded-xl border border-brand-200 bg-brand-50/50 hover:bg-brand-50 hover:border-brand-300 text-left transition-all group text-xs"
               >
                 <div className="font-bold text-brand-900 flex items-center gap-1.5">
                   <Stethoscope className="w-3.5 h-3.5 text-brand-600" />
                   Dr. Raj Sharma
                 </div>
-                <div className="text-[10px] text-brand-600 mt-0.5 truncate">Cardiologist</div>
+                <div className="text-[10px] text-brand-600 mt-0.5 truncate">
+                  Cardiologist
+                </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('dr.priya@sharmaclinic.com', 'Doctor@123')}
+                onClick={() =>
+                  handleQuickLogin("dr.priya@sharmaclinic.com", "Doctor@123")
+                }
                 className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-300 text-left transition-all group text-xs"
               >
                 <div className="font-bold text-emerald-900 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-emerald-600" />
                   Dr. Priya Patel
                 </div>
-                <div className="text-[10px] text-emerald-600 mt-0.5 truncate">Physician</div>
+                <div className="text-[10px] text-emerald-600 mt-0.5 truncate">
+                  Physician
+                </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => handleQuickLogin('reception@sharmaclinic.com', 'Reception@123')}
+                onClick={() =>
+                  handleQuickLogin(
+                    "reception@sharmaclinic.com",
+                    "Reception@123",
+                  )
+                }
                 className="p-2.5 rounded-xl border border-sky-200 bg-sky-50/50 hover:bg-sky-50 hover:border-sky-300 text-left transition-all group text-xs"
               >
                 <div className="font-bold text-sky-900 flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-sky-600" />
                   Reception Desk
                 </div>
-                <div className="text-[10px] text-sky-600 mt-0.5 truncate">Anjali Verma</div>
+                <div className="text-[10px] text-sky-600 mt-0.5 truncate">
+                  Anjali Verma
+                </div>
               </button>
             </div>
           </div>

@@ -133,6 +133,11 @@ export const ConsultationRoomPage: React.FC = () => {
         status,
         medicines: medicines.filter((m) => m.medicineName.trim()),
       };
+      if (!appointment?.patientId) {
+        throw new Error(
+          "Appointment details are still loading. Please wait and try again.",
+        );
+      }
       if (existingConsultation?.id) {
         const res = await apiClient.put(`/consultations/${existingConsultation.id}`, payload);
         return res.data.data;

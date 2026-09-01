@@ -25,6 +25,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   const superAdminPassword = await bcrypt.hash('Admin@123', 10);
+  const realSuperAdminPassword = await bcrypt.hash("SuperAdmin@123", 10);
   const doctorPassword = await bcrypt.hash('Doctor@123', 10);
   const receptionistPassword = await bcrypt.hash('Reception@123', 10);
 
@@ -38,6 +39,16 @@ async function main() {
     },
   });
   console.log('✅ Super Admin created: admin@clinicflow.com');
+
+  await prisma.user.create({
+    data: {
+      email: "superadmin@clinicflow.com",
+      passwordHash: realSuperAdminPassword,
+      role: "SUPER_ADMIN",
+      status: "ACTIVE",
+    },
+  });
+  console.log("✅ Real Super Admin created: superadmin@clinicflow.com");
 
   // 2. Create Subscription Plans
   const starterPlan = await prisma.subscriptionPlan.create({

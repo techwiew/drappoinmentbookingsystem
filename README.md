@@ -54,6 +54,9 @@ npm run dev
 
 ## 🔑 Default Seed Credentials
 - **Super Admin**: `admin@clinicflow.com` / `Admin@123`
+- **Real Super Admin**: `superadmin@clinicflow.com` / `SuperAdmin@123`
 - **Doctor 1**: `dr.raj@sharmaclinic.com` / `Doctor@123`
 - **Doctor 2**: `dr.priya@sharmaclinic.com` / `Doctor@123`
 - **Receptionist**: `reception@sharmaclinic.com` / `Reception@123`
+
+After signing in as Super Admin, open `/super-admin` and click **Add New Clinic** in the upper-right corner. The form creates the clinic, subscription, and first doctor account in one transaction.

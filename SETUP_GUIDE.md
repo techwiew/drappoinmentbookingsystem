@@ -279,11 +279,14 @@ Use these pre-seeded accounts to test all user roles:
 | Role | Email | Password | Redirect After Login |
 | :--- | :--- | :--- | :--- |
 | 👑 **Super Admin** | `admin@clinicflow.com` | `Admin@123` | `/super-admin` Platform Console |
+| 👑 **Real Super Admin** | `superadmin@clinicflow.com` | `SuperAdmin@123` | `/super-admin` Platform Console |
 | 🩺 **Doctor (Cardiology)** | `dr.raj@sharmaclinic.com` | `Doctor@123` | `/doctor-dashboard` |
 | 🩺 **Doctor (General)** | `dr.priya@sharmaclinic.com` | `Doctor@123` | `/doctor-dashboard` |
 | 🛎️ **Receptionist** | `reception@sharmaclinic.com` | `Reception@123` | `/reception-desk` |
 
 > **Tip**: The Login page has **Quick Demo Buttons** — click any role button to log in instantly without typing credentials.
+
+For integration testing, use **Real Super Admin Account** on the login page. After login, click **Add New Clinic** in the upper-right corner of `/super-admin` to create a clinic and its first doctor account.
 
 ---
 

@@ -220,9 +220,14 @@ export const ClinicsManagementPage: React.FC = () => {
                 </tr>
               ) : (
                 clinicsData?.map((clinic: any) => (
-                  <tr key={clinic.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr
+                    key={clinic.id}
+                    className="hover:bg-slate-50/80 transition-colors"
+                  >
                     <td className="p-3.5">
-                      <div className="font-bold text-slate-900 text-sm">{clinic.name}</div>
+                      <div className="font-bold text-slate-900 text-sm">
+                        {clinic.name}
+                      </div>
                       <div className="text-slate-500 text-[11px] mt-0.5">
                         {clinic.address}, {clinic.city}, {clinic.state}
                       </div>
@@ -240,15 +245,21 @@ export const ClinicsManagementPage: React.FC = () => {
                     </td>
                     <td className="p-3.5">
                       <span className="font-semibold text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200">
-                        {clinic.subscription?.planName || 'Standard'}
+                        {clinic.subscription?.planName || "Standard"}
                       </span>
                       <div className="text-[10px] text-slate-400 mt-1">
-                        Renews: {clinic.subscription?.endDate ? new Date(clinic.subscription.endDate).toLocaleDateString() : 'N/A'}
+                        Renews:{" "}
+                        {clinic.subscription?.endDate
+                          ? new Date(
+                              clinic.subscription.endDate,
+                            ).toLocaleDateString()
+                          : "N/A"}
                       </div>
                     </td>
                     <td className="p-3.5">
                       <div className="text-slate-800 font-medium">
-                        🩺 {clinic.doctorCount} Doctors • 🛎️ {clinic.receptionistCount} Staff
+                        🩺 {clinic.doctorCount} Doctors • 🛎️{" "}
+                        {clinic.receptionistCount} Staff
                       </div>
                       <div className="text-slate-500 text-[11px] mt-0.5">
                         👥 {clinic.patientCount} Registered Patients
@@ -258,12 +269,15 @@ export const ClinicsManagementPage: React.FC = () => {
                       <StatusBadge status={clinic.status} size="sm" />
                     </td>
                     <td className="p-3.5 text-right space-x-1.5">
-                      {clinic.status === 'ACTIVE' ? (
+                      {clinic.status === "ACTIVE" ? (
                         <Button
                           size="sm"
                           variant="danger"
                           onClick={() =>
-                            toggleStatusMutation.mutate({ clinicId: clinic.id, status: 'SUSPENDED' })
+                            toggleStatusMutation.mutate({
+                              clinicId: clinic.id,
+                              status: "SUSPENDED",
+                            })
                           }
                           className="text-[11px] px-2 py-1"
                         >
@@ -274,7 +288,10 @@ export const ClinicsManagementPage: React.FC = () => {
                           size="sm"
                           variant="success"
                           onClick={() =>
-                            toggleStatusMutation.mutate({ clinicId: clinic.id, status: 'ACTIVE' })
+                            toggleStatusMutation.mutate({
+                              clinicId: clinic.id,
+                              status: "ACTIVE",
+                            })
                           }
                           className="text-[11px] px-2 py-1"
                         >
@@ -315,7 +332,15 @@ export const ClinicsManagementPage: React.FC = () => {
               label="Tenant Slug (Unique ID)"
               placeholder="apollo-care"
               value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+                })
+              }
+              minLength={2}
+              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+              title="Use at least 2 lowercase letters or numbers, with hyphens between words."
               required
             />
           </div>
@@ -325,21 +350,27 @@ export const ClinicsManagementPage: React.FC = () => {
               label="City"
               placeholder="Mumbai"
               value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, city: e.target.value })
+              }
               required
             />
             <Input
               label="State"
               placeholder="Maharashtra"
               value={formData.state}
-              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, state: e.target.value })
+              }
               required
             />
             <Input
               label="Pincode"
               placeholder="400050"
               value={formData.pincode}
-              onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, pincode: e.target.value })
+              }
               required
             />
           </div>
@@ -349,7 +380,9 @@ export const ClinicsManagementPage: React.FC = () => {
               label="Phone Number"
               placeholder="+91 98200 12345"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               required
             />
             <Input
@@ -357,14 +390,18 @@ export const ClinicsManagementPage: React.FC = () => {
               type="email"
               placeholder="contact@apolloclinic.com"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               required
             />
             <Input
               label="Token Prefix"
               placeholder="APO"
               value={formData.tokenPrefix}
-              onChange={(e) => setFormData({ ...formData, tokenPrefix: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, tokenPrefix: e.target.value })
+              }
               required
             />
           </div>
@@ -378,14 +415,18 @@ export const ClinicsManagementPage: React.FC = () => {
               label="Doctor / Admin Name"
               placeholder="Dr. Rajesh Gupta"
               value={formData.adminName}
-              onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, adminName: e.target.value })
+              }
               required
             />
             <Input
               label="Doctor Mobile"
               placeholder="9820099887"
               value={formData.adminMobile}
-              onChange={(e) => setFormData({ ...formData, adminMobile: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, adminMobile: e.target.value })
+              }
               required
             />
           </div>
@@ -396,14 +437,18 @@ export const ClinicsManagementPage: React.FC = () => {
               type="email"
               placeholder="dr.rajesh@apolloclinic.com"
               value={formData.adminEmail}
-              onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, adminEmail: e.target.value })
+              }
               required
             />
             <Input
               label="Initial Password"
               type="text"
               value={formData.adminPassword}
-              onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, adminPassword: e.target.value })
+              }
               required
             />
           </div>
@@ -413,19 +458,28 @@ export const ClinicsManagementPage: React.FC = () => {
               label="Specialization"
               placeholder="Cardiology"
               value={formData.specialization}
-              onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, specialization: e.target.value })
+              }
             />
             <Input
               label="Registration #"
               placeholder="MCI-2018-991"
               value={formData.registrationNumber}
-              onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, registrationNumber: e.target.value })
+              }
             />
             <Input
               label="Consultation Fee (₹)"
               type="number"
               value={formData.consultationFee}
-              onChange={(e) => setFormData({ ...formData, consultationFee: parseFloat(e.target.value) || 0 })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  consultationFee: parseFloat(e.target.value) || 0,
+                })
+              }
             />
           </div>
 
@@ -436,7 +490,9 @@ export const ClinicsManagementPage: React.FC = () => {
           <Select
             label="Assign Subscription Tier"
             value={formData.planId}
-            onChange={(e) => setFormData({ ...formData, planId: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, planId: e.target.value })
+            }
             options={
               plans?.map((p: any) => ({
                 value: p.id,
@@ -446,7 +502,11 @@ export const ClinicsManagementPage: React.FC = () => {
           />
 
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-            <Button variant="secondary" type="button" onClick={() => setIsAddModalOpen(false)}>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+            >
               Cancel
             </Button>
             <Button

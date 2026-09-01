@@ -95,6 +95,7 @@ export class ConsultationService {
     }
 
     const docId = data.doctorId || appointment.doctorId || doctorId;
+    const patientId = appointment.patientId;
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create or Update Consultation
@@ -126,7 +127,7 @@ export class ConsultationService {
           data: {
             clinicId,
             appointmentId: data.appointmentId,
-            patientId: data.patientId,
+            patientId,
             doctorId: docId,
             chiefComplaint: data.chiefComplaint,
             symptoms: data.symptoms || null,
@@ -134,9 +135,11 @@ export class ConsultationService {
             doctorNotes: data.doctorNotes || null,
             advice: data.advice || null,
             testsRecommended: data.testsRecommended || null,
-            nextVisitDate: data.nextVisitDate ? new Date(data.nextVisitDate) : null,
+            nextVisitDate: data.nextVisitDate
+              ? new Date(data.nextVisitDate)
+              : null,
             followUpNotes: data.followUpNotes || null,
-            status: data.status || 'COMPLETED',
+            status: data.status || "COMPLETED",
           },
         });
       }
@@ -152,7 +155,7 @@ export class ConsultationService {
             data: {
               clinicId,
               consultationId: consultation.id,
-              patientId: data.patientId,
+              patientId,
               doctorId: docId,
             },
           });
