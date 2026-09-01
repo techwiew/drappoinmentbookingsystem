@@ -1,0 +1,1648 @@
+# PROJECT: ClinicFlow — Multi-Tenant Doctor Clinic Management SaaS
+Design link-
+https://stitch.withgoogle.com/projects/18090104768647936574?pli=1
+
+implement both mobile and web view
+You are a senior full-stack software architect and engineer.
+
+I already have the UI/UX design for this application created in Google Stitch.
+
+Your job is to convert the provided Stitch design into a production-quality full-stack web application.
+
+IMPORTANT:
+The Stitch design is the visual source of truth.
+
+Do NOT redesign the UI unnecessarily.
+Do NOT replace the design with generic dashboard templates.
+Reproduce the layout, spacing, typography, cards, tables, colors, navigation, forms, responsive behavior and interactions as closely as practical.
+
+Before writing application code, inspect the entire design and create an implementation plan.
+
+==================================================
+1. PRODUCT OVERVIEW
+==================================================
+
+This is a subscription-based multi-tenant SaaS application for doctors and clinics.
+
+The platform allows a Super Admin to create and manage clinics.
+
+Each clinic can have:
+
+- One or multiple doctors
+- One or multiple receptionists
+- Patients
+- Appointments
+- Daily patient queues
+- Consultations
+- Prescriptions
+- Billing/payment records
+- Patient history
+- Reports
+
+The application must support strict tenant isolation.
+
+Clinic A must NEVER be able to access Clinic B's patients, doctors, appointments, consultations or billing data.
+
+==================================================
+2. USER ROLES
+==================================================
+
+Implement these roles:
+
+SUPER_ADMIN
+DOCTOR
+RECEPTIONIST
+
+Role permissions must be enforced on BOTH frontend and backend.
+
+Frontend route protection is NOT sufficient.
+
+Backend authorization must verify:
+
+1. authenticated user
+2. user role
+3. clinic membership
+4. resource ownership / clinic ownership
+5. doctor permissions where required
+
+==================================================
+3. SUPER ADMIN
+==================================================
+
+Super Admin is the platform owner.
+
+Super Admin can:
+
+- Login
+- View platform dashboard
+- Create clinics
+- Edit clinics
+- Activate/deactivate clinics
+- View clinic details
+- Manage subscription plans
+- Assign subscription plans
+- View subscription status
+- View subscription expiry
+- View platform revenue
+- View clinic count
+- View doctor count
+- View receptionist count
+- Search clinics
+- Filter clinics
+
+Super Admin should NOT normally access clinical patient information.
+
+==================================================
+4. CLINIC ACCOUNT
+==================================================
+
+A clinic is a tenant.
+
+Each clinic has:
+
+- id
+- name
+- logo
+- address
+- phone
+- email
+- city
+- state
+- pincode
+- status
+- subscription
+- createdAt
+- updatedAt
+
+Every clinic-owned table must contain clinicId where appropriate.
+
+Never trust clinicId sent by the frontend.
+
+Always derive the current clinic from the authenticated user's session/token.
+
+==================================================
+5. DOCTORS
+==================================================
+
+A clinic can have one or multiple doctors.
+
+Doctor fields:
+
+- id
+- clinicId
+- userId
+- name
+- email
+- mobile
+- specialization
+- qualification
+- registrationNumber
+- consultationFee
+- status
+- workingDays
+- workingHours
+- createdAt
+- updatedAt
+
+Doctors can:
+
+- View dashboard
+- View appointments
+- View their queue
+- View patients assigned to them
+- Create patients
+- Assign doctors to patients
+- Start consultations
+- Complete consultations
+- Add diagnosis
+- Add notes
+- Add prescription
+- Add advice
+- Add next visit date
+- View patient history
+- View billing
+- View reports according to permissions
+
+==================================================
+6. RECEPTIONISTS
+==================================================
+
+Receptionists belong to a clinic.
+
+Receptionist fields:
+
+- id
+- clinicId
+- userId
+- name
+- email
+- mobile
+- status
+- createdAt
+- updatedAt
+
+Receptionists can:
+
+- Login
+- View receptionist dashboard
+- Register patients
+- Edit patient basic information
+- Assign patient to doctor
+- Create appointments
+- Reschedule appointments
+- Cancel appointments
+- Check in patients
+- Manage queue
+- Add walk-in patients
+- Add emergency patients
+- Collect payments
+- View basic patient history according to permissions
+
+Receptionists cannot:
+
+- Create/edit doctor consultation notes
+- Create prescriptions
+- Modify completed consultations
+- Change subscription
+- Manage Super Admin
+- Access another clinic
+
+==================================================
+7. PATIENT MODEL
+==================================================
+
+IMPORTANT ARCHITECTURAL RULE:
+
+A patient belongs to a CLINIC, not directly to one doctor.
+
+This is required because a patient may see multiple doctors inside the same clinic.
+
+Patient fields:
+
+- id
+- clinicId
+- patientNumber
+- fullName
+- dateOfBirth
+- gender
+- mobile
+- email
+- address
+- city
+- state
+- pincode
+- bloodGroup
+- allergies
+- existingIllness
+- medicalConditions
+- emergencyContactName
+- emergencyContactRelationship
+- emergencyContactMobile
+- notes
+- createdAt
+- updatedAt
+
+==================================================
+8. PATIENT-DOCTOR RELATIONSHIP
+==================================================
+
+A patient can have:
+
+- zero doctors
+- one doctor
+- multiple doctors
+
+Do NOT store only doctorId directly on the patient table.
+
+Create a many-to-many relationship.
+
+Use a junction table such as:
+
+patient_doctors
+
+Fields:
+
+- id
+- patientId
+- doctorId
+- assignedAt
+- assignedBy
+- status
+
+This allows:
+
+Patient Rahul
+→ Dr. Raj
+→ Dr. Priya
+
+without creating duplicate patient records.
+
+==================================================
+9. PATIENT CREATION LOGIC
+==================================================
+
+Both receptionist and doctor can create patients.
+
+If clinic has only ONE doctor:
+
+Doctor selection should NOT be mandatory.
+
+The system may automatically associate the patient with that doctor according to business rules.
+
+If clinic has MULTIPLE doctors:
+
+Show:
+
+Assign Doctor
+
+Allow:
+
+- no doctor
+- one doctor
+- multiple doctors
+
+Example:
+
+Assigned Doctors
+
+[x] Dr. Raj Sharma
+[ ] Dr. Priya Sharma
+
+Doctor assignment can be changed later.
+
+==================================================
+10. PATIENT DUPLICATE PROTECTION
+==================================================
+
+When registering a patient, prevent accidental duplicate records.
+
+Before creating a patient, search by:
+
+- mobile number
+- patient number
+- optionally name + date of birth
+
+If a likely existing patient is found, show:
+
+"Patient may already exist."
+
+Provide:
+
+View Existing Patient
+Continue Creating New Patient
+
+Do not silently create duplicates.
+
+==================================================
+11. APPOINTMENTS
+==================================================
+
+Appointment belongs to:
+
+- clinic
+- patient
+- doctor
+- appointment date
+- appointment time
+
+Fields:
+
+- id
+- clinicId
+- patientId
+- doctorId
+- appointmentDate
+- appointmentTime
+- appointmentType
+- tokenNumber
+- status
+- consultationFee
+- notes
+- createdBy
+- createdAt
+- updatedAt
+
+Appointment types:
+
+NEW_PATIENT
+FOLLOW_UP
+WALK_IN
+EMERGENCY
+
+Statuses:
+
+BOOKED
+CHECKED_IN
+WAITING
+IN_CONSULTATION
+COMPLETED
+CANCELLED
+NO_SHOW
+SKIPPED
+
+==================================================
+12. DAILY QUEUE
+==================================================
+
+The queue is doctor-specific.
+
+Each appointment should receive a token number according to clinic/doctor/date rules.
+
+Doctor can see:
+
+- current patient
+- next patient
+- waiting patients
+- completed patients
+
+Receptionist can see queues for doctors they are authorized to manage.
+
+Queue actions:
+
+- call next
+- start consultation
+- skip
+- mark no-show
+- reorder
+- add walk-in
+- add emergency
+- check-in
+
+Do not rely only on frontend state for queue correctness.
+
+Queue state must be stored and validated by the backend.
+
+==================================================
+13. CONSULTATION
+==================================================
+
+Only authorized doctors can create consultation records.
+
+Consultation fields:
+
+- id
+- clinicId
+- appointmentId
+- patientId
+- doctorId
+- chiefComplaint
+- symptoms
+- diagnosis
+- doctorNotes
+- advice
+- testsRecommended
+- nextVisitDate
+- followUpNotes
+- status
+- createdAt
+- updatedAt
+
+Consultation status:
+
+DRAFT
+COMPLETED
+
+Once completed, prevent unauthorized editing.
+
+If editing completed consultations is required later, implement an audit trail.
+
+==================================================
+14. PRESCRIPTION
+==================================================
+
+Create:
+
+prescriptions
+prescription_items
+
+Prescription fields:
+
+- id
+- clinicId
+- consultationId
+- patientId
+- doctorId
+- prescribedAt
+
+Prescription item:
+
+- medicineName
+- dosage
+- frequency
+- duration
+- instructions
+
+Allow multiple medicines.
+
+Example:
+
+Paracetamol
+500 mg
+1-0-1
+5 days
+
+Cetirizine
+10 mg
+0-0-1
+5 days
+
+==================================================
+15. BILLING
+==================================================
+
+Create payment/billing records.
+
+Fields:
+
+- id
+- clinicId
+- patientId
+- appointmentId
+- doctorId
+- consultationFee
+- additionalFee
+- discount
+- totalAmount
+- paidAmount
+- pendingAmount
+- paymentMethod
+- paymentStatus
+- transactionReference
+- createdAt
+- updatedAt
+
+Payment methods:
+
+CASH
+UPI
+CARD
+OTHER
+
+Payment statuses:
+
+PAID
+PENDING
+PARTIALLY_PAID
+
+All monetary values must use DECIMAL in MySQL.
+
+NEVER use floating point for money.
+
+==================================================
+16. DASHBOARD
+==================================================
+
+Doctor dashboard should show:
+
+Today's Patients
+Waiting
+Completed
+Today's Collection
+New Patients
+Returning Patients
+No Shows
+Pending Payments
+
+Today's queue
+
+Today's appointments
+
+Revenue summary
+
+New vs returning patients
+
+Follow-ups due today
+
+Dashboard data must be calculated from backend APIs.
+
+Do not hardcode dashboard numbers.
+
+==================================================
+17. SUPER ADMIN DASHBOARD
+==================================================
+
+Show:
+
+Total Clinics
+Active Clinics
+Trial Clinics
+Expired Clinics
+Total Doctors
+Total Receptionists
+Monthly Recurring Revenue
+
+Charts:
+
+Clinic Growth
+Subscription Distribution
+Revenue
+
+All statistics must come from backend APIs.
+
+==================================================
+18. SUBSCRIPTION SYSTEM
+==================================================
+
+Implement subscription-ready architecture.
+
+Create:
+
+subscription_plans
+subscriptions
+subscription_payments
+
+Example plans:
+
+STARTER
+PROFESSIONAL
+CLINIC
+
+Subscription fields:
+
+- id
+- clinicId
+- planId
+- status
+- startDate
+- endDate
+- billingCycle
+- amount
+- createdAt
+- updatedAt
+
+Statuses:
+
+TRIAL
+ACTIVE
+EXPIRING_SOON
+EXPIRED
+CANCELLED
+SUSPENDED
+
+The system must support future payment gateway integration.
+
+For Phase 1, do NOT integrate a payment gateway unless specifically requested.
+
+Build the architecture so Razorpay/Stripe can be added later.
+
+==================================================
+19. AUTHENTICATION
+==================================================
+
+Use secure authentication.
+
+Recommended:
+
+JWT access token
+Refresh token mechanism
+
+Password:
+
+Use bcrypt/argon2 hashing.
+
+Never store plain-text passwords.
+
+Implement:
+
+- Login
+- Logout
+- Refresh token
+- Forgot password architecture
+- Password reset
+- Change password
+- Account status
+
+Do not store sensitive authentication information unnecessarily in localStorage.
+
+Prefer secure HTTP-only cookies where practical for refresh/session tokens.
+
+==================================================
+20. DATABASE
+==================================================
+
+Use:
+
+MySQL
+
+ORM:
+
+Prisma
+
+Use migrations.
+
+Create proper indexes.
+
+Important indexes:
+
+clinicId
+userId
+patientId
+doctorId
+appointmentDate
+mobile
+patientNumber
+subscription status
+
+Use foreign keys.
+
+Use unique constraints where appropriate.
+
+Patient number should be unique within a clinic.
+
+Do not use database-level global uniqueness where tenant-scoped uniqueness is intended.
+
+==================================================
+21. DATABASE TABLES
+==================================================
+
+Initial database structure should include:
+
+users
+clinics
+clinic_users
+doctors
+receptionists
+patients
+patient_doctors
+appointments
+consultations
+prescriptions
+prescription_items
+payments
+subscription_plans
+subscriptions
+subscription_payments
+audit_logs
+
+You may introduce additional supporting tables if architecturally necessary.
+
+Before implementation, generate an ER diagram or Mermaid ER diagram.
+
+==================================================
+22. MULTI-TENANCY SECURITY
+==================================================
+
+This is one of the most important requirements.
+
+Every request must establish:
+
+authenticatedUser
+role
+clinicId
+
+For clinic users:
+
+clinicId comes from the authenticated user's membership.
+
+Never trust:
+
+req.body.clinicId
+req.query.clinicId
+frontend-selected clinicId
+
+to determine access.
+
+Every database query involving tenant data must enforce clinic ownership.
+
+Example:
+
+DO NOT:
+
+Patient.findUnique({
+  where: { id: patientId }
+})
+
+without verifying clinic ownership.
+
+Instead ensure the patient belongs to the authenticated clinic.
+
+Never allow:
+
+Clinic A user
+→ Clinic B patient
+
+==================================================
+23. AUDIT LOGGING
+==================================================
+
+Create audit logs for important operations:
+
+- Login
+- Patient created
+- Patient updated
+- Doctor assigned
+- Appointment created
+- Appointment cancelled
+- Consultation created
+- Consultation completed
+- Prescription created
+- Payment recorded
+- Staff created
+- Staff deactivated
+- Subscription changed
+
+Audit fields:
+
+- userId
+- clinicId
+- action
+- entityType
+- entityId
+- metadata
+- timestamp
+- IP if appropriate
+
+Do not log passwords or sensitive authentication secrets.
+
+==================================================
+24. FRONTEND STACK
+==================================================
+
+Use:
+
+React
+TypeScript
+Vite
+
+React Router
+
+React Hook Form
+
+Zod
+
+TanStack Query
+
+Tailwind CSS OR the styling system already established by the Stitch design.
+
+Do not introduce a second styling system unnecessarily.
+
+Use reusable components.
+
+Do not duplicate forms.
+
+Example:
+
+PatientForm should be reusable by:
+
+Doctor
+Receptionist
+
+Role-based differences should be handled through props/configuration/permissions.
+
+==================================================
+25. FRONTEND ARCHITECTURE
+==================================================
+
+Use a feature-based structure.
+
+Suggested:
+
+src/
+
+components/
+  ui/
+
+features/
+  auth/
+  dashboard/
+  clinics/
+  doctors/
+  receptionists/
+  patients/
+  appointments/
+  queue/
+  consultations/
+  prescriptions/
+  billing/
+  subscriptions/
+  reports/
+
+layouts/
+
+pages/
+
+routes/
+
+hooks/
+
+services/
+
+api/
+
+schemas/
+
+types/
+
+utils/
+
+lib/
+
+Do not create one giant App.tsx.
+
+Keep features modular.
+
+==================================================
+26. API ARCHITECTURE
+==================================================
+
+Backend:
+
+Node.js
+TypeScript
+Express
+
+Use REST APIs.
+
+Example:
+
+POST /api/auth/login
+POST /api/auth/logout
+POST /api/auth/refresh
+
+GET /api/super-admin/dashboard
+
+GET /api/clinics
+POST /api/clinics
+GET /api/clinics/:id
+PATCH /api/clinics/:id
+PATCH /api/clinics/:id/status
+
+GET /api/doctors
+POST /api/doctors
+PATCH /api/doctors/:id
+
+GET /api/receptionists
+POST /api/receptionists
+PATCH /api/receptionists/:id
+
+GET /api/patients
+POST /api/patients
+GET /api/patients/:id
+PATCH /api/patients/:id
+
+POST /api/patients/:id/doctors
+DELETE /api/patients/:id/doctors/:doctorId
+
+GET /api/appointments
+POST /api/appointments
+PATCH /api/appointments/:id
+
+GET /api/queue
+POST /api/queue/check-in
+POST /api/queue/:id/start
+POST /api/queue/:id/complete
+POST /api/queue/:id/skip
+
+GET /api/consultations/:id
+POST /api/consultations
+PATCH /api/consultations/:id
+
+POST /api/prescriptions
+
+GET /api/payments
+POST /api/payments
+
+GET /api/reports
+
+GET /api/subscriptions
+PATCH /api/subscriptions/:id
+
+Follow REST conventions consistently.
+
+==================================================
+27. API SECURITY
+==================================================
+
+Implement:
+
+Helmet
+CORS configuration
+Rate limiting
+Request validation
+Centralized error handling
+Authentication middleware
+Role middleware
+Tenant authorization middleware
+
+Validate all request bodies using Zod or an equivalent backend validation system.
+
+Never trust frontend validation.
+
+Frontend validation improves UX.
+
+Backend validation provides security.
+
+==================================================
+28. ERROR HANDLING
+==================================================
+
+Create standardized API response format.
+
+Success:
+
+{
+  "success": true,
+  "data": {}
+}
+
+Error:
+
+{
+  "success": false,
+  "error": {
+    "code": "PATIENT_NOT_FOUND",
+    "message": "Patient not found"
+  }
+}
+
+Never expose:
+
+- stack traces
+- SQL errors
+- internal filesystem paths
+- secrets
+- database credentials
+
+in production API responses.
+
+==================================================
+29. ENVIRONMENT VARIABLES
+==================================================
+
+Use .env files.
+
+Frontend:
+
+VITE_API_URL
+
+Backend:
+
+NODE_ENV
+PORT
+DATABASE_URL
+JWT_SECRET
+JWT_REFRESH_SECRET
+CORS_ORIGIN
+
+Never commit .env files.
+
+Create:
+
+.env.example
+
+with placeholder values.
+
+==================================================
+30. CONFIGURATION
+==================================================
+
+Create separate environments:
+
+development
+test
+production
+
+Do not hardcode:
+
+API URLs
+database credentials
+JWT secrets
+clinic IDs
+subscription prices
+URLs
+
+==================================================
+31. TESTING
+==================================================
+
+Testing is required.
+
+Frontend:
+
+Vitest
+React Testing Library
+
+Backend:
+
+Vitest/Jest
+Supertest
+
+Test:
+
+Authentication
+Role permissions
+Tenant isolation
+Patient creation
+Duplicate patient detection
+Doctor assignment
+Appointment creation
+Queue transitions
+Consultation
+Prescription
+Billing
+Subscription status
+
+Especially test:
+
+Clinic A cannot access Clinic B data.
+
+Create automated tests for this.
+
+==================================================
+32. UI IMPLEMENTATION
+==================================================
+
+Use the provided Stitch design as the visual reference.
+
+Match:
+
+- colors
+- typography
+- spacing
+- sidebar
+- navbar
+- cards
+- tables
+- buttons
+- modals
+- forms
+- charts
+- status badges
+- responsive layouts
+
+Do not replace the Stitch design with generic Bootstrap/Admin templates.
+
+Do not use placeholder UI if the design already specifies the component.
+
+Create reusable UI components.
+
+==================================================
+33. RESPONSIVE DESIGN
+==================================================
+
+Support:
+
+Desktop
+1280+
+1440+
+
+Tablet
+768+
+
+Mobile
+390+
+
+Desktop is the primary experience.
+
+Receptionist workflow should work especially well on desktop/tablet.
+
+Doctor consultation should work well on desktop/tablet.
+
+==================================================
+34. ACCESSIBILITY
+==================================================
+
+Implement:
+
+- semantic HTML
+- keyboard navigation
+- visible focus states
+- accessible labels
+- proper form errors
+- sufficient contrast
+- ARIA only where necessary
+
+==================================================
+35. PERFORMANCE
+==================================================
+
+Use:
+
+lazy-loaded routes
+pagination
+server-side filtering
+server-side sorting where appropriate
+debounced search
+TanStack Query caching
+optimized database queries
+
+Do not load thousands of patients into the browser at once.
+
+Patient list should be paginated.
+
+Appointments should be date-filtered.
+
+==================================================
+36. DEPLOYMENT TARGET
+==================================================
+
+The production deployment target is a MilesWeb server/hosting environment.
+
+Design deployment so that:
+
+React frontend:
+
+npm run build
+
+produces static production assets.
+
+Node.js backend:
+
+runs as a separate Node process.
+
+MySQL:
+
+runs on the hosting/server MySQL database.
+
+Do not require Docker unless the target MilesWeb plan explicitly supports it and we decide to use it.
+
+Create deployment documentation for:
+
+1. Build frontend
+2. Upload frontend
+3. Configure API
+4. Configure Node.js application
+5. Configure MySQL
+6. Run Prisma migrations
+7. Configure environment variables
+8. Configure domain/subdomain
+9. Configure HTTPS
+10. Restart Node.js application
+11. Verify health endpoint
+
+Recommended domain structure:
+
+app.example.com
+→ React frontend
+
+api.example.com
+→ Node.js API
+
+admin.example.com
+→ optional Super Admin frontend
+
+Alternatively, if the hosting setup makes this simpler, serve the React frontend and API under the same domain.
+
+==================================================
+37. HEALTH CHECK
+==================================================
+
+Create:
+
+GET /api/health
+
+Response:
+
+{
+  "success": true,
+  "status": "ok"
+}
+
+Use this for deployment verification.
+
+==================================================
+38. LOGGING
+==================================================
+
+Implement structured server logging.
+
+Log:
+
+- startup
+- shutdown
+- requests where appropriate
+- errors
+- authentication failures
+- important application events
+
+Do not log:
+
+- passwords
+- JWT secrets
+- sensitive patient medical information unnecessarily
+- payment secrets
+
+==================================================
+39. SEED DATA
+==================================================
+
+Create a development seed script.
+
+Seed:
+
+1 Super Admin
+
+Example:
+
+admin@example.com
+
+Create demo clinic:
+
+Sharma Clinic
+
+Create:
+
+2 doctors
+2 receptionists
+10 patients
+appointments
+queue records
+consultations
+prescriptions
+payments
+
+Use clearly fake/demo data.
+
+Never use real patient information.
+
+==================================================
+40. DOCUMENTATION
+==================================================
+
+Create:
+
+README.md
+
+Include:
+
+Project overview
+Architecture
+Tech stack
+Folder structure
+Installation
+Environment variables
+Database setup
+Prisma commands
+Development commands
+Testing
+Build
+Deployment
+Troubleshooting
+
+Also create:
+
+docs/
+  architecture.md
+  database.md
+  api.md
+  deployment.md
+  security.md
+
+==================================================
+41. CODE QUALITY
+==================================================
+
+Use TypeScript strict mode.
+
+Avoid any.
+
+Use meaningful names.
+
+Use reusable functions.
+
+Avoid duplicated logic.
+
+Keep controllers thin.
+
+Keep business logic in services.
+
+Keep database access in repository/data-access layer where appropriate.
+
+Use DTO/schema validation.
+
+Use centralized error handling.
+
+Use ESLint.
+
+Use Prettier.
+
+==================================================
+42. GIT
+==================================================
+
+Initialize Git if not already initialized.
+
+Create meaningful commits.
+
+Do not commit:
+
+.env
+node_modules
+build output where inappropriate
+database credentials
+secrets
+
+Create:
+
+.gitignore
+
+==================================================
+43. DEVELOPMENT PROCESS
+==================================================
+
+DO NOT immediately start generating the entire application.
+
+Follow this exact process:
+
+PHASE 0 — DESIGN INSPECTION
+
+Inspect the provided Stitch designs.
+
+List:
+
+- all screens
+- routes
+- components
+- user roles
+- interactions
+- forms
+- tables
+- modals
+- responsive states
+
+Do not write application code yet.
+
+PHASE 1 — ARCHITECTURE
+
+Create:
+
+- architecture plan
+- database ER diagram
+- database schema
+- role/permission matrix
+- API specification
+- frontend folder structure
+- backend folder structure
+- deployment architecture
+
+PHASE 2 — PROJECT SETUP
+
+Create the React and Node.js projects.
+
+Install required dependencies.
+
+Configure:
+
+TypeScript
+ESLint
+Prettier
+Environment variables
+Testing
+Prisma
+MySQL
+
+PHASE 3 — DATABASE
+
+Create Prisma schema.
+
+Create migration.
+
+Create seed script.
+
+Run migration.
+
+Run seed.
+
+Verify database.
+
+PHASE 4 — AUTHENTICATION
+
+Implement:
+
+Super Admin login
+Doctor login
+Receptionist login
+JWT/session
+Role authorization
+Tenant isolation
+
+Write tests.
+
+PHASE 5 — SUPER ADMIN
+
+Implement:
+
+Dashboard
+Clinic list
+Add clinic
+Edit clinic
+Clinic details
+Subscription management
+
+Write tests.
+
+PHASE 6 — CLINIC
+
+Implement:
+
+Doctor management
+Receptionist management
+Clinic settings
+
+PHASE 7 — PATIENTS
+
+Implement:
+
+Patient list
+Patient creation
+Patient editing
+Patient profile
+Doctor assignment
+Duplicate detection
+
+Write tests.
+
+PHASE 8 — APPOINTMENTS
+
+Implement:
+
+Create appointment
+Edit
+Cancel
+Reschedule
+Check-in
+Doctor assignment
+
+PHASE 9 — QUEUE
+
+Implement:
+
+Daily queue
+Token
+Check-in
+Start consultation
+Skip
+Complete
+No-show
+
+Write queue transition tests.
+
+PHASE 10 — CONSULTATION
+
+Implement:
+
+Consultation
+Diagnosis
+Notes
+Prescription
+Next visit
+Patient history
+
+PHASE 11 — BILLING
+
+Implement:
+
+Fees
+Payments
+Payment status
+Collection dashboard
+
+PHASE 12 — REPORTS
+
+Implement:
+
+Patient reports
+Appointment reports
+Collection reports
+
+PHASE 13 — SUBSCRIPTION
+
+Implement:
+
+Plans
+Subscriptions
+Expiry handling
+Subscription restrictions
+
+Do not integrate payment gateway yet.
+
+PHASE 14 — POLISH
+
+Implement:
+
+Loading states
+Empty states
+Error states
+Responsive UI
+Accessibility
+Performance
+
+PHASE 15 — TESTING
+
+Run:
+
+npm test
+npm run build
+npm run lint
+
+Run backend tests.
+
+Run frontend tests.
+
+Run production builds.
+
+Fix all errors.
+
+PHASE 16 — DEPLOYMENT
+
+Prepare:
+
+production environment variables
+database migration
+frontend build
+Node.js deployment
+MySQL configuration
+domain
+HTTPS
+health check
+
+==================================================
+44. IMPORTANT DEVELOPMENT RULE
+==================================================
+
+After completing each phase:
+
+1. Run tests.
+2. Run lint.
+3. Run build.
+4. Check for TypeScript errors.
+5. Verify the application in the browser.
+6. Fix issues before moving to the next phase.
+
+Never knowingly leave the application in a broken state.
+
+==================================================
+45. FINAL REQUIREMENT
+==================================================
+
+This must be a real working application.
+
+Do NOT create:
+
+- static mockups
+- fake dashboard numbers
+- fake buttons
+- fake forms
+- hardcoded patient data
+- fake API calls
+
+All major UI actions must connect to real backend APIs and MySQL.
+
+The final application should be suitable as the foundation for a commercial SaaS product.
+
+START NOW WITH PHASE 0 ONLY.
+
+First inspect the Stitch design and provide:
+
+1. Screen inventory
+2. User flow
+3. Component inventory
+4. Database entities
+5. Role/permission matrix
+6. API module list
+7. Proposed project structure
+8. Deployment architecture
+9. Risks/ambiguities
+10. Detailed implementation plan
+
+Do NOT write application code until the Phase 0 plan is complete.

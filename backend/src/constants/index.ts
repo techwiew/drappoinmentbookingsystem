@@ -1,0 +1,38 @@
+export const ROLES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  DOCTOR: 'DOCTOR',
+  RECEPTIONIST: 'RECEPTIONIST',
+} as const;
+
+export type RoleType = (typeof ROLES)[keyof typeof ROLES];
+
+export const APPOINTMENT_STATUS = {
+  BOOKED: 'BOOKED',
+  CHECKED_IN: 'CHECKED_IN',
+  WAITING: 'WAITING',
+  IN_CONSULTATION: 'IN_CONSULTATION',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  NO_SHOW: 'NO_SHOW',
+  SKIPPED: 'SKIPPED',
+} as const;
+
+export const APPOINTMENT_TYPE = {
+  NEW_PATIENT: 'NEW_PATIENT',
+  FOLLOW_UP: 'FOLLOW_UP',
+  WALK_IN: 'WALK_IN',
+  EMERGENCY: 'EMERGENCY',
+} as const;
+
+export const PAYMENT_METHOD = {
+  CASH: 'CASH',
+  UPI: 'UPI',
+  CARD: 'CARD',
+  OTHER: 'OTHER',
+} as const;
+
+export const PAYMENT_STATUS = {
+  PAID: 'PAID',
+  PENDING: 'PENDING',
+  PARTIALLY_PAID: 'PARTIALLY_PAID',
+} as const;
