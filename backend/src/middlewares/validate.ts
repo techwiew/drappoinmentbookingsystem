@@ -32,7 +32,7 @@ export const validateRequest = (
           res,
           'VALIDATION_ERROR',
           'Invalid request payload or parameters',
-          422,
+          400,
           errorMessages
         );
       }

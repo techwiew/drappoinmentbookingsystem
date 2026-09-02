@@ -285,7 +285,7 @@ export const QueuePage: React.FC = () => {
                               isLoading={startMutation.isPending}
                               onClick={() => startMutation.mutate(apt.id)}
                             >
-                              Call
+                              Start Consult
                             </Button>
                           )}
                           <Button

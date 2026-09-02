@@ -3,6 +3,22 @@ import { ConsultationService } from './consultations.service.js';
 import { sendSuccess } from '../../utils/response.js';
 
 export class ConsultationController {
+  static async list(req: Request, res: Response, next: NextFunction) {
+    try {
+      const consultations = await ConsultationService.listConsultations(
+        req.tenant!.clinicId,
+        {
+          appointmentId: req.query.appointmentId as string | undefined,
+          patientId: req.query.patientId as string | undefined,
+        }
+      );
+
+      return sendSuccess(res, consultations);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const consultation = await ConsultationService.getConsultationById(
@@ -36,6 +52,23 @@ export class ConsultationController {
         req.user!.userId
       );
       return sendSuccess(res, consultation, 'Consultation recorded successfully', 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async open(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await ConsultationService.openConsultationForPatient(
+        req.tenant!.clinicId,
+        req.body,
+        {
+          userId: req.user!.userId,
+          doctorId: req.tenant?.doctorId || null,
+        }
+      );
+
+      return sendSuccess(res, result, 'Consultation opened successfully', 201);
     } catch (error) {
       next(error);
     }

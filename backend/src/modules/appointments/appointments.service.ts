@@ -1,7 +1,80 @@
 import { prisma } from '../../lib/prisma.js';
 import { logAudit } from '../../middlewares/audit.js';
+import { getCurrentAppointmentTime, normalizeAppointmentTime } from '../../utils/time.js';
 
 export class AppointmentService {
+  static async getAppointmentById(clinicId: string, appointmentId: string) {
+    const appointment = await prisma.appointment.findFirst({
+      where: { id: appointmentId, clinicId },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            patientNumber: true,
+            fullName: true,
+            mobile: true,
+            gender: true,
+            age: true,
+            bloodGroup: true,
+            allergies: true,
+            existingIllness: true,
+          },
+        },
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+            specialization: true,
+          },
+        },
+        consultation: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+        payments: {
+          select: {
+            id: true,
+            totalAmount: true,
+            paymentStatus: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw { statusCode: 404, code: 'APPOINTMENT_NOT_FOUND', message: 'Appointment not found' };
+    }
+
+    return {
+      id: appointment.id,
+      patientId: appointment.patientId,
+      patientNumber: appointment.patient.patientNumber,
+      patientName: appointment.patient.fullName,
+      patientMobile: appointment.patient.mobile,
+      patientGender: appointment.patient.gender,
+      patientAge: appointment.patient.age,
+      patientBloodGroup: appointment.patient.bloodGroup,
+      patientAllergies: appointment.patient.allergies,
+      patientExistingIllness: appointment.patient.existingIllness,
+      doctorId: appointment.doctorId,
+      doctorName: appointment.doctor.name,
+      doctorSpecialization: appointment.doctor.specialization,
+      appointmentDate: appointment.appointmentDate,
+      appointmentTime: appointment.appointmentTime,
+      appointmentType: appointment.appointmentType,
+      tokenNumber: appointment.tokenNumber,
+      status: appointment.status,
+      consultationFee: Number(appointment.consultationFee),
+      notes: appointment.notes,
+      consultationId: appointment.consultation?.id || null,
+      consultationStatus: appointment.consultation?.status || null,
+      paymentStatus: appointment.payments[0]?.paymentStatus || 'PENDING',
+      createdAt: appointment.createdAt,
+    };
+  }
+
   static async listAppointments(
     clinicId: string,
     query: {
@@ -158,6 +231,7 @@ export class AppointmentService {
       data.consultationFee !== undefined
         ? data.consultationFee
         : Number(doctor.consultationFee);
+    const appointmentTime = normalizeAppointmentTime(data.appointmentTime || getCurrentAppointmentTime());
 
     const appointment = await prisma.appointment.create({
       data: {
@@ -165,7 +239,7 @@ export class AppointmentService {
         patientId: data.patientId,
         doctorId: data.doctorId,
         appointmentDate: apptDate,
-        appointmentTime: data.appointmentTime || '10:00 AM',
+        appointmentTime,
         appointmentType: data.appointmentType || 'NEW_PATIENT',
         tokenNumber,
         status: initialStatus,
@@ -231,7 +305,7 @@ export class AppointmentService {
       d.setHours(0, 0, 0, 0);
       updateData.appointmentDate = d;
     }
-    if (data.appointmentTime) updateData.appointmentTime = data.appointmentTime;
+    if (data.appointmentTime) updateData.appointmentTime = normalizeAppointmentTime(data.appointmentTime);
     if (data.appointmentType) updateData.appointmentType = data.appointmentType;
     if (data.status) updateData.status = data.status;
     if (data.consultationFee !== undefined) updateData.consultationFee = data.consultationFee;

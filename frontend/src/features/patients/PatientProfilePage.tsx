@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
+import { useAuth } from '../../context/AuthContext.js';
 import { Card } from '../../components/ui/Card.js';
 import { Button } from '../../components/ui/Button.js';
 import { Badge, StatusBadge } from '../../components/ui/Badge.js';
@@ -23,9 +24,11 @@ import {
 export const PatientProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { doctorId, role } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'consultations' | 'prescriptions' | 'billing'>('overview');
   const [rxPrintData, setRxPrintData] = useState<any>(null);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [isOpeningConsultation, setIsOpeningConsultation] = useState(false);
 
   const { data: patient, isLoading } = useQuery({
     queryKey: ['patient', id],
@@ -53,6 +56,25 @@ export const PatientProfilePage: React.FC = () => {
     },
     enabled: !!id && activeTab === 'billing',
   });
+
+  const handleOpenConsultation = async () => {
+    if (!id) return;
+
+    try {
+      setIsOpeningConsultation(true);
+      const res = await apiClient.post('/consultations/open', {
+        patientId: id,
+        doctorId: doctorId || undefined,
+      });
+      const { appointmentId } = res.data.data;
+      navigate(`/queue/${appointmentId}/consult`);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Unable to open consultation for this patient.';
+      window.alert(message);
+    } finally {
+      setIsOpeningConsultation(false);
+    }
+  };
 
   const handlePrintRx = async (prescriptionId: string) => {
     try {
@@ -131,6 +153,18 @@ export const PatientProfilePage: React.FC = () => {
           </div>
 
           <div className="flex gap-2 shrink-0">
+            {(role === 'DOCTOR' || role === 'RECEPTIONIST') && (
+              <Button
+                size="sm"
+                className="bg-brand-500 text-white hover:bg-brand-400 border border-brand-400"
+                variant="primary"
+                isLoading={isOpeningConsultation}
+                onClick={handleOpenConsultation}
+                leftIcon={<Stethoscope className="w-3.5 h-3.5" />}
+              >
+                Open Consultation
+              </Button>
+            )}
             <Button
               size="sm"
               className="bg-white/10 border-white/20 text-white hover:bg-white/20"

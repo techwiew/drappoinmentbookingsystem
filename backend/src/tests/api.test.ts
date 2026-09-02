@@ -120,6 +120,25 @@ describe('🏥 ClinicFlow Multi-Tenant Full-Stack API Test Suite', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.metrics.totalClinics).toBeGreaterThanOrEqual(2);
     });
+
+    it('rejects doctor creation with invalid mobile number format', async () => {
+      const res = await request(app)
+        .post('/api/doctors')
+        .set('Authorization', `Bearer ${doctorTokenClinicA}`)
+        .send({
+          name: 'Invalid Mobile Doctor',
+          email: `badmobile.${Date.now()}@example.com`,
+          password: 'Doctor@123',
+          mobile: '98765',
+          specialization: 'Orthopedics',
+          qualification: 'MBBS',
+          registrationNumber: 'REG-INVALID-1',
+          consultationFee: 500,
+          workingDays: ['MON', 'TUE', 'WED'],
+        });
+
+      expect(res.status).toBe(400);
+    });
   });
 
   describe('2. Patient Registration & Duplicate Detection', () => {
@@ -150,6 +169,20 @@ describe('🏥 ClinicFlow Multi-Tenant Full-Stack API Test Suite', () => {
       expect(res.body.data.fullName).toBe('Tanvi Saxena');
       expect(res.body.data.assignedDoctors.length).toBe(1);
       patientAId = res.body.data.id;
+    });
+
+    it('rejects creation of patient with malformed 10-digit mobile number', async () => {
+      const res = await request(app)
+        .post('/api/patients')
+        .set('Authorization', `Bearer ${receptionistTokenClinicA}`)
+        .send({
+          fullName: 'Bad Mobile Patient',
+          mobile: '98765abc10',
+          gender: 'MALE',
+          age: 33,
+        });
+
+      expect(res.status).toBe(400);
     });
   });
 
@@ -253,6 +286,25 @@ describe('🏥 ClinicFlow Multi-Tenant Full-Stack API Test Suite', () => {
       expect(res.body.data.status).toBe('COMPLETED');
       expect(res.body.data.prescription.items.length).toBe(2);
       consultationId = res.body.data.id;
+    });
+
+    it('allows saving consultation without prescription when doctor enters diagnosis and notes', async () => {
+      const res = await request(app)
+        .post('/api/consultations')
+        .set('Authorization', `Bearer ${doctorTokenClinicA}`)
+        .send({
+          appointmentId: appointmentAId,
+          patientId: patientAId,
+          chiefComplaint: 'Follow-up check for recurring headache',
+          diagnosis: 'Migraine resolved with no active medication needed',
+          doctorNotes: 'Patient improving with hydration and rest',
+          status: 'COMPLETED',
+          medicines: [],
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.status).toBe('COMPLETED');
+      expect(res.body.data.prescription).toBeNull();
     });
 
     it('allows fetching prescription for print formatting', async () => {

@@ -115,14 +115,34 @@ export const StaffPage: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && (
+          {role === 'DOCTOR' && activeTab === 'doctors' && (
             <Button
               variant="primary"
               size="sm"
               leftIcon={<Plus className="w-4 h-4" />}
-              onClick={() => activeTab === 'doctors' ? setIsAddDocModalOpen(true) : setIsAddRecModalOpen(true)}
+              onClick={() => setIsAddDocModalOpen(true)}
             >
-              Add {activeTab === 'doctors' ? 'Doctor' : 'Receptionist'}
+              Add Doctor
+            </Button>
+          )}
+          {role === 'RECEPTIONIST' && activeTab === 'receptionists' && (
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => setIsAddRecModalOpen(true)}
+            >
+              Add Receptionist
+            </Button>
+          )}
+          {role === 'DOCTOR' && activeTab === 'receptionists' && (
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => setIsAddRecModalOpen(true)}
+            >
+              Add Receptionist
             </Button>
           )}
         </div>
@@ -211,14 +231,15 @@ export const StaffPage: React.FC = () => {
             ))
           )}
 
-          {/* Add Doctor CTA Card */}
-          <button
-            onClick={() => setIsAddDocModalOpen(true)}
-            className="h-48 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 transition-all group"
-          >
-            <Plus className="w-8 h-8 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-semibold">Add New Doctor</span>
-          </button>
+          {role === 'DOCTOR' && (
+            <button
+              onClick={() => setIsAddDocModalOpen(true)}
+              className="h-48 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 transition-all group"
+            >
+              <Plus className="w-8 h-8 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-semibold">Add New Doctor</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -274,7 +295,7 @@ export const StaffPage: React.FC = () => {
         >
           <div className="grid grid-cols-2 gap-3">
             <Input label="Full Name" required value={docForm.name} onChange={(e) => setDocForm({ ...docForm, name: e.target.value })} />
-            <Input label="Mobile" required value={docForm.mobile} onChange={(e) => setDocForm({ ...docForm, mobile: e.target.value })} />
+            <Input label="Mobile" required value={docForm.mobile} onChange={(e) => setDocForm({ ...docForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Login Email" type="email" required value={docForm.email} onChange={(e) => setDocForm({ ...docForm, email: e.target.value })} />
@@ -333,7 +354,7 @@ export const StaffPage: React.FC = () => {
         >
           <div className="grid grid-cols-2 gap-3">
             <Input label="Full Name" required value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} />
-            <Input label="Mobile" required value={recForm.mobile} onChange={(e) => setRecForm({ ...recForm, mobile: e.target.value })} />
+            <Input label="Mobile" required value={recForm.mobile} onChange={(e) => setRecForm({ ...recForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Login Email" type="email" required value={recForm.email} onChange={(e) => setRecForm({ ...recForm, email: e.target.value })} />

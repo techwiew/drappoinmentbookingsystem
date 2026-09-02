@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
+const mobileSchema = z.string().regex(/^\d{10}$/, 'Mobile number must be exactly 10 digits');
+
 export const createDoctorSchema = z.object({
   body: z.object({
     name: z.string().min(2, 'Doctor name is required'),
     email: z.string().email('Invalid email'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
-    mobile: z.string().min(5, 'Mobile is required'),
+    mobile: mobileSchema,
     specialization: z.string().min(2, 'Specialization is required'),
     qualification: z.string().min(2, 'Qualification is required'),
     registrationNumber: z.string().min(2, 'Medical registration number is required'),
@@ -26,7 +28,7 @@ export const updateDoctorSchema = z.object({
   }),
   body: z.object({
     name: z.string().optional(),
-    mobile: z.string().optional(),
+    mobile: mobileSchema.optional(),
     specialization: z.string().optional(),
     qualification: z.string().optional(),
     registrationNumber: z.string().optional(),

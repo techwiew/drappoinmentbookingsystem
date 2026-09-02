@@ -13,6 +13,7 @@ const router = Router();
 router.use(authenticate, requireTenant);
 
 router.get('/', AppointmentController.listAppointments);
+router.get('/:id', AppointmentController.getAppointmentById);
 router.post(
   '/',
   validateRequest(createAppointmentSchema),

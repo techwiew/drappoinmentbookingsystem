@@ -3,6 +3,19 @@ import { AppointmentService } from './appointments.service.js';
 import { sendSuccess } from '../../utils/response.js';
 
 export class AppointmentController {
+  static async getAppointmentById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const appointment = await AppointmentService.getAppointmentById(
+        req.tenant!.clinicId,
+        req.params.id
+      );
+
+      return sendSuccess(res, appointment);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async listAppointments(req: Request, res: Response, next: NextFunction) {
     try {
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;

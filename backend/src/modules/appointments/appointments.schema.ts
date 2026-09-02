@@ -1,11 +1,15 @@
 import { z } from 'zod';
+import { isValidAppointmentTime } from '../../utils/time.js';
 
 export const createAppointmentSchema = z.object({
   body: z.object({
     patientId: z.string().min(1, 'Patient ID is required'),
     doctorId: z.string().min(1, 'Doctor ID is required'),
     appointmentDate: z.string().min(1, 'Appointment date is required'),
-    appointmentTime: z.string().default('10:00 AM'),
+    appointmentTime: z
+      .string()
+      .refine(isValidAppointmentTime, 'Appointment time must be a valid time')
+      .default('10:00 AM'),
     appointmentType: z.enum(['NEW_PATIENT', 'FOLLOW_UP', 'WALK_IN', 'EMERGENCY']).default('NEW_PATIENT'),
     consultationFee: z.number().optional(),
     notes: z.string().optional(),
@@ -19,7 +23,10 @@ export const updateAppointmentSchema = z.object({
   }),
   body: z.object({
     appointmentDate: z.string().optional(),
-    appointmentTime: z.string().optional(),
+    appointmentTime: z
+      .string()
+      .refine(isValidAppointmentTime, 'Appointment time must be a valid time')
+      .optional(),
     appointmentType: z.enum(['NEW_PATIENT', 'FOLLOW_UP', 'WALK_IN', 'EMERGENCY']).optional(),
     status: z.enum([
       'BOOKED',

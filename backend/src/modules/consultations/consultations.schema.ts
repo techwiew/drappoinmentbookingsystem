@@ -10,19 +10,26 @@ const prescriptionItemSchema = z.object({
 
 export const createConsultationSchema = z.object({
   body: z.object({
-    appointmentId: z.string().min(1, "Appointment ID is required"),
-    patientId: z.string().min(1, "Patient ID is required").optional(),
+    appointmentId: z.string().min(1, 'Appointment ID is required'),
+    patientId: z.string().min(1, 'Patient ID is required').optional(),
     doctorId: z.string().optional(),
-    chiefComplaint: z.string().min(1, "Chief complaint is required"),
+    chiefComplaint: z.string().optional(),
     symptoms: z.string().optional(),
-    diagnosis: z.string().min(1, "Diagnosis is required"),
+    diagnosis: z.string().optional(),
     doctorNotes: z.string().optional(),
     advice: z.string().optional(),
     testsRecommended: z.string().optional(),
-    nextVisitDate: z.string().optional().or(z.literal("")),
+    nextVisitDate: z.string().optional().or(z.literal('')),
     followUpNotes: z.string().optional(),
-    status: z.enum(["DRAFT", "COMPLETED"]).default("COMPLETED"),
+    status: z.enum(['DRAFT', 'COMPLETED']).default('COMPLETED'),
     medicines: z.array(prescriptionItemSchema).optional().default([]),
+  }),
+});
+
+export const openConsultationSchema = z.object({
+  body: z.object({
+    patientId: z.string().min(1, 'Patient ID is required'),
+    doctorId: z.string().optional(),
   }),
 });
 

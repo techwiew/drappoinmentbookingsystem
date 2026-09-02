@@ -27,6 +27,8 @@ export const PatientsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { doctorId } = useAuth();
 
+  const normalizeMobileInput = (value: string) => value.replace(/\D/g, '').slice(0, 10);
+
   const [search, setSearch] = useState('');
   const [genderFilter, setGenderFilter] = useState('');
   const [isRegModalOpen, setIsRegModalOpen] = useState(false);
@@ -266,7 +268,7 @@ export const PatientsPage: React.FC = () => {
               required
               placeholder="10-digit mobile"
               value={form.mobile}
-              onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+              onChange={(e) => setForm({ ...form, mobile: normalizeMobileInput(e.target.value) })}
             />
           </div>
 

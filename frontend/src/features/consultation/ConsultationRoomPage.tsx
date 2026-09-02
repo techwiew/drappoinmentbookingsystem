@@ -305,9 +305,9 @@ export const ConsultationRoomPage: React.FC = () => {
               <h2 className="text-sm font-bold text-slate-900">Clinical Notes & Diagnosis</h2>
             </div>
             <div className="space-y-3">
-              <Textarea label="Chief Complaint" placeholder="Patient's primary concern..." rows={2} value={form.chiefComplaint} onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })} disabled={isLocked} required />
+              <Textarea label="Chief Complaint" placeholder="Patient's primary concern..." rows={2} value={form.chiefComplaint} onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })} disabled={isLocked} />
               <Textarea label="Symptoms & Observations" placeholder="Clinical observations..." rows={2} value={form.symptoms} onChange={(e) => setForm({ ...form, symptoms: e.target.value })} disabled={isLocked} />
-              <Textarea label="Diagnosis" placeholder="Primary diagnosis with ICD code..." rows={2} value={form.diagnosis} onChange={(e) => setForm({ ...form, diagnosis: e.target.value })} disabled={isLocked} required />
+              <Textarea label="Diagnosis" placeholder="Primary diagnosis with ICD code..." rows={2} value={form.diagnosis} onChange={(e) => setForm({ ...form, diagnosis: e.target.value })} disabled={isLocked} />
               <Textarea label="Doctor's Notes" placeholder="Internal clinical notes..." rows={2} value={form.doctorNotes} onChange={(e) => setForm({ ...form, doctorNotes: e.target.value })} disabled={isLocked} />
               <Textarea label="Tests Recommended" placeholder="CBC, LFT, ECG..." rows={2} value={form.testsRecommended} onChange={(e) => setForm({ ...form, testsRecommended: e.target.value })} disabled={isLocked} />
               <Textarea label="General Advice" placeholder="Diet, activity restrictions..." rows={2} value={form.advice} onChange={(e) => setForm({ ...form, advice: e.target.value })} disabled={isLocked} />

@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
+const mobileSchema = z.string().regex(/^\d{10}$/, 'Mobile number must be exactly 10 digits');
+
 export const createPatientSchema = z.object({
   body: z.object({
     fullName: z.string().min(2, 'Full name is required'),
-    mobile: z.string().min(8, 'Valid mobile number is required'),
+    mobile: mobileSchema,
     email: z.string().email().optional().or(z.literal('')),
     dateOfBirth: z.string().optional().or(z.literal('')),
     age: z.number().min(0).max(150).optional(),
@@ -18,7 +20,7 @@ export const createPatientSchema = z.object({
     medicalConditions: z.string().optional().or(z.literal('')),
     emergencyContactName: z.string().optional().or(z.literal('')),
     emergencyContactRelationship: z.string().optional().or(z.literal('')),
-    emergencyContactMobile: z.string().optional().or(z.literal('')),
+    emergencyContactMobile: mobileSchema.optional().or(z.literal('')),
     notes: z.string().optional().or(z.literal('')),
     doctorIds: z.array(z.string()).optional(),
   }),
@@ -30,7 +32,7 @@ export const updatePatientSchema = z.object({
   }),
   body: z.object({
     fullName: z.string().min(2).optional(),
-    mobile: z.string().min(8).optional(),
+    mobile: mobileSchema.optional(),
     email: z.string().email().optional().or(z.literal('')),
     dateOfBirth: z.string().optional().or(z.literal('')),
     age: z.number().optional(),
@@ -45,7 +47,7 @@ export const updatePatientSchema = z.object({
     medicalConditions: z.string().optional().or(z.literal('')),
     emergencyContactName: z.string().optional().or(z.literal('')),
     emergencyContactRelationship: z.string().optional().or(z.literal('')),
-    emergencyContactMobile: z.string().optional().or(z.literal('')),
+    emergencyContactMobile: mobileSchema.optional().or(z.literal('')),
     notes: z.string().optional().or(z.literal('')),
   }),
 });
