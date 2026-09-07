@@ -43,7 +43,7 @@ export const Header: React.FC = () => {
         ) : (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-              CF
+              MN
             </div>
             <div className="text-sm font-bold text-slate-800">
               MediNodes Platform Owner Console

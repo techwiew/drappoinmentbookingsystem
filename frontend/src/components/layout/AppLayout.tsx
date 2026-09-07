@@ -71,7 +71,7 @@ export const AppLayout: React.FC = () => {
             <Stethoscope className="w-4 h-4" />
           </div>
           <span className="font-extrabold text-slate-900 tracking-tight text-base">
-            Clinic<span className="text-brand-600">Flow</span>
+            Medi<span className="text-brand-600">Nodes</span>
           </span>
         </div>
         <button
@@ -92,7 +92,7 @@ export const AppLayout: React.FC = () => {
             </div>
             <div>
               <span className="font-extrabold text-white text-lg tracking-tight">
-                Clinic<span className="text-brand-400">Flow</span>
+                Medi<span className="text-brand-400">Nodes</span>
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest text-brand-400 block -mt-1">
                 Clinical SaaS
@@ -145,7 +145,7 @@ export const AppLayout: React.FC = () => {
               <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-xs">
-                    CF
+                    MN
                   </div>
                   <span className="font-bold text-white">MediNodes</span>
                 </div>
