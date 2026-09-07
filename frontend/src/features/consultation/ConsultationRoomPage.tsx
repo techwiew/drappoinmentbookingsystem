@@ -7,6 +7,8 @@ import { Card } from '../../components/ui/Card.js';
 import { Button } from '../../components/ui/Button.js';
 import { Input } from '../../components/ui/Input.js';
 import { Textarea } from '../../components/ui/Textarea.js';
+import { Modal } from '../../components/ui/Modal.js';
+import { Select } from '../../components/ui/Select.js';
 import { StatusBadge, Badge } from "../../components/ui/Badge.js";
 import {
   ArrowLeft,
@@ -19,6 +21,8 @@ import {
   Pill,
   ClipboardList,
   Lock,
+  IndianRupee,
+  Calculator,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -75,6 +79,23 @@ export const ConsultationRoomPage: React.FC = () => {
       instructions: "",
     },
   ]);
+
+  // Payment modal states
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [payForm, setPayForm] = useState({
+    consultationFee: 0,
+    additionalFee: 0,
+    discount: 0,
+    paidAmount: 0,
+    paymentMethod: 'CASH',
+    transactionReference: '',
+    existingPaidAmount: 0, // existing paid amount from previous payments
+  });
+  const [paymentError, setPaymentError] = useState('');
+
+  // Compute invoice total and remaining amount for the selected appointment
+  const invoiceTotal = Math.max(0, (payForm.consultationFee || 0) + (payForm.additionalFee || 0) - (payForm.discount || 0));
+  const remaining = Math.max(0, invoiceTotal - payForm.existingPaidAmount);
 
   const { data: appointment, isLoading: aptLoading } = useQuery({
     queryKey: ["appointment-detail", appointmentId],
@@ -144,23 +165,124 @@ export const ConsultationRoomPage: React.FC = () => {
         );
       }
       if (existingConsultation?.id) {
-        const res = await apiClient.put(
-          `/consultations/${existingConsultation.id}`,
-          payload,
-        );
-        return res.data.data;
+        try {
+          const res = await apiClient.put(
+            `/consultations/${existingConsultation.id}`,
+            payload,
+          );
+          return res.data.data;
+        } catch (err: any) {
+          // If we get a conflict error, it means another consultation was created concurrently.
+          // Fetch the existing consultation and return it.
+          if (err.response?.status === 409) {
+            const res = await apiClient.get(`/consultations?appointmentId=${appointmentId}`);
+            return res.data.data[0];
+          }
+          throw err;
+        }
       } else {
-        const res = await apiClient.post("/consultations", payload);
-        return res.data.data;
+        try {
+          const res = await apiClient.post("/consultations", payload);
+          return res.data.data;
+        } catch (err: any) {
+          // If we get a conflict error, it means another consultation was created concurrently.
+          // Fetch the existing consultation and return it.
+          if (err.response?.status === 409) {
+            const res = await apiClient.get(`/consultations?appointmentId=${appointmentId}`);
+            return res.data.data[0];
+          }
+          throw err;
+        }
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ["consultation-for-apt", appointmentId],
       });
       queryClient.invalidateQueries({ queryKey: ["live-queue"] });
+      // Optionally, update the existingConsultation state if we have a way to do so.
+      // Since we are invalidating the query, the component will refetch.
     },
   });
+
+  // Payment mutation
+  const recordPaymentMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await apiClient.post('/payments', payload);
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      // Refetch appointment to update payment status if needed elsewhere
+      queryClient.invalidateQueries({ queryKey: ['appointment-detail', appointmentId] });
+      setIsPaymentModalOpen(false);
+      // Reset payment form? We'll leave it as is.
+    },
+  });
+
+  const openPaymentModal = async () => {
+    setPaymentError('');
+    // Fetch existing payment for this appointment, if any
+    let existingPayment = null;
+    try {
+      const res = await apiClient.get('/payments', {
+        params: { appointmentId },
+      });
+      if (res.data.data.length > 0) {
+        existingPayment = res.data.data[0];
+      }
+    } catch (err) {
+      console.error('Failed to fetch existing payment', err);
+    }
+
+    const consultationFee = existingPayment ? Number(existingPayment.consultationFee) : (appointment?.consultationFee || 0);
+    const additionalFee = existingPayment ? Number(existingPayment.additionalFee) : 0;
+    const discount = existingPayment ? Number(existingPayment.discount) : 0;
+    const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
+    const existingPaidAmount = existingPayment ? Number(existingPayment.paidAmount) : 0;
+
+    setPayForm({
+      consultationFee,
+      additionalFee,
+      discount,
+      paidAmount: 0, // amount to pay in this transaction
+      paymentMethod: existingPayment ? existingPayment.paymentMethod : 'CASH',
+      transactionReference: existingPayment ? existingPayment.transactionReference || '' : '',
+      existingPaidAmount,
+    });
+
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appointment?.id) return;
+
+    const { consultationFee, additionalFee, discount, paidAmount, paymentMethod, transactionReference, existingPaidAmount } = payForm;
+    const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
+    const newTotalPaid = existingPaidAmount + paidAmount;
+
+    if (paidAmount <= 0) {
+      setPaymentError('Amount to pay must be greater than zero');
+      return;
+    }
+    if (newTotalPaid > totalAmount) {
+      setPaymentError(`Amount to pay exceeds remaining balance of ₹${(totalAmount - existingPaidAmount).toFixed(2)}`);
+      return;
+    }
+
+    setPaymentError('');
+    recordPaymentMutation.mutate({
+      patientId: appointment.patientId,
+      appointmentId: appointment.id,
+      doctorId: appointment.doctorId || doctorId,
+      consultationFee,
+      additionalFee,
+      discount,
+      paidAmount, // This is the amount to add (new payment)
+      paymentMethod,
+      transactionReference: transactionReference || undefined,
+    });
+  };
 
   const isLocked = existingConsultation?.status === "COMPLETED";
 
@@ -212,7 +334,8 @@ export const ConsultationRoomPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-5">
+    <>
+      <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -228,9 +351,20 @@ export const ConsultationRoomPage: React.FC = () => {
             Consultation Room
           </span>
           {isLocked && (
-            <Badge variant="success" size="sm">
-              <Lock className="w-3 h-3 mr-1" /> Completed & Locked
-            </Badge>
+            <>
+              <Badge variant="success" size="sm">
+                <Lock className="w-3 h-3 mr-1" /> Completed & Locked
+              </Badge>
+              <Button
+                variant="success"
+                size="sm"
+                className="ml-3"
+                leftIcon={<IndianRupee className="w-3 h-3" />}
+                onClick={openPaymentModal}
+              >
+                Record Payment
+              </Button>
+            </>
           )}
         </div>
 
@@ -588,6 +722,133 @@ export const ConsultationRoomPage: React.FC = () => {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+
+    {/* Payment Modal */}
+    <Modal
+      isOpen={isPaymentModalOpen}
+      onClose={() => setIsPaymentModalOpen(false)}
+      title="Record Payment"
+      description={
+        appointment
+          ? `Patient: ${appointment.patientName} • Doctor: ${appointment.doctorName}`
+          : ""
+      }
+      maxWidth="lg"
+    >
+      {appointment && (
+        <form onSubmit={handlePaymentSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-2">
+              <label className="text-xs font-semibold text-slate-700 block mb-1">
+                Consultation Fee (₹)
+              </label>
+              <p className="text-lg font-semibold text-slate-900">
+                ₹{payForm.consultationFee || 0}
+              </p>
+            </div>
+            <div className="p-2">
+              <label className="text-xs font-semibold text-slate-700 block mb-1">
+                Additional Charges (₹)
+              </label>
+              <p className="text-lg font-semibold text-slate-900">
+                ₹{payForm.additionalFee || 0}
+              </p>
+            </div>
+          </div>
+          <div className="p-2">
+            <label className="text-xs font-semibold text-slate-700 block mb-1">
+              Discount / Concession (₹)
+            </label>
+            <p className="text-lg font-semibold text-slate-900">
+              ₹{payForm.discount || 0}
+            </p>
+          </div>
+
+          {/* Total Preview */}
+          <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-emerald-800">
+              <Calculator className="w-4 h-4" />
+              <span className="font-semibold">Total Billable Amount:</span>
+            </div>
+            <span className="text-lg font-black text-emerald-800">
+              ₹{invoiceTotal.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Payment Method"
+              value={payForm.paymentMethod}
+              onChange={(e) =>
+                setPayForm({ ...payForm, paymentMethod: e.target.value })
+              }
+              options={[
+                { value: "CASH", label: "💵 Cash" },
+                { value: "UPI", label: "📱 UPI / QR Code" },
+                { value: "CARD", label: "💳 Card / POS" },
+                { value: "OTHER", label: "Other" },
+              ]}
+            />
+            <Input
+              label="Amount to Pay (₹)"
+              type="number"
+              step="0.01"
+              value={payForm.paidAmount}
+              onChange={(e) =>
+                setPayForm({ ...payForm, paidAmount: parseFloat(e.target.value) || 0 })
+              }
+              required
+            />
+          </div>
+
+          {payForm.paymentMethod !== "CASH" && (
+            <Input
+              label="Transaction Reference / UTR"
+              placeholder="e.g. UPI Ref: T123456789"
+              value={payForm.transactionReference}
+              onChange={(e) =>
+                setPayForm({ ...payForm, transactionReference: e.target.value })
+              }
+            />
+          )}
+
+          {/* Show remaining amount and payment status */}
+          <div className="text-sm flex items-center justify-between mt-2">
+            <span>
+              Already paid: ₹{payForm.existingPaidAmount.toFixed(2)} / Total: ₹{invoiceTotal.toFixed(2)}
+            </span>
+            <span>
+              Remaining: ₹{remaining.toFixed(2)}
+            </span>
+          </div>
+
+          {payForm.paidAmount > remaining && (
+            <div className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 border border-rose-200 rounded-lg">
+              ⚠️ Amount to pay exceeds remaining balance. Please adjust.
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsPaymentModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="success"
+              isLoading={recordPaymentMutation.isPending}
+              leftIcon={<CheckCircle2 className="w-4 h-4" />}
+            >
+              Record Payment
+            </Button>
+          </div>
+        </form>
+      )}
+    </Modal>
+    </>
   );
 };

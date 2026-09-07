@@ -8,6 +8,7 @@ export class BillingService {
       date?: string;
       status?: string;
       search?: string;
+      appointmentId?: string;
       page?: number;
       limit?: number;
     }
@@ -31,7 +32,13 @@ export class BillingService {
     }
 
     if (query.status && query.status !== 'ALL') {
-      where.paymentStatus = query.status;
+      where.paymentStatus = query.status === 'PENDING'
+        ? { in: ['PENDING', 'PARTIALLY_PAID'] }
+        : query.status;
+    }
+
+    if (query.appointmentId) {
+      where.appointmentId = query.appointmentId;
     }
 
     if (query.search) {
@@ -109,41 +116,117 @@ export class BillingService {
   }
 
   static async recordPayment(clinicId: string, data: any, creatorUserId: string) {
-    const consultationFee = Number(data.consultationFee || 0);
-    const additionalFee = Number(data.additionalFee || 0);
-    const discount = Number(data.discount || 0);
-    const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
     const paidAmount = Number(data.paidAmount || 0);
-    const pendingAmount = Math.max(0, totalAmount - paidAmount);
-
-    let paymentStatus = 'PENDING';
-    if (paidAmount >= totalAmount && totalAmount > 0) {
-      paymentStatus = 'PAID';
-    } else if (paidAmount > 0) {
-      paymentStatus = 'PARTIALLY_PAID';
+    if (paidAmount <= 0) {
+      throw { statusCode: 400, code: 'INVALID_PAYMENT_AMOUNT', message: 'Payment amount must be greater than zero' };
     }
 
-    const payment = await prisma.payment.create({
-      data: {
-        clinicId,
-        patientId: data.patientId,
-        appointmentId: data.appointmentId || null,
-        doctorId: data.doctorId || null,
-        consultationFee,
-        additionalFee,
-        discount,
-        totalAmount,
-        paidAmount,
-        pendingAmount,
-        paymentMethod: data.paymentMethod || 'CASH',
-        paymentStatus,
-        transactionReference: data.transactionReference || null,
-      },
-      include: {
-        patient: true,
-        doctor: true,
-      },
-    });
+    let payment;
+    // If appointmentId is provided, check for existing payment record for that appointment
+    if (data.appointmentId) {
+      const existingPayment = await prisma.payment.findFirst({
+        where: {
+          appointmentId: data.appointmentId,
+          clinicId,
+        },
+      });
+
+      if (existingPayment) {
+        const totalAmount = Number(existingPayment.totalAmount);
+        const newPaidAmount = Number(existingPayment.paidAmount) + paidAmount;
+        if (newPaidAmount > totalAmount) {
+          throw { statusCode: 400, code: 'OVERPAYMENT', message: `Payment exceeds the remaining balance of ${Math.max(0, totalAmount - Number(existingPayment.paidAmount)).toFixed(2)}` };
+        }
+        const newPendingAmount = Math.max(0, totalAmount - newPaidAmount);
+        let newPaymentStatus = existingPayment.paymentStatus;
+        if (newPaidAmount >= totalAmount && totalAmount > 0) {
+          newPaymentStatus = 'PAID';
+        } else if (newPaidAmount > 0) {
+          newPaymentStatus = 'PARTIALLY_PAID';
+        }
+
+        payment = await prisma.payment.update({
+          where: { id: existingPayment.id },
+          data: {
+            paidAmount: newPaidAmount,
+            pendingAmount: newPendingAmount,
+            paymentStatus: newPaymentStatus,
+            // Note: we do not update consultationFee, additionalFee, discount, totalAmount as they are part of the invoice
+            // Update paymentMethod and transactionReference only if provided? We'll update them to the new values.
+            paymentMethod: data.paymentMethod || existingPayment.paymentMethod,
+            transactionReference: data.transactionReference || existingPayment.transactionReference,
+          },
+          include: {
+            patient: true,
+            doctor: true,
+          },
+        });
+      } else {
+        const consultationFee = Number(data.consultationFee || 0);
+        const additionalFee = Number(data.additionalFee || 0);
+        const discount = Number(data.discount || 0);
+        const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
+        if (paidAmount > totalAmount) {
+          throw { statusCode: 400, code: 'OVERPAYMENT', message: `Payment exceeds the invoice total of ${totalAmount.toFixed(2)}` };
+        }
+        const pendingAmount = Math.max(0, totalAmount - paidAmount);
+        const paymentStatus = paidAmount >= totalAmount && totalAmount > 0 ? 'PAID' : 'PARTIALLY_PAID';
+        // No existing payment, create new
+        payment = await prisma.payment.create({
+          data: {
+            clinicId,
+            patientId: data.patientId,
+            appointmentId: data.appointmentId || null,
+            doctorId: data.doctorId || null,
+            consultationFee,
+            additionalFee,
+            discount,
+            totalAmount,
+            paidAmount,
+            pendingAmount,
+            paymentMethod: data.paymentMethod || 'CASH',
+            paymentStatus,
+            transactionReference: data.transactionReference || null,
+          },
+          include: {
+            patient: true,
+            doctor: true,
+          },
+        });
+      }
+    } else {
+      const consultationFee = Number(data.consultationFee || 0);
+      const additionalFee = Number(data.additionalFee || 0);
+      const discount = Number(data.discount || 0);
+      const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
+      if (paidAmount > totalAmount) {
+        throw { statusCode: 400, code: 'OVERPAYMENT', message: `Payment exceeds the invoice total of ${totalAmount.toFixed(2)}` };
+      }
+      const pendingAmount = Math.max(0, totalAmount - paidAmount);
+      const paymentStatus = paidAmount >= totalAmount && totalAmount > 0 ? 'PAID' : 'PARTIALLY_PAID';
+      // No appointmentId, create new payment (should not happen in normal flow)
+      payment = await prisma.payment.create({
+        data: {
+          clinicId,
+          patientId: data.patientId,
+          appointmentId: data.appointmentId || null,
+          doctorId: data.doctorId || null,
+          consultationFee,
+          additionalFee,
+          discount,
+          totalAmount,
+          paidAmount,
+          pendingAmount,
+          paymentMethod: data.paymentMethod || 'CASH',
+          paymentStatus,
+          transactionReference: data.transactionReference || null,
+        },
+        include: {
+          patient: true,
+          doctor: true,
+        },
+      });
+    }
 
     await logAudit({
       clinicId,
@@ -152,9 +235,9 @@ export class BillingService {
       entityType: 'Payment',
       entityId: payment.id,
       metadata: {
-        totalAmount,
-        paidAmount,
-        paymentMethod: data.paymentMethod,
+        totalAmount: Number(payment.totalAmount),
+        paidAmount: payment.paidAmount,
+        paymentMethod: payment.paymentMethod,
       },
     });
 
@@ -182,12 +265,13 @@ export class BillingService {
     const discount = data.discount !== undefined ? Number(data.discount) : Number(payment.discount);
     const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
     const paidAmount = data.paidAmount !== undefined ? Number(data.paidAmount) : Number(payment.paidAmount);
+    if (paidAmount < 0 || paidAmount > totalAmount) {
+      throw { statusCode: 400, code: 'INVALID_PAYMENT_AMOUNT', message: 'Paid amount must be between zero and the invoice total' };
+    }
     const pendingAmount = Math.max(0, totalAmount - paidAmount);
 
-    let paymentStatus = payment.paymentStatus;
-    if (data.paymentStatus) {
-      paymentStatus = data.paymentStatus;
-    } else if (paidAmount >= totalAmount && totalAmount > 0) {
+    let paymentStatus = 'PENDING';
+    if (paidAmount >= totalAmount && totalAmount > 0) {
       paymentStatus = 'PAID';
     } else if (paidAmount > 0) {
       paymentStatus = 'PARTIALLY_PAID';

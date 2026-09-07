@@ -141,6 +141,26 @@ export class ConsultationService {
     const chiefComplaint = toConsultationText(data.chiefComplaint) ?? '';
     const diagnosis = toConsultationText(data.diagnosis) ?? '';
 
+    // Check if there's already an open (DRAFT) consultation for this appointment
+    // If the new consultation is also DRAFT, we should prevent duplicates
+    const isNewConsultationDraft = data.status === 'DRAFT';
+    if (isNewConsultationDraft) {
+      const existingDraftConsultation = await prisma.consultation.findFirst({
+        where: {
+          appointmentId: data.appointmentId,
+          status: 'DRAFT',
+        },
+      });
+
+      if (existingDraftConsultation) {
+        throw {
+          statusCode: 409,
+          code: 'CONFLICT',
+          message: 'An open consultation already exists for this appointment. Please complete or cancel it before starting a new one.'
+        };
+      }
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create or Update Consultation
       const existing = await tx.consultation.findUnique({
@@ -349,6 +369,44 @@ export class ConsultationService {
       };
     }
 
+    const existingOpenConsultation = appointment
+      ? await prisma.consultation.findFirst({
+          where: { appointmentId: appointment.id, status: 'DRAFT' },
+        })
+      : null;
+
+    if (existingOpenConsultation && appointment) {
+      // If there's an open consultation, ensure appointment is IN_CONSULTATION
+      if (appointment.status !== 'IN_CONSULTATION') {
+        appointment = await prisma.appointment.update({
+          where: { id: appointment.id },
+          data: { status: 'IN_CONSULTATION' },
+        });
+      }
+
+      await logAudit({
+        clinicId,
+        userId: actor.userId,
+        action: 'CONSULTATION_OPENED',
+        entityType: 'Appointment',
+        entityId: appointment.id,
+        metadata: {
+          patientId: data.patientId,
+          doctorId: resolvedDoctorId,
+          reusedAppointment: true,
+          reusedConsultation: true,
+        },
+      });
+
+      return {
+        appointmentId: appointment.id,
+        consultationId: existingOpenConsultation.id,
+        patientId: data.patientId,
+        doctorId: resolvedDoctorId,
+        status: appointment.status,
+      };
+    }
+
     if (!appointment) {
       const doctor = await prisma.doctor.findFirst({
         where: { id: resolvedDoctorId, clinicId, status: 'ACTIVE' },
@@ -416,10 +474,6 @@ export class ConsultationService {
       });
     }
 
-    const consultation = await prisma.consultation.findUnique({
-      where: { appointmentId: appointment.id },
-    });
-
     await logAudit({
       clinicId,
       userId: actor.userId,
@@ -429,13 +483,14 @@ export class ConsultationService {
       metadata: {
         patientId: data.patientId,
         doctorId: resolvedDoctorId,
-        reusedAppointment: !!consultation,
+        reusedAppointment: false,
+        reusedConsultation: false,
       },
     });
 
     return {
       appointmentId: appointment.id,
-      consultationId: consultation?.id || null,
+      consultationId: null,
       patientId: data.patientId,
       doctorId: resolvedDoctorId,
       status: appointment.status,
@@ -461,9 +516,8 @@ export class ConsultationService {
       throw { statusCode: 404, code: 'NOT_FOUND', message: 'Consultation not found' };
     }
 
-    // Prevent changing a completed consultation to draft
-    if (consultation.status === 'COMPLETED' && data.status !== 'COMPLETED') {
-      throw { statusCode: 403, code: 'LOCKED', message: 'Completed consultations cannot be altered to draft' };
+    if (consultation.status === 'COMPLETED') {
+      throw { statusCode: 403, code: 'LOCKED', message: 'Completed consultations cannot be altered' };
     }
 
     const updated = await prisma.$transaction(async (tx) => {

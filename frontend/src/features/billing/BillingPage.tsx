@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
@@ -38,6 +38,7 @@ export const BillingPage: React.FC = () => {
     paymentMethod: 'CASH',
     transactionReference: '',
   });
+  const [paymentError, setPaymentError] = useState('');
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ['payments', search, statusFilter],
@@ -60,7 +61,7 @@ export const BillingPage: React.FC = () => {
         params: { date: new Date().toISOString().split('T')[0] },
       });
       return (res.data.data || []).filter(
-        (a: any) => a.status === 'COMPLETED' && (!a.paymentStatus || a.paymentStatus === 'PENDING')
+        (a: any) => a.status === 'COMPLETED' && a.paymentStatus !== 'PAID'
       );
     },
     refetchInterval: 15000,
@@ -78,16 +79,47 @@ export const BillingPage: React.FC = () => {
     },
   });
 
-  const openPaymentModal = (apt: any) => {
+  const openPaymentModal = async (apt: any) => {
     setSelectedApt(apt);
+    // Fetch existing payment for this appointment, if any
+    let existingPayment = null;
+    try {
+      const res = await apiClient.get('/payments', {
+        params: { appointmentId: apt.id },
+      });
+      if (res.data.data.length > 0) {
+        existingPayment = res.data.data[0];
+      }
+    } catch (err) {
+      console.error('Failed to fetch existing payment', err);
+    }
+
+    const consultationFee = existingPayment ? Number(existingPayment.consultationFee) : apt.consultationFee || 0;
+    const additionalFee = existingPayment ? Number(existingPayment.additionalFee) : 0;
+    const discount = existingPayment ? Number(existingPayment.discount) : 0;
+    const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
+    const existingPaidAmount = existingPayment ? Number(existingPayment.paidAmount) : 0;
+    const remainingAmount = Math.max(0, totalAmount - existingPaidAmount);
+
     setPayForm({
-      consultationFee: apt.consultationFee || 0,
-      additionalFee: 0,
-      discount: 0,
-      paidAmount: apt.consultationFee || 0,
-      paymentMethod: 'CASH',
-      transactionReference: '',
+      consultationFee,
+      additionalFee,
+      discount,
+      paidAmount: 0, // amount to pay in this transaction
+      paymentMethod: existingPayment ? existingPayment.paymentMethod : 'CASH',
+      transactionReference: existingPayment ? existingPayment.transactionReference || '' : '',
     });
+
+    // Store the remaining amount in the component state? We'll use a ref or just compute in the modal.
+    // We'll create a state variable for remaining amount.
+    // But we can compute it in the modal using the payForm and the existing payment data.
+    // Instead, we'll store the existing payment in a separate state or in the selectedApt.
+    // For simplicity, we'll store the existing payment in selectedApt._existingPayment.
+    setSelectedApt((prev: any) => ({
+      ...prev,
+      _existingPayment: existingPayment,
+    }));
+
     setIsPaymentModalOpen(true);
   };
 
@@ -97,6 +129,22 @@ export const BillingPage: React.FC = () => {
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedApt) return;
+
+    // Compute remaining amount for validation
+    const existingPaidAmount = selectedApt._existingPayment?.paidAmount || 0;
+    const invoiceTotal = Math.max(0, (payForm.consultationFee || 0) + (payForm.additionalFee || 0) - (payForm.discount || 0));
+    const remaining = Math.max(0, invoiceTotal - existingPaidAmount);
+
+    if (payForm.paidAmount <= 0) {
+      setPaymentError('Amount to pay must be greater than zero');
+      return;
+    }
+    if (payForm.paidAmount > remaining) {
+      setPaymentError(`Amount to pay exceeds remaining balance of ₹${remaining.toFixed(2)}`);
+      return;
+    }
+
+    setPaymentError('');
     recordPaymentMutation.mutate({
       patientId: selectedApt.patientId,
       appointmentId: selectedApt.id,
@@ -112,6 +160,20 @@ export const BillingPage: React.FC = () => {
 
   const totalRevenue = payments?.reduce((sum: number, p: any) => sum + (p.paidAmount || 0), 0) || 0;
   const totalPending = (pendingApts?.length || 0);
+
+// Compute invoice total, existing paid amount, and remaining amount for the selected appointment
+  const existingPaidAmount = Number(selectedApt?._existingPayment?.paidAmount || 0);
+  const invoiceTotal = Math.max(0, (payForm.consultationFee || 0) + (payForm.additionalFee || 0) - (payForm.discount || 0));
+  const alreadyPaid = existingPaidAmount + payForm.paidAmount;
+  const remaining = Math.max(0, invoiceTotal - alreadyPaid);
+
+  useEffect(() => {
+    const appointmentId = searchParams.get('appointmentId');
+    const appointment = pendingApts?.find((item: any) => item.id === appointmentId);
+    if (appointment && !isPaymentModalOpen) {
+      void openPaymentModal(appointment);
+    }
+  }, [pendingApts, searchParams, isPaymentModalOpen]);
 
   return (
     <div className="space-y-5">
@@ -325,31 +387,30 @@ export const BillingPage: React.FC = () => {
         {selectedApt && (
           <form onSubmit={handlePaymentSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Consultation Fee (₹)"
-                type="number"
-                step="0.01"
-                value={payForm.consultationFee}
-                onChange={(e) =>
-                  setPayForm({
-                    ...payForm,
-                    consultationFee: parseFloat(e.target.value) || 0,
-                  })
-                }
-                required
-              />
-              <Input
-                label="Additional Charges (₹)"
-                type="number"
-                step="0.01"
-                value={payForm.additionalFee}
-                onChange={(e) =>
-                  setPayForm({
-                    ...payForm,
-                    additionalFee: parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
+              <div className="p-2">
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Consultation Fee (₹)
+                </label>
+                <p className="text-lg font-semibold text-slate-900">
+                  ₹{payForm.consultationFee || 0}
+                </p>
+              </div>
+              <div className="p-2">
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Additional Charges (₹)
+                </label>
+                <p className="text-lg font-semibold text-slate-900">
+                  ₹{payForm.additionalFee || 0}
+                </p>
+              </div>
+            </div>
+            <div className="p-2">
+              <label className="text-xs font-semibold text-slate-700 block mb-1">
+                Discount / Concession (₹)
+              </label>
+              <p className="text-lg font-semibold text-slate-900">
+                ₹{payForm.discount || 0}
+              </p>
             </div>
 
             <Input
@@ -372,7 +433,7 @@ export const BillingPage: React.FC = () => {
                 <span className="font-semibold">Total Billable Amount:</span>
               </div>
               <span className="text-lg font-black text-emerald-800">
-                ₹{totalAmount.toFixed(2)}
+                ₹{invoiceTotal.toFixed(2)}
               </span>
             </div>
 
@@ -391,7 +452,7 @@ export const BillingPage: React.FC = () => {
                 ]}
               />
               <Input
-                label="Amount Collected (₹)"
+                label="Amount to Pay (₹)"
                 type="number"
                 step="0.01"
                 value={payForm.paidAmount}
@@ -419,11 +480,25 @@ export const BillingPage: React.FC = () => {
               />
             )}
 
-            {payForm.paidAmount < totalAmount && payForm.paidAmount > 0 && (
+            {/* Show remaining amount and payment status */}
+            <div className="text-sm flex items-center justify-between mt-2">
+              <span>
+                Already paid: ₹{alreadyPaid.toFixed(2)} / Total: ₹{invoiceTotal.toFixed(2)}
+              </span>
+              <span>
+                Remaining: ₹{remaining.toFixed(2)}
+              </span>
+            </div>
+
+            {payForm.paidAmount > remaining && (
               <div className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 border border-rose-200 rounded-lg">
-                ⚠️ Partial payment: ₹
-                {(totalAmount - payForm.paidAmount).toFixed(2)} will remain
-                pending
+                ⚠️ Amount to pay exceeds remaining balance. Please adjust.
+              </div>
+            )}
+
+            {paymentError && (
+              <div className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 border border-rose-200 rounded-lg">
+                {paymentError}
               </div>
             )}
 

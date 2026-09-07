@@ -101,6 +101,14 @@ export const DoctorDashboardPage: React.FC = () => {
             >
               Today's Schedule
             </Button>
+            <Button
+              variant="primary"
+              className="ml-3 bg-white text-brand-700 hover:bg-brand-50 shadow-md"
+              onClick={() => navigate('/appointments')}
+              leftIcon={<Users className="w-4 h-4" />}
+            >
+              Book Appointment
+            </Button>
           </div>
         </div>
       </div>

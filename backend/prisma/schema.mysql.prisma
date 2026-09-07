@@ -161,8 +161,8 @@ model Doctor {
   registrationNumber String
   consultationFee    Decimal      @default(0.00) @db.Decimal(10, 2)
   status             UserStatus   @default(ACTIVE)
-  workingDays        String       @default("[\"MON\",\"TUE\",\"WED\",\"THU\",\"FRI\",\"SAT\"]") @db.Text
-  workingHours       String       @default("{\"start\":\"09:00\",\"end\":\"17:00\"}") @db.Text
+  workingDays        String       @db.Text
+  workingHours       String       @db.Text
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
@@ -387,7 +387,7 @@ model SubscriptionPlan {
   billingCycle     BillingCycle   @default(MONTHLY)
   maxDoctors       Int            @default(1)
   maxReceptionists Int            @default(2)
-  features         String         @default("[]") @db.Text
+  features         String         @db.Text
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

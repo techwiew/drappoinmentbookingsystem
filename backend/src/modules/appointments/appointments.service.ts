@@ -37,6 +37,7 @@ export class AppointmentService {
           select: {
             id: true,
             totalAmount: true,
+            paidAmount: true,
             paymentStatus: true,
           },
         },
@@ -45,6 +46,15 @@ export class AppointmentService {
 
     if (!appointment) {
       throw { statusCode: 404, code: 'APPOINTMENT_NOT_FOUND', message: 'Appointment not found' };
+    }
+
+    const totalPaid = appointment.payments.reduce((sum, payment) => sum + Number(payment.paidAmount), 0);
+    const totalAmount = appointment.payments.length > 0 ? Number(appointment.payments[0].totalAmount) : 0;
+    let paymentStatus = 'PENDING';
+    if (totalPaid >= totalAmount && totalAmount > 0) {
+      paymentStatus = 'PAID';
+    } else if (totalPaid > 0) {
+      paymentStatus = 'PARTIALLY_PAID';
     }
 
     return {
@@ -70,7 +80,7 @@ export class AppointmentService {
       notes: appointment.notes,
       consultationId: appointment.consultation?.id || null,
       consultationStatus: appointment.consultation?.status || null,
-      paymentStatus: appointment.payments[0]?.paymentStatus || 'PENDING',
+      paymentStatus,
       createdAt: appointment.createdAt,
     };
   }
@@ -148,6 +158,7 @@ export class AppointmentService {
             select: {
               id: true,
               totalAmount: true,
+              paidAmount: true,
               paymentStatus: true,
             },
           },
@@ -156,7 +167,17 @@ export class AppointmentService {
     ]);
 
     return {
-      appointments: appointments.map((a) => ({
+      appointments: appointments.map((a) => {
+        const totalPaid = a.payments.reduce((sum, payment) => sum + Number(payment.paidAmount), 0);
+        const totalAmount = a.payments.length > 0 ? Number(a.payments[0].totalAmount) : 0;
+        let paymentStatus = 'PENDING';
+        if (totalPaid >= totalAmount && totalAmount > 0) {
+          paymentStatus = 'PAID';
+        } else if (totalPaid > 0) {
+          paymentStatus = 'PARTIALLY_PAID';
+        }
+
+        return {
         id: a.id,
         patientId: a.patientId,
         patientNumber: a.patient.patientNumber,
@@ -177,9 +198,10 @@ export class AppointmentService {
         notes: a.notes,
         consultationId: a.consultation?.id || null,
         consultationStatus: a.consultation?.status || null,
-        paymentStatus: a.payments[0]?.paymentStatus || 'PENDING',
+        paymentStatus,
         createdAt: a.createdAt,
-      })),
+        };
+      }),
       meta: {
         page,
         limit,

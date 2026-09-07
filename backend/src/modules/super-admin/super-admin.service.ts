@@ -270,6 +270,8 @@ export class SuperAdminService {
           registrationNumber: data.registrationNumber,
           consultationFee: data.consultationFee,
           status: "ACTIVE",
+          workingDays: JSON.stringify(["MON", "TUE", "WED", "THU", "FRI", "SAT"]),
+          workingHours: JSON.stringify({ start: "09:00", end: "17:00" }),
         },
       });
 

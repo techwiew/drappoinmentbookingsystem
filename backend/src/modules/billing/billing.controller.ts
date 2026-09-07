@@ -10,6 +10,7 @@ export class BillingController {
       const date = req.query.date as string;
       const status = req.query.status as string;
       const search = req.query.search as string;
+      const appointmentId = req.query.appointmentId as string;
 
       const result = await BillingService.listPayments(req.tenant!.clinicId, {
         page,
@@ -17,6 +18,7 @@ export class BillingController {
         date,
         status,
         search,
+        appointmentId,
       });
 
       return sendSuccess(res, result.payments, undefined, 200, result.meta);
