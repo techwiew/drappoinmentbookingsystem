@@ -3,8 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
 import { Card } from '../../components/ui/Card.js';
 import { Button } from '../../components/ui/Button.js';
-import { Input } from '../../components/ui/Input.js';
-import { Select } from '../../components/ui/Select.js';
+import { Input } from "../../components/ui/Input.js";
 import { Modal } from '../../components/ui/Modal.js';
 import { StatusBadge, Badge } from '../../components/ui/Badge.js';
 import {
@@ -27,32 +26,23 @@ export const ClinicsManagementPage: React.FC = () => {
 
   // Form State for New Clinic Wizard
   const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    address: '',
-    phone: '',
-    email: '',
-    city: '',
-    state: '',
-    pincode: '',
-    tokenPrefix: 'TKN',
-    planId: '',
-    adminName: '',
-    adminEmail: '',
-    adminPassword: 'Doctor@123',
-    adminMobile: '',
-    specialization: 'General Medicine',
-    qualification: 'MBBS',
-    registrationNumber: 'REG-1001',
+    name: "",
+    address: "",
+    phone: "",
+    email: "",
+    city: "",
+    state: "",
+    pincode: "",
+    planPrice: 0,
+    activeMonths: 1,
+    adminName: "",
+    adminEmail: "",
+    adminPassword: "Doctor@123",
+    adminMobile: "",
+    specialization: "General Medicine",
+    qualification: "MBBS",
+    registrationNumber: "REG-1001",
     consultationFee: 500,
-  });
-
-  const { data: plans } = useQuery({
-    queryKey: ['super-admin-plans'],
-    queryFn: async () => {
-      const res = await apiClient.get('/super-admin/plans');
-      return res.data.data;
-    },
   });
 
   const { data: clinicsData, isLoading } = useQuery({
@@ -76,23 +66,22 @@ export const ClinicsManagementPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['super-admin-dashboard'] });
       setIsAddModalOpen(false);
       setFormData({
-        name: '',
-        slug: '',
-        address: '',
-        phone: '',
-        email: '',
-        city: '',
-        state: '',
-        pincode: '',
-        tokenPrefix: 'TKN',
-        planId: '',
-        adminName: '',
-        adminEmail: '',
-        adminPassword: 'Doctor@123',
-        adminMobile: '',
-        specialization: 'General Medicine',
-        qualification: 'MBBS',
-        registrationNumber: 'REG-1001',
+        name: "",
+        address: "",
+        phone: "",
+        email: "",
+        city: "",
+        state: "",
+        pincode: "",
+        planPrice: 0,
+        activeMonths: 1,
+        adminName: "",
+        adminEmail: "",
+        adminPassword: "Doctor@123",
+        adminMobile: "",
+        specialization: "General Medicine",
+        qualification: "MBBS",
+        registrationNumber: "REG-1001",
         consultationFee: 500,
       });
     },
@@ -111,22 +100,9 @@ export const ClinicsManagementPage: React.FC = () => {
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-    const tokenPrefix = name
-      .split(' ')
-      .map((w) => w.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 4) || 'TKN';
-
     setFormData((prev) => ({
       ...prev,
       name,
-      slug: prev.slug ? prev.slug : slug,
-      tokenPrefix: prev.tokenPrefix === 'TKN' ? tokenPrefix : prev.tokenPrefix,
     }));
   };
 
@@ -134,7 +110,6 @@ export const ClinicsManagementPage: React.FC = () => {
     e.preventDefault();
     createClinicMutation.mutate({
       ...formData,
-      planId: formData.planId || plans?.[0]?.id,
     });
   };
 
@@ -328,21 +303,6 @@ export const ClinicsManagementPage: React.FC = () => {
               onChange={handleNameChange}
               required
             />
-            <Input
-              label="Tenant Slug (Unique ID)"
-              placeholder="apollo-care"
-              value={formData.slug}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
-                })
-              }
-              minLength={2}
-              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-              title="Use at least 2 lowercase letters or numbers, with hyphens between words."
-              required
-            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -392,15 +352,6 @@ export const ClinicsManagementPage: React.FC = () => {
               value={formData.email}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
-              }
-              required
-            />
-            <Input
-              label="Token Prefix"
-              placeholder="APO"
-              value={formData.tokenPrefix}
-              onChange={(e) =>
-                setFormData({ ...formData, tokenPrefix: e.target.value })
               }
               required
             />
@@ -484,22 +435,38 @@ export const ClinicsManagementPage: React.FC = () => {
           </div>
 
           <div className="text-xs font-bold uppercase tracking-wider text-indigo-700 border-b border-indigo-100 pb-1 pt-2">
-            3. Subscription Tier Assignment
+            3. Subscription
           </div>
-
-          <Select
-            label="Assign Subscription Tier"
-            value={formData.planId}
-            onChange={(e) =>
-              setFormData({ ...formData, planId: e.target.value })
-            }
-            options={
-              plans?.map((p: any) => ({
-                value: p.id,
-                label: `${p.name} — ₹${Number(p.price).toLocaleString()} / mo (Max ${p.maxDoctors} Doctors)`,
-              })) || []
-            }
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Plan Price (₹ / month)"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.planPrice}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  planPrice: parseFloat(e.target.value) || 0,
+                })
+              }
+              required
+            />
+            <Input
+              label="Active For (months)"
+              type="number"
+              min="1"
+              step="1"
+              value={formData.activeMonths}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  activeMonths: parseInt(e.target.value, 10) || 1,
+                })
+              }
+              required
+            />
+          </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
             <Button

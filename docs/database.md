@@ -1,4 +1,4 @@
-# ClinicFlow — Database Architecture & Schema Specification
+# MediNodes — Database Architecture & Schema Specification
 
 ## 1. ORM & Database Engine
 - **Engine**: MySQL 8.0+ / MariaDB 10.5+

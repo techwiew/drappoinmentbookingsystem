@@ -6,7 +6,7 @@ export const app = createApp();
 
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   const server = app.listen(config.port, () => {
-    console.log(`\n🏥 ClinicFlow API Server running at http://localhost:${config.port}`);
+    console.log(`\n🏥 MediNodes API Server running at http://localhost:${config.port}`);
     console.log(`📡 Health endpoint: http://localhost:${config.port}/api/health`);
     console.log(`🌍 Environment: ${config.env}\n`);
   });

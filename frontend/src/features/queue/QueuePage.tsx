@@ -99,7 +99,9 @@ export const QueuePage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['live-queue'] })}
+            onClick={() =>
+              queryClient.invalidateQueries({ queryKey: ["live-queue"] })
+            }
             className="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
             title="Refresh Queue"
           >
@@ -107,7 +109,7 @@ export const QueuePage: React.FC = () => {
           </button>
 
           {/* Doctor Filter (Receptionist only) */}
-          {role !== 'DOCTOR' && doctors && doctors.length > 1 && (
+          {role !== "DOCTOR" && doctors && doctors.length > 1 && (
             <select
               value={selectedDoctorId}
               onChange={(e) => setSelectedDoctorId(e.target.value)}
@@ -115,7 +117,9 @@ export const QueuePage: React.FC = () => {
             >
               <option value="">All Doctors</option>
               {doctors.map((d: any) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
               ))}
             </select>
           )}
@@ -125,15 +129,40 @@ export const QueuePage: React.FC = () => {
       {/* Summary Stat Row */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
-          { label: 'Total Today', value: summary?.total ?? 0, color: 'text-slate-900' },
-          { label: 'Waiting', value: summary?.waiting ?? 0, color: 'text-amber-600' },
-          { label: 'In Consultation', value: summary?.inConsultation ?? 0, color: 'text-brand-600' },
-          { label: 'Completed', value: summary?.completed ?? 0, color: 'text-emerald-600' },
-          { label: 'Skipped / No-Show', value: (summary?.skipped ?? 0) + (summary?.noShow ?? 0), color: 'text-rose-600' },
+          {
+            label: "Total Today",
+            value: summary?.total ?? 0,
+            color: "text-slate-900",
+          },
+          {
+            label: "Waiting",
+            value: summary?.waiting ?? 0,
+            color: "text-amber-600",
+          },
+          {
+            label: "In Consultation",
+            value: summary?.inConsultation ?? 0,
+            color: "text-brand-600",
+          },
+          {
+            label: "Completed",
+            value: summary?.completed ?? 0,
+            color: "text-emerald-600",
+          },
+          {
+            label: "Skipped / No-Show",
+            value: (summary?.skipped ?? 0) + (summary?.noShow ?? 0),
+            color: "text-rose-600",
+          },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl border border-slate-200 shadow-soft p-3 text-center">
+          <div
+            key={s.label}
+            className="bg-white rounded-xl border border-slate-200 shadow-soft p-3 text-center"
+          >
             <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
-            <div className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wide">{s.label}</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-wide">
+              {s.label}
+            </div>
           </div>
         ))}
       </div>
@@ -146,7 +175,9 @@ export const QueuePage: React.FC = () => {
           <Card className="border-2 border-brand-300 bg-gradient-to-br from-brand-50 to-white">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-xs font-bold text-brand-700 uppercase tracking-wider">Now In Consultation</span>
+              <span className="text-xs font-bold text-brand-700 uppercase tracking-wider">
+                Now In Consultation
+              </span>
             </div>
 
             {isLoading ? (
@@ -158,19 +189,28 @@ export const QueuePage: React.FC = () => {
                     {currentPatient.tokenNumber}
                   </div>
                   <div>
-                    <div className="font-bold text-lg text-slate-900">{currentPatient.patientName}</div>
-                    <div className="text-xs text-slate-500">
-                      {currentPatient.patientGender} • {currentPatient.patientAge ? `${currentPatient.patientAge} yrs` : '—'}
+                    <div className="font-bold text-lg text-slate-900">
+                      {currentPatient.patientName}
                     </div>
-                    <div className="text-xs text-slate-400">{currentPatient.appointmentTime}</div>
+                    <div className="text-xs text-slate-500">
+                      {currentPatient.patientGender} •{" "}
+                      {currentPatient.patientAge
+                        ? `${currentPatient.patientAge} yrs`
+                        : "—"}
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {currentPatient.appointmentTime}
+                    </div>
                   </div>
                 </div>
 
-                {role === 'DOCTOR' && (
+                {(role === "DOCTOR" || role === "RECEPTIONIST") && (
                   <Button
                     variant="primary"
                     className="w-full"
-                    onClick={() => navigate(`/queue/${currentPatient.id}/consult`)}
+                    onClick={() =>
+                      navigate(`/queue/${currentPatient.id}/consult`)
+                    }
                     rightIcon={<ArrowRight className="w-4 h-4" />}
                   >
                     Open Consultation Room
@@ -181,17 +221,18 @@ export const QueuePage: React.FC = () => {
               <div className="text-center py-6">
                 <Stethoscope className="w-10 h-10 mx-auto text-brand-200 mb-2" />
                 <p className="text-sm text-slate-500">No active consultation</p>
-                {waitingList.length > 0 && role === 'DOCTOR' && (
-                  <Button
-                    size="sm"
-                    className="mt-3"
-                    variant="primary"
-                    isLoading={startMutation.isPending}
-                    onClick={() => startMutation.mutate(waitingList[0].id)}
-                  >
-                    Call Token #{waitingList[0].tokenNumber}
-                  </Button>
-                )}
+                {waitingList.length > 0 &&
+                  (role === "DOCTOR" || role === "RECEPTIONIST") && (
+                    <Button
+                      size="sm"
+                      className="mt-3"
+                      variant="primary"
+                      isLoading={startMutation.isPending}
+                      onClick={() => startMutation.mutate(waitingList[0].id)}
+                    >
+                      Call Token #{waitingList[0].tokenNumber}
+                    </Button>
+                  )}
               </div>
             )}
           </Card>
@@ -199,29 +240,36 @@ export const QueuePage: React.FC = () => {
           {/* Next Patient Preview */}
           {waitingList.length > 0 && (
             <Card className="border border-amber-200 bg-amber-50/60">
-              <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2">Next Patient</div>
+              <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-2">
+                Next Patient
+              </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm">
                     {waitingList[0].tokenNumber}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">{waitingList[0].patientName}</div>
-                    <div className="text-xs text-slate-500">{waitingList[0].appointmentTime}</div>
+                    <div className="text-sm font-bold text-slate-900">
+                      {waitingList[0].patientName}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {waitingList[0].appointmentTime}
+                    </div>
                   </div>
                 </div>
 
-                {role === 'DOCTOR' && currentPatient && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-amber-300 text-amber-700 hover:bg-amber-100"
-                    isLoading={startMutation.isPending}
-                    onClick={() => startMutation.mutate(waitingList[0].id)}
-                  >
-                    Call Next
-                  </Button>
-                )}
+                {(role === "DOCTOR" || role === "RECEPTIONIST") &&
+                  currentPatient && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                      isLoading={startMutation.isPending}
+                      onClick={() => startMutation.mutate(waitingList[0].id)}
+                    >
+                      Call Next
+                    </Button>
+                  )}
               </div>
             </Card>
           )}
@@ -255,16 +303,25 @@ export const QueuePage: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {waitingList.map((apt: any, idx: number) => (
-                      <tr key={apt.id} className={`hover:bg-slate-50 transition-colors ${idx === 0 ? 'bg-amber-50/60' : ''}`}>
+                      <tr
+                        key={apt.id}
+                        className={`hover:bg-slate-50 transition-colors ${idx === 0 ? "bg-amber-50/60" : ""}`}
+                      >
                         <td className="p-3">
-                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                            idx === 0 ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-700'
-                          }`}>
+                          <span
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                              idx === 0
+                                ? "bg-amber-500 text-white"
+                                : "bg-slate-200 text-slate-700"
+                            }`}
+                          >
                             {apt.tokenNumber}
                           </span>
                         </td>
                         <td className="p-3">
-                          <div className="font-semibold text-slate-900">{apt.patientName}</div>
+                          <div className="font-semibold text-slate-900">
+                            {apt.patientName}
+                          </div>
                           <div className="text-[11px] text-slate-400 flex items-center gap-1">
                             <Phone className="w-3 h-3" />
                             {apt.patientMobile}
@@ -272,22 +329,22 @@ export const QueuePage: React.FC = () => {
                         </td>
                         <td className="p-3">
                           <Badge variant="default" size="sm">
-                            {apt.appointmentType?.replace(/_/g, ' ')}
+                            {apt.appointmentType?.replace(/_/g, " ")}
                           </Badge>
                         </td>
-                        <td className="p-3 text-slate-500">{apt.appointmentTime}</td>
+                        <td className="p-3 text-slate-500">
+                          {apt.appointmentTime}
+                        </td>
                         <td className="p-3 text-right space-x-1">
-                          {role === 'DOCTOR' && (
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              className="text-[11px]"
-                              isLoading={startMutation.isPending}
-                              onClick={() => startMutation.mutate(apt.id)}
-                            >
-                              Start Consult
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            className="text-[11px]"
+                            isLoading={startMutation.isPending}
+                            onClick={() => startMutation.mutate(apt.id)}
+                          >
+                            Start Consult
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -326,10 +383,18 @@ export const QueuePage: React.FC = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             {completedList.map((apt: any) => (
-              <div key={apt.id} className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full text-xs">
-                <span className="font-bold text-emerald-700">#{apt.tokenNumber}</span>
+              <div
+                key={apt.id}
+                className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full text-xs"
+              >
+                <span className="font-bold text-emerald-700">
+                  #{apt.tokenNumber}
+                </span>
                 <span className="text-emerald-800">{apt.patientName}</span>
-                <StatusBadge status={apt.paymentStatus || 'PENDING'} size="sm" />
+                <StatusBadge
+                  status={apt.paymentStatus || "PENDING"}
+                  size="sm"
+                />
               </div>
             ))}
           </div>

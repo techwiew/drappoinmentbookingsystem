@@ -10,7 +10,7 @@ router.get('/', async (req: Request, res: Response) => {
       success: true,
       status: 'ok',
       timestamp: new Date().toISOString(),
-      service: 'ClinicFlow API Server',
+      service: 'MediNodes API Server',
       database: 'connected',
     });
   } catch (error) {

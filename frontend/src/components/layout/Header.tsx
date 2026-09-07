@@ -46,7 +46,7 @@ export const Header: React.FC = () => {
               CF
             </div>
             <div className="text-sm font-bold text-slate-800">
-              ClinicFlow Platform Owner Console
+              MediNodes Platform Owner Console
             </div>
           </div>
         )}

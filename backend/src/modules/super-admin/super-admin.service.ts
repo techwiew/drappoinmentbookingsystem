@@ -5,23 +5,33 @@ import { logAudit } from '../../middlewares/audit.js';
 export class SuperAdminService {
   static async getDashboardStats() {
     const totalClinics = await prisma.clinic.count();
-    const activeClinics = await prisma.clinic.count({ where: { status: 'ACTIVE' } });
-    const trialClinics = await prisma.clinic.count({ where: { status: 'TRIAL' } });
-    const expiredClinics = await prisma.clinic.count({ where: { status: 'EXPIRED' } });
-    const totalDoctors = await prisma.doctor.count({ where: { status: 'ACTIVE' } });
-    const totalReceptionists = await prisma.receptionist.count({ where: { status: 'ACTIVE' } });
+    const activeClinics = await prisma.clinic.count({
+      where: { status: "ACTIVE" },
+    });
+    const trialClinics = await prisma.clinic.count({
+      where: { status: "TRIAL" },
+    });
+    const expiredClinics = await prisma.clinic.count({
+      where: { status: "EXPIRED" },
+    });
+    const totalDoctors = await prisma.doctor.count({
+      where: { status: "ACTIVE" },
+    });
+    const totalReceptionists = await prisma.receptionist.count({
+      where: { status: "ACTIVE" },
+    });
     const totalPatients = await prisma.patient.count();
     const totalAppointments = await prisma.appointment.count();
 
     // Calculate Monthly Recurring Revenue (MRR)
     const activeSubscriptions = await prisma.subscription.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: "ACTIVE" },
       include: { plan: true },
     });
 
     const mrr = activeSubscriptions.reduce((acc, sub) => {
       const amount = Number(sub.amount || sub.plan.price);
-      return acc + (sub.billingCycle === 'YEARLY' ? amount / 12 : amount);
+      return acc + (sub.billingCycle === "YEARLY" ? amount / 12 : amount);
     }, 0);
 
     // Distribution by plan
@@ -43,7 +53,7 @@ export class SuperAdminService {
     // Recent clinics
     const recentClinics = await prisma.clinic.findMany({
       take: 5,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         subscription: {
           include: { plan: true },
@@ -77,8 +87,8 @@ export class SuperAdminService {
         slug: c.slug,
         city: c.city,
         status: c.status,
-        planName: c.subscription?.plan?.name || 'No Plan',
-        subscriptionStatus: c.subscription?.status || 'INACTIVE',
+        planName: c.subscription?.plan?.name || "No Plan",
+        subscriptionStatus: c.subscription?.status || "INACTIVE",
         doctorCount: c._count.doctors,
         patientCount: c._count.patients,
         appointmentCount: c._count.appointments,
@@ -87,7 +97,12 @@ export class SuperAdminService {
     };
   }
 
-  static async listClinics(query: { page?: number; limit?: number; search?: string; status?: string }) {
+  static async listClinics(query: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  }) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 20));
     const skip = (page - 1) * limit;
@@ -101,7 +116,7 @@ export class SuperAdminService {
         { phone: { contains: query.search } },
       ];
     }
-    if (query.status && query.status !== 'ALL') {
+    if (query.status && query.status !== "ALL") {
       where.status = query.status;
     }
 
@@ -111,7 +126,7 @@ export class SuperAdminService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         include: {
           subscription: {
             include: { plan: true },
@@ -163,37 +178,62 @@ export class SuperAdminService {
   }
 
   static async createClinic(data: any, superAdminId: string) {
-    const existingSlug = await prisma.clinic.findUnique({ where: { slug: data.slug } });
-    if (existingSlug) {
-      throw { statusCode: 409, code: 'SLUG_EXISTS', message: 'A clinic with this unique identifier already exists' };
-    }
-
-    const existingUser = await prisma.user.findUnique({ where: { email: data.adminEmail.toLowerCase() } });
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.adminEmail.toLowerCase() },
+    });
     if (existingUser) {
-      throw { statusCode: 409, code: 'EMAIL_EXISTS', message: 'An account with this email address already exists' };
+      throw {
+        statusCode: 409,
+        code: "EMAIL_EXISTS",
+        message: "An account with this email address already exists",
+      };
     }
 
-    const plan = await prisma.subscriptionPlan.findUnique({ where: { id: data.planId } });
+    const plan = await prisma.subscriptionPlan.findFirst({
+      orderBy: { price: "asc" },
+    });
     if (!plan) {
-      throw { statusCode: 404, code: 'PLAN_NOT_FOUND', message: 'Selected subscription plan does not exist' };
+      throw {
+        statusCode: 404,
+        code: "PLAN_NOT_FOUND",
+        message: "Create a subscription plan before adding a clinic",
+      };
     }
 
     const hashedPassword = await hashPassword(data.adminPassword);
+    const baseSlug =
+      data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") || "clinic";
+    let slug = baseSlug;
+    let suffix = 2;
+    while (await prisma.clinic.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
+    const tokenPrefix =
+      data.name
+        .split(/\s+/)
+        .map((word: string) => word[0])
+        .join("")
+        .replace(/[^a-z]/gi, "")
+        .toUpperCase()
+        .slice(0, 4) || "TKN";
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Create Clinic
       const clinic = await tx.clinic.create({
         data: {
           name: data.name,
-          slug: data.slug,
+          slug,
           address: data.address,
           phone: data.phone,
           email: data.email,
           city: data.city,
           state: data.state,
           pincode: data.pincode,
-          tokenPrefix: data.tokenPrefix || 'TKN',
-          status: 'ACTIVE',
+          tokenPrefix,
+          status: "ACTIVE",
         },
       });
 
@@ -202,8 +242,8 @@ export class SuperAdminService {
         data: {
           email: data.adminEmail.toLowerCase(),
           passwordHash: hashedPassword,
-          role: 'DOCTOR',
-          status: 'ACTIVE',
+          role: "DOCTOR",
+          status: "ACTIVE",
         },
       });
 
@@ -212,7 +252,7 @@ export class SuperAdminService {
         data: {
           clinicId: clinic.id,
           userId: user.id,
-          role: 'DOCTOR',
+          role: "DOCTOR",
           isOwner: true,
         },
       });
@@ -229,24 +269,24 @@ export class SuperAdminService {
           qualification: data.qualification,
           registrationNumber: data.registrationNumber,
           consultationFee: data.consultationFee,
-          status: 'ACTIVE',
+          status: "ACTIVE",
         },
       });
 
       // 5. Create Active Subscription
       const startDate = new Date();
       const endDate = new Date();
-      endDate.setMonth(startDate.getMonth() + 1);
+      endDate.setMonth(startDate.getMonth() + data.activeMonths);
 
       await tx.subscription.create({
         data: {
           clinicId: clinic.id,
           planId: plan.id,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           startDate,
           endDate,
-          billingCycle: 'MONTHLY',
-          amount: plan.price,
+          billingCycle: "MONTHLY",
+          amount: data.planPrice,
         },
       });
 
@@ -255,8 +295,8 @@ export class SuperAdminService {
 
     await logAudit({
       userId: superAdminId,
-      action: 'CLINIC_CREATED',
-      entityType: 'Clinic',
+      action: "CLINIC_CREATED",
+      entityType: "Clinic",
       entityId: result.id,
       metadata: { name: result.name, slug: result.slug },
     });
@@ -264,7 +304,11 @@ export class SuperAdminService {
     return result;
   }
 
-  static async updateClinicStatus(clinicId: string, status: string, superAdminId: string) {
+  static async updateClinicStatus(
+    clinicId: string,
+    status: string,
+    superAdminId: string,
+  ) {
     const clinic = await prisma.clinic.update({
       where: { id: clinicId },
       data: { status: status as any },
@@ -273,8 +317,8 @@ export class SuperAdminService {
     await logAudit({
       userId: superAdminId,
       clinicId,
-      action: 'CLINIC_STATUS_UPDATED',
-      entityType: 'Clinic',
+      action: "CLINIC_STATUS_UPDATED",
+      entityType: "Clinic",
       entityId: clinicId,
       metadata: { newStatus: status },
     });
@@ -284,7 +328,7 @@ export class SuperAdminService {
 
   static async listPlans() {
     return prisma.subscriptionPlan.findMany({
-      orderBy: { price: 'asc' },
+      orderBy: { price: "asc" },
     });
   }
 }

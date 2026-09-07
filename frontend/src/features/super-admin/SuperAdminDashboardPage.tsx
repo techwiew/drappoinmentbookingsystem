@@ -6,7 +6,6 @@ import { StatusBadge } from "../../components/ui/Badge.js";
 import { Button } from "../../components/ui/Button.js";
 import { Modal } from "../../components/ui/Modal.js";
 import { Input } from "../../components/ui/Input.js";
-import { Select } from "../../components/ui/Select.js";
 import {
   Building2,
   Users,
@@ -33,15 +32,14 @@ export const SuperAdminDashboardPage: React.FC = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    slug: "",
     address: "Main Road",
     phone: "",
     email: "",
     city: "",
     state: "",
     pincode: "",
-    tokenPrefix: "TKN",
-    planId: "",
+    planPrice: 0,
+    activeMonths: 1,
     adminName: "",
     adminEmail: "",
     adminPassword: "Doctor@123",
@@ -82,22 +80,9 @@ export const SuperAdminDashboardPage: React.FC = () => {
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    const tokenPrefix =
-      name
-        .split(" ")
-        .map((w) => w.charAt(0))
-        .join("")
-        .toUpperCase()
-        .slice(0, 4) || "TKN";
     setFormData((prev) => ({
       ...prev,
       name,
-      slug: prev.slug ? prev.slug : slug,
-      tokenPrefix: prev.tokenPrefix === "TKN" ? tokenPrefix : prev.tokenPrefix,
     }));
   };
 
@@ -105,7 +90,6 @@ export const SuperAdminDashboardPage: React.FC = () => {
     e.preventDefault();
     createClinicMutation.mutate({
       ...formData,
-      planId: formData.planId || plans?.[0]?.id,
     });
   };
 
@@ -120,15 +104,14 @@ export const SuperAdminDashboardPage: React.FC = () => {
     setCreatedClinic(null);
     setFormData({
       name: "",
-      slug: "",
       address: "Main Road",
       phone: "",
       email: "",
       city: "",
       state: "",
       pincode: "",
-      tokenPrefix: "TKN",
-      planId: "",
+      planPrice: 0,
+      activeMonths: 1,
       adminName: "",
       adminEmail: "",
       adminPassword: "Doctor@123",
@@ -393,7 +376,7 @@ export const SuperAdminDashboardPage: React.FC = () => {
             </div>
             <div className="space-y-2 text-xs">
               {[
-                { label: "Email", value: "admin@clinicflow.com" },
+                { label: "Email", value: "admin@medinodes.com" },
                 { label: "Password", value: "Admin@123" },
               ].map(({ label, value }) => (
                 <div
@@ -472,7 +455,7 @@ export const SuperAdminDashboardPage: React.FC = () => {
                 },
                 { label: "Email", value: formData.adminEmail },
                 { label: "Password", value: formData.adminPassword },
-                { label: "Clinic Slug", value: formData.slug },
+                { label: "Clinic Slug", value: createdClinic.slug },
               ].map(({ label, value }) => (
                 <div
                   key={label}
@@ -535,23 +518,6 @@ export const SuperAdminDashboardPage: React.FC = () => {
                 onChange={handleNameChange}
                 required
               />
-              <Input
-                label="Unique Slug (auto-generated)"
-                placeholder="apollo-care"
-                value={formData.slug}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    slug: e.target.value
-                      .toLowerCase()
-                      .replace(/[^a-z0-9-]/g, ""),
-                  })
-                }
-                minLength={2}
-                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-                title="Use at least 2 lowercase letters or numbers, with hyphens between words."
-                required
-              />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Input
@@ -599,18 +565,6 @@ export const SuperAdminDashboardPage: React.FC = () => {
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
-                }
-                required
-              />
-              <Input
-                label="Token Prefix (e.g. APO)"
-                placeholder="APO"
-                value={formData.tokenPrefix}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    tokenPrefix: e.target.value.toUpperCase(),
-                  })
                 }
                 required
               />
@@ -693,21 +647,28 @@ export const SuperAdminDashboardPage: React.FC = () => {
             </div>
 
             <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 border-b border-indigo-100 pb-1 pt-1">
-              3. Subscription Tier
+              3. Subscription
             </div>
-            <Select
-              label="Assign Plan"
-              value={formData.planId}
-              onChange={(e) =>
-                setFormData({ ...formData, planId: e.target.value })
-              }
-              options={
-                plans?.map((p: any) => ({
-                  value: p.id,
-                  label: `${p.name} — ₹${Number(p.price).toLocaleString()}/mo (Max ${p.maxDoctors} Doctors)`,
-                })) || []
-              }
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Plan Price (₹ / month)"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.planPrice}
+                onChange={(e) => setFormData({ ...formData, planPrice: parseFloat(e.target.value) || 0 })}
+                required
+              />
+              <Input
+                label="Active For (months)"
+                type="number"
+                min="1"
+                step="1"
+                value={formData.activeMonths}
+                onChange={(e) => setFormData({ ...formData, activeMonths: parseInt(e.target.value, 10) || 1 })}
+                required
+              />
+            </div>
 
             <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
               <Button variant="secondary" type="button" onClick={resetAndClose}>

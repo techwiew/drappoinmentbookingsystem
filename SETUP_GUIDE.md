@@ -1,6 +1,6 @@
-# ClinicFlow — Complete User & Developer Setup Guide
+# MediNodes — Complete User & Developer Setup Guide
 
-> **ClinicFlow** is a subscription-based multi-tenant doctor clinic management SaaS built with React 18 + TypeScript (Frontend), Node.js + Express + Prisma (Backend), and SQLite (local) / MySQL (production).
+> **MediNodes** is a subscription-based multi-tenant doctor clinic management SaaS built with React 18 + TypeScript (Frontend), Node.js + Express + Prisma (Backend), and SQLite (local) / MySQL (production).
 
 ---
 
@@ -103,11 +103,11 @@ Open `backend/.env` and configure:
 DATABASE_URL="file:./dev.db"
 
 # For PRODUCTION with MySQL, replace with:
-# DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/clinicflow_db"
+# DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/medinodes_db"
 
 # ── JWT Secrets (change these in production!) ─────────────────
-JWT_ACCESS_SECRET="clinicflow_access_secret_change_in_production"
-JWT_REFRESH_SECRET="clinicflow_refresh_secret_change_in_production"
+JWT_ACCESS_SECRET="medinodes_access_secret_change_in_production"
+JWT_REFRESH_SECRET="medinodes_refresh_secret_change_in_production"
 JWT_ACCESS_EXPIRES_IN="15m"
 JWT_REFRESH_EXPIRES_IN="7d"
 
@@ -158,9 +158,9 @@ If deploying to a VPS or cloud MySQL server, follow these steps:
 Log into your MySQL server and run:
 
 ```sql
-CREATE DATABASE clinicflow_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'clinicflow_user'@'%' IDENTIFIED BY 'StrongPassword@123';
-GRANT ALL PRIVILEGES ON clinicflow_db.* TO 'clinicflow_user'@'%';
+CREATE DATABASE medinodes_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'medinodes_user'@'%' IDENTIFIED BY 'StrongPassword@123';
+GRANT ALL PRIVILEGES ON medinodes_db.* TO 'medinodes_user'@'%';
 FLUSH PRIVILEGES;
 ```
 
@@ -173,7 +173,7 @@ cp backend/prisma/schema.mysql.prisma backend/prisma/schema.prisma
 
 Update `backend/.env`:
 ```env
-DATABASE_URL="mysql://clinicflow_user:StrongPassword@123@your-mysql-host:3306/clinicflow_db"
+DATABASE_URL="mysql://medinodes_user:StrongPassword@123@your-mysql-host:3306/medinodes_db"
 ```
 
 ### 4c. Run Migrations
@@ -199,7 +199,7 @@ npm run prisma:seed
 Expected output:
 ```
 🌱 Starting database seed...
-✅ Super Admin created: admin@clinicflow.com
+✅ Super Admin created: admin@medinodes.com
 ✅ Subscription plans seeded
 ✅ Demo clinic created with Active Pro Subscription
 ✅ Doctors seeded: Dr. Raj Sharma & Dr. Priya Patel
@@ -220,7 +220,7 @@ npm run dev
 
 Expected output:
 ```
-🏥 ClinicFlow API Server running at http://localhost:5000
+🏥 MediNodes API Server running at http://localhost:5000
 📡 Health endpoint: http://localhost:5000/api/health
 🌍 Environment: development
 ```
@@ -266,7 +266,7 @@ npm run dev
 This uses `concurrently` to start both services in one terminal:
 
 ```
-[backend]  🏥 ClinicFlow API Server running at http://localhost:5000
+[backend]  🏥 MediNodes API Server running at http://localhost:5000
 [frontend]   ➜  Local:   http://localhost:5173/
 ```
 
@@ -278,8 +278,8 @@ Use these pre-seeded accounts to test all user roles:
 
 | Role | Email | Password | Redirect After Login |
 | :--- | :--- | :--- | :--- |
-| 👑 **Super Admin** | `admin@clinicflow.com` | `Admin@123` | `/super-admin` Platform Console |
-| 👑 **Real Super Admin** | `superadmin@clinicflow.com` | `SuperAdmin@123` | `/super-admin` Platform Console |
+| 👑 **Super Admin** | `admin@medinodes.com` | `Admin@123` | `/super-admin` Platform Console |
+| 👑 **Real Super Admin** | `superadmin@medinodes.com` | `SuperAdmin@123` | `/super-admin` Platform Console |
 | 🩺 **Doctor (Cardiology)** | `dr.raj@sharmaclinic.com` | `Doctor@123` | `/doctor-dashboard` |
 | 🩺 **Doctor (General)** | `dr.priya@sharmaclinic.com` | `Doctor@123` | `/doctor-dashboard` |
 | 🛎️ **Receptionist** | `reception@sharmaclinic.com` | `Reception@123` | `/reception-desk` |
@@ -296,7 +296,7 @@ Run this script on your **MySQL production server** (via phpMyAdmin, MySQL Workb
 
 ```sql
 -- ====================================================================
--- ClinicFlow Multi-Tenant Database Schema (MySQL 8.0+)
+-- MediNodes Multi-Tenant Database Schema (MySQL 8.0+)
 -- Run this on your MySQL/MariaDB server
 -- ====================================================================
 
@@ -569,7 +569,7 @@ INSERT IGNORE INTO `subscription_plans` (`id`, `name`, `code`, `price`, `billing
 
 -- Super Admin (Password: Admin@123)
 INSERT IGNORE INTO `users` (`id`, `email`, `password`, `role`, `status`, `createdAt`, `updatedAt`) VALUES
-('user-super-admin', 'admin@clinicflow.com', '$2a$10$m00nK0R2VfC7XwE1s8kU..x2lOqJ5lC8pD2mN1b7k2d8h4l9u8m12', 'SUPER_ADMIN', 'ACTIVE', NOW(), NOW());
+('user-super-admin', 'admin@medinodes.com', '$2a$10$m00nK0R2VfC7XwE1s8kU..x2lOqJ5lC8pD2mN1b7k2d8h4l9u8m12', 'SUPER_ADMIN', 'ACTIVE', NOW(), NOW());
 
 -- Demo Clinic
 INSERT IGNORE INTO `clinics` (`id`, `name`, `slug`, `address`, `phone`, `email`, `city`, `state`, `pincode`, `tokenPrefix`, `status`, `createdAt`, `updatedAt`) VALUES

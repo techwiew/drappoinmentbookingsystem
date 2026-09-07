@@ -1,310 +1,427 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext.js';
-import { apiClient } from '../../api/client.js';
-import { Input } from '../../components/ui/Input.js';
-import { Button } from '../../components/ui/Button.js';
+import React, { FormEvent, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.js";
+import { apiClient } from "../../api/client.js";
 import {
-  Stethoscope,
-  Lock,
-  Mail,
-  ShieldCheck,
+  ArrowRight,
   Building2,
+  Eye,
+  EyeOff,
+  HeartPulse,
+  LockKeyhole,
+  Mail,
+  Menu,
+  ShieldCheck,
+  Stethoscope,
   Users,
-  CheckCircle2,
-  Sparkles,
-} from 'lucide-react';
+  X,
+  Zap,
+} from "lucide-react";
+import { LANDING_COPY, LANDING_NAV_LINKS } from "../../constants/landing.js";
+
+const REMEMBERED_EMAIL_KEY = "medinodes_remembered_email";
+
+const quickRoles = [
+  {
+    label: "Super Admin",
+    description: "Platform Owner",
+    email: "admin@medinodes.com",
+    password: "Admin@123",
+    icon: ShieldCheck,
+    classes:
+      "border-violet-200 hover:border-violet-400 hover:bg-violet-50/40 text-violet-900",
+    iconClasses: "bg-violet-50 text-violet-600 border-violet-200",
+  },
+  {
+    label: "Dr. Raj Sharma",
+    description: "Cardiologist",
+    email: "dr.raj@sharmaclinic.com",
+    password: "Doctor@123",
+    icon: Stethoscope,
+    classes:
+      "border-teal-200 hover:border-teal-400 hover:bg-teal-50/40 text-teal-900",
+    iconClasses: "bg-teal-50 text-teal-700 border-teal-200",
+  },
+  {
+    label: "Dr. Priya Patel",
+    description: "General Physician",
+    email: "dr.priya@sharmaclinic.com",
+    password: "Doctor@123",
+    icon: Users,
+    classes:
+      "border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/40 text-emerald-900",
+    iconClasses: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  {
+    label: "Reception Desk",
+    description: "Anjali Verma (Frontline)",
+    email: "reception@sharmaclinic.com",
+    password: "Reception@123",
+    icon: Building2,
+    classes:
+      "border-sky-200 hover:border-sky-400 hover:bg-sky-50/40 text-sky-900",
+    iconClasses: "bg-sky-50 text-sky-700 border-sky-200",
+  },
+];
+
+type QuickRole = (typeof quickRoles)[number];
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("dr.raj@sharmaclinic.com");
+  const [password, setPassword] = useState("Doctor@123");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberSession, setRememberSession] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async (e?: React.FormEvent, customEmail?: string, customPass?: string) => {
-    if (e) e.preventDefault();
-    setError('');
-    setIsLoading(true);
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+    if (rememberedEmail) setEmail(rememberedEmail);
+  }, []);
 
+  const handleLogin = async (
+    event?: FormEvent,
+    customEmail?: string,
+    customPass?: string,
+  ) => {
+    event?.preventDefault();
+    setError("");
+    setIsLoading(true);
     const loginEmail = customEmail || email;
     const loginPass = customPass || password;
 
     try {
-      const response = await apiClient.post('/auth/login', {
+      const response = await apiClient.post("/auth/login", {
         email: loginEmail,
         password: loginPass,
       });
-
       const { accessToken, refreshToken, user } = response.data.data;
       login(accessToken, refreshToken, user);
+      if (rememberSession)
+        localStorage.setItem(REMEMBERED_EMAIL_KEY, loginEmail);
+      else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
 
-      // Role-based routing
-      if (user.role === 'SUPER_ADMIN') {
-        navigate('/super-admin');
-      } else if (user.role === 'DOCTOR') {
-        navigate('/doctor-dashboard');
-      } else if (user.role === 'RECEPTIONIST') {
-        navigate('/reception-desk');
-      } else {
-        navigate('/patients');
-      }
+      if (user.role === "SUPER_ADMIN") navigate("/super-admin");
+      else if (user.role === "DOCTOR") navigate("/doctor-dashboard");
+      else if (user.role === "RECEPTIONIST") navigate("/reception-desk");
+      else navigate("/patients");
     } catch (err: any) {
       setError(
-        err.response?.data?.error?.message || 'Login failed. Please check your credentials.'
+        err.response?.data?.error?.message ||
+          "Login failed. Please check your credentials.",
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleQuickLogin = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    handleLogin(undefined, demoEmail, demoPass);
+  const fillCredentials = (role: QuickRole, autoLogin = false) => {
+    setEmail(role.email);
+    setPassword(role.password);
+    setError("");
+    if (autoLogin) void handleLogin(undefined, role.email, role.password);
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col md:flex-row font-sans selection:bg-brand-500 selection:text-white">
-      {/* Left Visual Branding Panel */}
-      <div className="md:w-1/2 bg-gradient-to-br from-slate-900 via-slate-800 to-brand-950 p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden border-b md:border-b-0 md:border-r border-slate-800">
-        {/* Ambient Glows */}
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Brand Header */}
-        <div className="flex items-center gap-3 relative z-10">
-          <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold shadow-lg shadow-brand-600/30">
-            <Stethoscope className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="font-extrabold text-white text-2xl tracking-tight">
-              Clinic<span className="text-brand-400">Flow</span>
+    <main className="min-h-screen bg-white font-sans text-slate-900 selection:bg-teal-100 selection:text-teal-950">
+      <header className="sticky top-0 z-30 border-b border-[#bcc9c6]/50 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex h-[76px] max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-8">
+          <a href="/" className="flex items-center gap-3" aria-label="MediNodes home">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00685f] text-white shadow-sm shadow-[#00685f]/20">
+              <HeartPulse className="h-6 w-6" />
             </span>
-            <span className="text-xs uppercase font-bold tracking-widest text-slate-400 block -mt-1">
-              Multi-Tenant Clinical SaaS
+            <span className="hidden shrink-0 sm:flex flex-col">
+              <span className="flex items-center gap-2 whitespace-nowrap text-lg font-extrabold tracking-tight text-[#00685f]">
+                {LANDING_COPY.brand.name}
+                <span className="rounded-full bg-[#89f5e7] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#005049]">
+                  {LANDING_COPY.brand.badge}
+                </span>
+              </span>
+              <span className="text-[11px] leading-none text-[#3d4947]">
+                {LANDING_COPY.brand.tagline}
+              </span>
             </span>
-          </div>
-        </div>
+          </a>
 
-        {/* Feature Highlights */}
-        <div className="my-10 space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5" /> Next-Generation Clinic
-            Management
-          </div>
+          <nav className="hidden items-center gap-5 lg:flex xl:gap-7" aria-label="Public navigation">
+            {LANDING_NAV_LINKS.map(([label, id]) => (
+              <a
+                key={id}
+                href={`/#${id}`}
+                className="text-sm font-semibold text-[#3d4947] transition-colors hover:text-[#00685f]"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
 
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-            Streamlined queues, digital consultations & seamless billing.
-          </h1>
-
-          <div className="grid grid-cols-1 gap-3.5 text-slate-300 text-sm">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>
-                Strict multi-tenant security & zero cross-clinic leakage
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>
-                Doctor-specific live token queue & call-next workstation
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>
-                Multi-doctor assignments, duplicate check & Rx printing
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer info */}
-        <div className="text-xs text-slate-500 relative z-10">
-          © 2026 ClinicFlow Technologies. All rights reserved.
-        </div>
-      </div>
-
-      {/* Right Login Panel */}
-      <div className="md:w-1/2 bg-white p-8 sm:p-12 lg:p-16 flex flex-col justify-center items-center">
-        <div className="w-full max-w-md space-y-6">
-          <div>
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Sign In to Your Workspace
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Enter your clinic credentials or pick a demo role below.
-            </p>
-          </div>
-
-          {error && (
-            <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium animate-shake">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Input
-              label="Email Address"
-              type="email"
-              placeholder="e.g. dr.raj@sharmaclinic.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              leftIcon={<Mail className="w-4 h-4" />}
-              required
-            />
-
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              leftIcon={<Lock className="w-4 h-4" />}
-              required
-            />
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full font-semibold shadow-md shadow-brand-600/20"
-              isLoading={isLoading}
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            <a
+              href="/#demo"
+              className="whitespace-nowrap rounded-lg border border-[#bcc9c6] bg-white px-3 py-2 text-sm font-semibold text-[#171d1c] transition-colors hover:border-[#00685f] hover:bg-[#f0f5f2] lg:px-4"
             >
-              Sign In to ClinicFlow
-            </Button>
-          </form>
-
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-1.5 text-sm font-bold text-emerald-950">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Real Super Admin Account
-                </div>
-                <div className="mt-1 text-[11px] text-emerald-700">
-                  superadmin@clinicflow.com · SuperAdmin@123
-                </div>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  setEmail("superadmin@clinicflow.com");
-                  setPassword("SuperAdmin@123");
-                  setError("");
-                }}
-                className="shrink-0 bg-emerald-600 hover:bg-emerald-700"
-              >
-                Use Real Admin
-              </Button>
-            </div>
+              {LANDING_COPY.navigation.demo}
+            </a>
+            <a
+              href="/"
+              className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-[#00685f] px-3 py-2.5 text-sm font-bold text-white shadow-sm shadow-[#00685f]/20 transition-colors hover:bg-[#008378] lg:px-4"
+            >
+              <ArrowRight className="h-4 w-4" /> Back to home
+            </a>
           </div>
 
-          <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-1.5 text-sm font-bold text-indigo-950">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                  Demo Super Admin
-                </div>
-                <div className="mt-1 text-[11px] text-indigo-700">
-                  admin@clinicflow.com · Admin@123
-                </div>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() =>
-                  handleQuickLogin("admin@clinicflow.com", "Admin@123")
-                }
-                isLoading={isLoading}
-                className="shrink-0 bg-indigo-600 hover:bg-indigo-700"
-              >
-                Enter Demo
-              </Button>
-            </div>
-          </div>
-
-          {/* Quick 1-Click Demo Login Bar */}
-          <div className="pt-4 border-t border-slate-100">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-              <span>⚡ 1-Click Quick Demo Switcher</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickLogin("admin@clinicflow.com", "Admin@123")
-                }
-                className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-left transition-all group text-xs"
-              >
-                <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-                  Super Admin
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5 truncate">
-                  Platform Owner
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickLogin("dr.raj@sharmaclinic.com", "Doctor@123")
-                }
-                className="p-2.5 rounded-xl border border-brand-200 bg-brand-50/50 hover:bg-brand-50 hover:border-brand-300 text-left transition-all group text-xs"
-              >
-                <div className="font-bold text-brand-900 flex items-center gap-1.5">
-                  <Stethoscope className="w-3.5 h-3.5 text-brand-600" />
-                  Dr. Raj Sharma
-                </div>
-                <div className="text-[10px] text-brand-600 mt-0.5 truncate">
-                  Cardiologist
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickLogin("dr.priya@sharmaclinic.com", "Doctor@123")
-                }
-                className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-300 text-left transition-all group text-xs"
-              >
-                <div className="font-bold text-emerald-900 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-emerald-600" />
-                  Dr. Priya Patel
-                </div>
-                <div className="text-[10px] text-emerald-600 mt-0.5 truncate">
-                  Physician
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  handleQuickLogin(
-                    "reception@sharmaclinic.com",
-                    "Reception@123",
-                  )
-                }
-                className="p-2.5 rounded-xl border border-sky-200 bg-sky-50/50 hover:bg-sky-50 hover:border-sky-300 text-left transition-all group text-xs"
-              >
-                <div className="font-bold text-sky-900 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-sky-600" />
-                  Reception Desk
-                </div>
-                <div className="text-[10px] text-sky-600 mt-0.5 truncate">
-                  Anjali Verma
-                </div>
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            aria-label="Toggle navigation"
+            aria-expanded={isMenuOpen}
+            className="rounded-lg p-2 text-[#3d4947] hover:bg-[#f0f5f2] sm:hidden"
+            onClick={() => setIsMenuOpen((open) => !open)}
+          >
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
-      </div>
-    </div>
+        {isMenuOpen && (
+          <div className="border-t border-[#bcc9c6]/40 bg-white px-4 py-4 sm:hidden">
+            <nav className="flex flex-col gap-1" aria-label="Mobile public navigation">
+              {LANDING_NAV_LINKS.map(([label, id]) => (
+                <a
+                  key={id}
+                  href={`/#${id}`}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[#3d4947] hover:bg-[#f0f5f2]"
+                >
+                  {label}
+                </a>
+              ))}
+              <a
+                href="/#demo"
+                onClick={() => setIsMenuOpen(false)}
+                className="mt-2 rounded-lg border border-[#bcc9c6] px-3 py-2.5 text-sm font-semibold text-[#171d1c] hover:bg-[#f0f5f2]"
+              >
+                {LANDING_COPY.navigation.demo}
+              </a>
+              <a
+                href="/"
+                className="rounded-lg bg-[#00685f] px-3 py-2.5 text-sm font-bold text-white"
+              >
+                Back to home
+              </a>
+            </nav>
+          </div>
+        )}
+      </header>
+
+      <section className="custom-scroll flex min-h-[calc(100vh-76px)] items-center justify-center overflow-y-auto bg-white px-6 py-10 sm:px-10 lg:px-12">
+        <div className="w-full max-w-[672px] py-4">
+            <header className="mb-8">
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+                Sign In to Your Workspace
+              </h2>
+              <p className="mt-1.5 text-sm text-slate-500 sm:text-base">
+                Enter your clinic credentials or pick a demo role below.
+              </p>
+            </header>
+            {error && (
+              <div className="mb-5 rounded-lg border border-rose-200 bg-rose-50 p-3.5 text-xs font-medium text-rose-700">
+                {error}
+              </div>
+            )}
+            <form onSubmit={handleLogin} className="mb-7 space-y-4">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700">
+                Email Address <span className="text-rose-500">*</span>
+                <div className="relative mt-1.5">
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    type="email"
+                    required
+                    placeholder="e.g. dr.raj@sharmaclinic.com"
+                    className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-11 pr-4 text-sm font-normal normal-case tracking-normal text-slate-800 shadow-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:py-3"
+                  />
+                </div>
+              </label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700">
+                <span className="flex items-center">
+                  Password <span className="ml-1 text-rose-500">*</span>
+                  <a
+                    href="#forgot"
+                    className="ml-auto normal-case tracking-normal text-teal-700 hover:underline"
+                  >
+                    Forgot password?
+                  </a>
+                </span>
+                <div className="relative mt-1.5">
+                  <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Enter password"
+                    className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-11 pr-11 text-sm font-normal normal-case tracking-normal text-slate-800 shadow-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:py-3"
+                  />
+                  <button
+                    type="button"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="absolute right-0 top-0 flex h-full items-center px-3.5 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </label>
+              <label className="flex cursor-pointer items-center gap-2.5 py-0.5 text-xs text-slate-600 sm:text-sm">
+                <input
+                  type="checkbox"
+                  checked={rememberSession}
+                  onChange={(event) => setRememberSession(event.target.checked)}
+                  className="h-4 w-4 cursor-pointer rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                />{" "}
+                Remember my session on this clinical workstation
+              </label>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 disabled:cursor-wait disabled:opacity-70 sm:text-base"
+              >
+                {isLoading ? "Signing in..." : "Sign In to MediNodes"}{" "}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </form>
+
+            <section
+              aria-label="Pre-configured system accounts"
+              className="mb-7 space-y-2.5"
+            >
+              <AccountCard
+                title="Real Super Admin Account"
+                credentials="superadmin@medinodes.com · SuperAdmin@123"
+                buttonLabel="Use Real Admin"
+                color="emerald"
+                icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />}
+                onClick={() =>
+                  fillCredentials({
+                    ...quickRoles[0],
+                    email: "superadmin@medinodes.com",
+                    password: "SuperAdmin@123",
+                  })
+                }
+              />
+              <AccountCard
+                title="Demo Super Admin"
+                credentials="admin@medinodes.com · Admin@123"
+                buttonLabel="Enter Demo"
+                color="indigo"
+                icon={<Zap className="h-4 w-4 text-indigo-600" />}
+                onClick={() => fillCredentials(quickRoles[0], true)}
+                isLoading={isLoading}
+              />
+            </section>
+
+            <section
+              aria-label="1-click role switcher"
+              className="border-t border-slate-100 pt-4"
+            >
+              <div className="mb-3 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                <Zap className="h-3.5 w-3.5 text-amber-500" /> 1-Click Quick
+                Demo Switcher
+              </div>
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {quickRoles.map((role) => {
+                  const Icon = role.icon;
+                  return (
+                    <button
+                      key={role.label}
+                      type="button"
+                      onClick={() =>
+                        fillCredentials(role)
+                      }
+                      className={`group flex items-center gap-3 rounded-lg border bg-white p-3 text-left text-xs transition ${role.classes}`}
+                    >
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-transform group-hover:scale-105 ${role.iconClasses}`}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block font-bold leading-tight">
+                          {role.label}
+                        </span>
+                        <span className="mt-0.5 block truncate text-[11px] font-medium opacity-80">
+                          {role.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <footer className="mt-8 border-t border-slate-100 pt-4 text-center text-[11px] font-medium text-slate-400">
+              <span className="inline-flex flex-wrap items-center justify-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-teal-600" /> Secure
+                256-bit encrypted clinical portal <span>•</span> ABDM &amp;
+                HIPAA compliant
+              </span>
+            </footer>
+        </div>
+      </section>
+    </main>
   );
 };
+
+interface AccountCardProps {
+  title: string;
+  credentials: string;
+  buttonLabel: string;
+  color: "emerald" | "indigo";
+  icon: React.ReactNode;
+  onClick: () => void;
+  isLoading?: boolean;
+}
+
+const AccountCard: React.FC<AccountCardProps> = ({
+  title,
+  credentials,
+  buttonLabel,
+  color,
+  icon,
+  onClick,
+  isLoading,
+}) => (
+  <div
+    className={`flex flex-col items-start justify-between gap-3 rounded-xl border p-3.5 sm:flex-row sm:items-center sm:p-4 ${color === "emerald" ? "border-emerald-300/80 bg-emerald-50/50 hover:border-emerald-400" : "border-indigo-200 bg-indigo-50/40 hover:border-indigo-300"}`}
+  >
+    <div className="space-y-0.5">
+      <div
+        className={`flex items-center gap-2 text-sm font-semibold ${color === "emerald" ? "text-emerald-900" : "text-indigo-950"}`}
+      >
+        {icon}
+        {title}
+      </div>
+      <p
+        className={`font-mono text-xs ${color === "emerald" ? "text-emerald-800/80" : "text-indigo-800/80"}`}
+      >
+        {credentials}
+      </p>
+    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={isLoading}
+      className={`w-full shrink-0 rounded-md px-4 py-1.5 text-center text-xs font-semibold text-white shadow-sm transition disabled:opacity-60 sm:w-auto ${color === "emerald" ? "bg-emerald-700 hover:bg-emerald-800" : "bg-indigo-600 hover:bg-indigo-700"}`}
+    >
+      {buttonLabel}
+    </button>
+  </div>
+);

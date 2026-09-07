@@ -1,9 +1,9 @@
 {
-  "name": "clinicflow",
+  "name": "medinodes",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "ClinicFlow — Multi-Tenant Doctor Clinic Management SaaS",
+  "description": "MediNodes — Multi-Tenant Doctor Clinic Management SaaS",
   "workspaces": [
     "backend",
     "frontend"

@@ -1,4 +1,4 @@
-# PROJECT: ClinicFlow — Multi-Tenant Doctor Clinic Management SaaS
+# PROJECT: MediNodes — Multi-Tenant Doctor Clinic Management SaaS
 Design link-
 https://stitch.withgoogle.com/projects/18090104768647936574?pli=1
 

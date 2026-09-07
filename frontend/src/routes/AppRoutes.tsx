@@ -4,36 +4,39 @@ import { useAuth } from '../context/AuthContext.js';
 import { RoleGuard } from '../components/layout/RoleGuard.js';
 import { AppLayout } from '../components/layout/AppLayout.js';
 import { LoginPage } from '../features/auth/LoginPage.js';
+import { LandingPage } from "../features/landing/LandingPage.js";
 
 // Super Admin Pages
-import { SuperAdminDashboardPage } from '../features/super-admin/SuperAdminDashboardPage.js';
-import { ClinicsManagementPage } from '../features/super-admin/ClinicsManagementPage.js';
-import { PlansPage } from '../features/super-admin/PlansPage.js';
+import { SuperAdminDashboardPage } from "../features/super-admin/SuperAdminDashboardPage.js";
+import { ClinicsManagementPage } from "../features/super-admin/ClinicsManagementPage.js";
+import { PlansPage } from "../features/super-admin/PlansPage.js";
 
 // Doctor Pages
-import { DoctorDashboardPage } from '../features/doctor/DoctorDashboardPage.js';
+import { DoctorDashboardPage } from "../features/doctor/DoctorDashboardPage.js";
 
 // Receptionist Pages
-import { ReceptionistDashboardPage } from '../features/receptionist/ReceptionistDashboardPage.js';
+import { ReceptionistDashboardPage } from "../features/receptionist/ReceptionistDashboardPage.js";
 
 // Shared Feature Pages
-import { PatientsPage } from '../features/patients/PatientsPage.js';
-import { PatientProfilePage } from '../features/patients/PatientProfilePage.js';
-import { AppointmentsPage } from '../features/appointments/AppointmentsPage.js';
-import { QueuePage } from '../features/queue/QueuePage.js';
-import { ConsultationRoomPage } from '../features/consultation/ConsultationRoomPage.js';
-import { PrescriptionsPage } from '../features/prescriptions/PrescriptionsPage.js';
-import { BillingPage } from '../features/billing/BillingPage.js';
-import { StaffPage } from '../features/staff/StaffPage.js';
-import { ReportsPage } from '../features/reports/ReportsPage.js';
-import { ClinicSettingsPage } from '../features/settings/ClinicSettingsPage.js';
-import { Loader2 } from 'lucide-react';
+import { PatientsPage } from "../features/patients/PatientsPage.js";
+import { PatientProfilePage } from "../features/patients/PatientProfilePage.js";
+import { AppointmentsPage } from "../features/appointments/AppointmentsPage.js";
+import { QueuePage } from "../features/queue/QueuePage.js";
+import { ConsultationRoomPage } from "../features/consultation/ConsultationRoomPage.js";
+import { PrescriptionsPage } from "../features/prescriptions/PrescriptionsPage.js";
+import { BillingPage } from "../features/billing/BillingPage.js";
+import { StaffPage } from "../features/staff/StaffPage.js";
+import { ReportsPage } from "../features/reports/ReportsPage.js";
+import { ClinicSettingsPage } from "../features/settings/ClinicSettingsPage.js";
+import { Loader2 } from "lucide-react";
 
 const LoadingScreen = () => (
   <div className="min-h-screen bg-slate-50 flex items-center justify-center">
     <div className="flex flex-col items-center gap-3">
       <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
-      <span className="text-sm font-medium text-slate-500">Loading ClinicFlow...</span>
+      <span className="text-sm font-medium text-slate-500">
+        Loading MediNodes...
+      </span>
     </div>
   </div>
 );
@@ -42,11 +45,11 @@ const HomeRedirect: React.FC = () => {
   const { user, role, isLoading } = useAuth();
 
   if (isLoading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <LandingPage />;
 
-  if (role === 'SUPER_ADMIN') return <Navigate to="/super-admin" replace />;
-  if (role === 'DOCTOR') return <Navigate to="/doctor-dashboard" replace />;
-  if (role === 'RECEPTIONIST') return <Navigate to="/reception-desk" replace />;
+  if (role === "SUPER_ADMIN") return <Navigate to="/super-admin" replace />;
+  if (role === "DOCTOR") return <Navigate to="/doctor-dashboard" replace />;
+  if (role === "RECEPTIONIST") return <Navigate to="/reception-desk" replace />;
   return <Navigate to="/login" replace />;
 };
 

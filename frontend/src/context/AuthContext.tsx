@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async () => {
-    const token = localStorage.getItem('clinicflow_token');
+    const token = localStorage.getItem('medinodes_token');
     if (!token) {
       setIsLoading(false);
       return;
@@ -32,8 +32,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(response.data.data);
     } catch (error) {
       console.error('Failed to load user session', error);
-      localStorage.removeItem('clinicflow_token');
-      localStorage.removeItem('clinicflow_refresh_token');
+      localStorage.removeItem('medinodes_token');
+      localStorage.removeItem('medinodes_refresh_token');
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -45,8 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (token: string, refreshToken: string, userData: User) => {
-    localStorage.setItem('clinicflow_token', token);
-    localStorage.setItem('clinicflow_refresh_token', refreshToken);
+    localStorage.setItem('medinodes_token', token);
+    localStorage.setItem('medinodes_refresh_token', refreshToken);
     setUser(userData);
   };
 
@@ -56,8 +56,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       // Ignore logout errors
     } finally {
-      localStorage.removeItem('clinicflow_token');
-      localStorage.removeItem('clinicflow_refresh_token');
+      localStorage.removeItem('medinodes_token');
+      localStorage.removeItem('medinodes_refresh_token');
       setUser(null);
       window.location.href = '/login';
     }

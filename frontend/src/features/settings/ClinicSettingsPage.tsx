@@ -88,7 +88,8 @@ export const ClinicSettingsPage: React.FC = () => {
           Clinic Settings & Configuration
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Manage clinic letterhead, token prefix, contact details, and subscription tier
+          Manage clinic letterhead, token prefix, contact details, and
+          subscription tier
         </p>
       </div>
 
@@ -98,7 +99,9 @@ export const ClinicSettingsPage: React.FC = () => {
           <Card>
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
               <Building2 className="w-4 h-4 text-brand-600" />
-              <h2 className="text-sm font-bold text-slate-900">Clinic Profile & Letterhead</h2>
+              <h2 className="text-sm font-bold text-slate-900">
+                Clinic Profile & Letterhead
+              </h2>
             </div>
 
             {isSaved && (
@@ -119,7 +122,12 @@ export const ClinicSettingsPage: React.FC = () => {
                 <Input
                   label="Queue Token Prefix"
                   value={form.tokenPrefix}
-                  onChange={(e) => setForm({ ...form, tokenPrefix: e.target.value.toUpperCase() })}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      tokenPrefix: e.target.value.toUpperCase(),
+                    })
+                  }
                   maxLength={5}
                   required
                 />
@@ -142,7 +150,7 @@ export const ClinicSettingsPage: React.FC = () => {
               </div>
 
               <Textarea
-                label="Clinic Address (Appears on Printed Prescriptions)"
+                label="Clinic Address"
                 rows={2}
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -165,7 +173,9 @@ export const ClinicSettingsPage: React.FC = () => {
                 <Input
                   label="Pincode"
                   value={form.pincode}
-                  onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, pincode: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -189,35 +199,48 @@ export const ClinicSettingsPage: React.FC = () => {
           <Card>
             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
               <CreditCard className="w-4 h-4 text-brand-600" />
-              <h2 className="text-sm font-bold text-slate-900">Current Subscription</h2>
+              <h2 className="text-sm font-bold text-slate-900">
+                Current Subscription
+              </h2>
             </div>
 
             {subscription ? (
               <div className="space-y-3 text-xs">
                 <div className="p-3 bg-brand-50 rounded-xl border border-brand-100">
-                  <div className="text-base font-extrabold text-brand-900">{subscription.planName} Tier</div>
-                  <div className="text-brand-600 mt-0.5">₹{subscription.price?.toLocaleString()} / month</div>
+                  <div className="text-base font-extrabold text-brand-900">
+                    {subscription.planName} Tier
+                  </div>
+                  <div className="text-brand-600 mt-0.5">
+                    ₹{subscription.price?.toLocaleString()} / month
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Status:</span>
-                    <Badge variant="success" size="sm">Active</Badge>
+                    <Badge variant="success" size="sm">
+                      Active
+                    </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Billing Cycle:</span>
-                    <span className="font-semibold text-slate-800">{subscription.billingCycle}</span>
+                    <span className="font-semibold text-slate-800">
+                      {subscription.billingCycle}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Renewal Date:</span>
                     <span className="font-semibold text-slate-800">
-                      {subscription.endDate ? new Date(subscription.endDate).toLocaleDateString() : 'N/A'}
+                      {subscription.endDate
+                        ? new Date(subscription.endDate).toLocaleDateString()
+                        : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Quota:</span>
                     <span className="font-semibold text-slate-800">
-                      Max {subscription.maxDoctors} Doctors • {subscription.maxReceptionists} Staff
+                      Max {subscription.maxDoctors} Doctors •{" "}
+                      {subscription.maxReceptionists} Staff
                     </span>
                   </div>
                 </div>
@@ -232,10 +255,13 @@ export const ClinicSettingsPage: React.FC = () => {
           <Card className="bg-slate-900 text-white border-slate-800">
             <div className="flex items-center gap-2 mb-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Data Isolation Guard</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                Data Isolation Guard
+              </h3>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Your clinic records, consultations, and patient history are cryptographically isolated in your dedicated tenant partition.
+              Your clinic records, consultations, and patient history are
+              cryptographically isolated in your dedicated tenant partition.
             </p>
           </Card>
         </div>

@@ -32,23 +32,23 @@ async function main() {
   // 1. Create Super Admin
   const superAdmin = await prisma.user.create({
     data: {
-      email: 'admin@clinicflow.com',
+      email: 'admin@medinodes.com',
       passwordHash: superAdminPassword,
       role: 'SUPER_ADMIN',
       status: 'ACTIVE',
     },
   });
-  console.log('✅ Super Admin created: admin@clinicflow.com');
+  console.log('✅ Super Admin created: admin@medinodes.com');
 
   await prisma.user.create({
     data: {
-      email: "superadmin@clinicflow.com",
+      email: "superadmin@medinodes.com",
       passwordHash: realSuperAdminPassword,
       role: "SUPER_ADMIN",
       status: "ACTIVE",
     },
   });
-  console.log("✅ Real Super Admin created: superadmin@clinicflow.com");
+  console.log("✅ Real Super Admin created: superadmin@medinodes.com");
 
   // 2. Create Subscription Plans
   const starterPlan = await prisma.subscriptionPlan.create({

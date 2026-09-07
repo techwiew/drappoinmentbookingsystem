@@ -1,4 +1,4 @@
-# ClinicFlow — REST API Reference Specification
+# MediNodes — REST API Reference Specification
 
 All API endpoints follow standardized JSON responses:
 

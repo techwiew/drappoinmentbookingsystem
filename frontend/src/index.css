@@ -1,12 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+}
+
+.landing-page {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.landing-grid {
+  background-image: linear-gradient(rgba(0, 104, 95, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 104, 95, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+.mesh-gradient {
+  background-color: #081726;
+  background-image:
+    radial-gradient(at 0% 0%, rgba(13, 148, 136, 0.22) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(2, 132, 199, 0.18) 0px, transparent 55%),
+    radial-gradient(at 10% 90%, rgba(14, 36, 57, 0.6) 0px, transparent 60%);
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
 
 /* Custom scrollbars */
@@ -25,25 +59,3 @@
   background: #94a3b8;
 }
 
-/* Print Styles for Prescriptions & Receipts */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .printable-area, .printable-area * {
-    visibility: visible;
-  }
-  .printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
-    background: white;
-    color: black;
-  }
-  .no-print {
-    display: none !important;
-  }
-}

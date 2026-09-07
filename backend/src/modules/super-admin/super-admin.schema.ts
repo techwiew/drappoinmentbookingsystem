@@ -3,22 +3,14 @@ import { z } from 'zod';
 export const createClinicSchema = z.object({
   body: z.object({
     name: z.string().min(2, "Clinic name is required"),
-    slug: z
-      .string()
-      .trim()
-      .min(2, "Clinic slug must be at least 2 characters")
-      .regex(
-        /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-        "Clinic slug may contain lowercase letters, numbers, and hyphens only",
-      ),
     address: z.string().min(2, "Address is required"),
     phone: z.string().min(5, "Phone number is required"),
     email: z.string().email("Invalid email address"),
     city: z.string().min(2, "City is required"),
     state: z.string().min(2, "State is required"),
     pincode: z.string().min(4, "Pincode is required"),
-    tokenPrefix: z.string().default("TKN"),
-    planId: z.string().min(1, "Subscription plan is required"),
+    planPrice: z.number().min(0, "Plan price cannot be negative"),
+    activeMonths: z.number().int().min(1, "Active months must be at least 1"),
     adminName: z.string().min(2, "Doctor/Admin name is required"),
     adminEmail: z.string().email("Invalid admin email"),
     adminPassword: z.string().min(6, "Password must be at least 6 characters"),

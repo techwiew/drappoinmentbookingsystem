@@ -1,13 +1,13 @@
-# ClinicFlow — System Architecture & Multi-Tenant Design
+# MediNodes — System Architecture & Multi-Tenant Design
 
 ## 1. Overview
-ClinicFlow is an enterprise-ready, subscription-based multi-tenant Software-as-a-Service (SaaS) platform built for healthcare practices, outpatient clinics, and polyclinics. The platform provides complete operational autonomy to individual clinics (tenants) while offering centralized oversight, tenant management, and subscription tracking to the platform Super Admin.
+MediNodes is an enterprise-ready, subscription-based multi-tenant Software-as-a-Service (SaaS) platform built for healthcare practices, outpatient clinics, and polyclinics. The platform provides complete operational autonomy to individual clinics (tenants) while offering centralized oversight, tenant management, and subscription tracking to the platform Super Admin.
 
 ---
 
 ## 2. Multi-Tenancy Architecture
 
-ClinicFlow employs a **Pooled Database with Tenant Discriminator (`clinicId`) and Application-Layer Isolation**:
+MediNodes employs a **Pooled Database with Tenant Discriminator (`clinicId`) and Application-Layer Isolation**:
 
 ```
  ┌─────────────────────────────────────────────────────────────┐

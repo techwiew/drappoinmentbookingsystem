@@ -20,6 +20,8 @@ interface DuplicatePatientModalProps {
   onClose: () => void;
   duplicates: DuplicateCandidate[];
   onForceCreate: () => void;
+  onUseExisting?: (patientId: string) => void;
+  forceCreateLabel?: string;
   isLoading?: boolean;
 }
 
@@ -28,6 +30,8 @@ export const DuplicatePatientModal: React.FC<DuplicatePatientModalProps> = ({
   onClose,
   duplicates,
   onForceCreate,
+  onUseExisting,
+  forceCreateLabel = 'Continue Creating New Record',
   isLoading = false,
 }) => {
   const navigate = useNavigate();
@@ -70,17 +74,29 @@ export const DuplicatePatientModal: React.FC<DuplicatePatientModalProps> = ({
                 </div>
               </div>
 
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  onClose();
-                  navigate(`/patients/${item.id}`);
-                }}
-                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-              >
-                View Existing
-              </Button>
+              <div className="flex shrink-0 items-center gap-2">
+                {onUseExisting && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    isLoading={isLoading}
+                    onClick={() => onUseExisting(item.id)}
+                  >
+                    Book for Existing
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/patients/${item.id}`);
+                  }}
+                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
+                >
+                  View Existing
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -95,7 +111,7 @@ export const DuplicatePatientModal: React.FC<DuplicatePatientModalProps> = ({
             isLoading={isLoading}
             leftIcon={<UserCheck className="w-4 h-4" />}
           >
-            Continue Creating New Record
+            {forceCreateLabel}
           </Button>
         </div>
       </div>

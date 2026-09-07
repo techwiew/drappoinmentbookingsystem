@@ -14,11 +14,11 @@ let doctorAId = '';
 let patientAId = '';
 let appointmentAId = '';
 
-describe('🏥 ClinicFlow Multi-Tenant Full-Stack API Test Suite', () => {
+describe('🏥 MediNodes Multi-Tenant Full-Stack API Test Suite', () => {
   beforeAll(async () => {
     // 1. Authenticate Super Admin
     const saRes = await request(app).post('/api/auth/login').send({
-      email: 'admin@clinicflow.com',
+      email: 'admin@medinodes.com',
       password: 'Admin@123',
     });
     expect(saRes.status).toBe(200);
@@ -90,7 +90,7 @@ describe('🏥 ClinicFlow Multi-Tenant Full-Stack API Test Suite', () => {
   describe('1. Authentication & RBAC Checks', () => {
     it('rejects invalid password', async () => {
       const res = await request(app).post('/api/auth/login').send({
-        email: 'admin@clinicflow.com',
+        email: 'admin@medinodes.com',
         password: 'WrongPassword!',
       });
       expect(res.status).toBe(401);

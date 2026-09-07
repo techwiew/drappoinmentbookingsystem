@@ -1,4 +1,4 @@
-# ClinicFlow — Security Architecture & Multi-Tenant Isolation
+# MediNodes — Security Architecture & Multi-Tenant Isolation
 
 ## 1. Zero-Trust Multi-Tenancy
 1. **Tenant Extraction from Token**:

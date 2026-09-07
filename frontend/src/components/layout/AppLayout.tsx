@@ -130,7 +130,7 @@ export const AppLayout: React.FC = () => {
 
           {/* Footer Info */}
           <div className="p-4 border-t border-slate-800/80 text-[11px] text-slate-500 text-center">
-            ClinicFlow Enterprise v1.0.0
+            MediNodes Enterprise v1.0.0
           </div>
         </aside>
 
@@ -147,7 +147,7 @@ export const AppLayout: React.FC = () => {
                   <div className="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-xs">
                     CF
                   </div>
-                  <span className="font-bold text-white">ClinicFlow</span>
+                  <span className="font-bold text-white">MediNodes</span>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}

@@ -7,8 +7,7 @@ import { Button } from '../../components/ui/Button.js';
 import { Modal } from '../../components/ui/Modal.js';
 import { Input } from '../../components/ui/Input.js';
 import { Select } from '../../components/ui/Select.js';
-import { StatusBadge, Badge } from '../../components/ui/Badge.js';
-import { ReceiptPrinter } from '../../components/shared/ReceiptPrinter.js';
+import { StatusBadge, Badge } from "../../components/ui/Badge.js";
 import {
   CreditCard,
   Search,
@@ -30,8 +29,6 @@ export const BillingPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedApt, setSelectedApt] = useState<any>(null);
-  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
 
   const [payForm, setPayForm] = useState({
     consultationFee: 0,
@@ -78,8 +75,6 @@ export const BillingPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['pending-payment-apts'] });
       setIsPaymentModalOpen(false);
-      setReceiptData(data);
-      setIsReceiptOpen(true);
     },
   });
 
@@ -142,12 +137,14 @@ export const BillingPage: React.FC = () => {
               <div className="text-sm font-bold text-amber-900">
                 {totalPending} Completed Consultation(s) Awaiting Payment
               </div>
-              <div className="text-xs text-amber-700">Collect outstanding fees before patients leave</div>
+              <div className="text-xs text-amber-700">
+                Collect outstanding fees before patients leave
+              </div>
             </div>
           </div>
           <button
             className="text-xs font-semibold text-amber-700 underline hover:text-amber-900"
-            onClick={() => setStatusFilter('PENDING')}
+            onClick={() => setStatusFilter("PENDING")}
           >
             View Pending
           </button>
@@ -165,13 +162,17 @@ export const BillingPage: React.FC = () => {
           </div>
           <div className="space-y-2">
             {pendingApts.map((apt: any) => (
-              <div key={apt.id} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-xl">
+              <div
+                key={apt.id}
+                className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-xl"
+              >
                 <div>
                   <div className="font-semibold text-sm text-slate-900">
                     #{apt.tokenNumber} — {apt.patientName}
                   </div>
                   <div className="text-xs text-slate-500">
-                    Dr. {apt.doctorName} • Token #{apt.tokenNumber} • ₹{apt.consultationFee}
+                    Dr. {apt.doctorName} • Token #{apt.tokenNumber} • ₹
+                    {apt.consultationFee}
                   </div>
                 </div>
                 <Button
@@ -193,7 +194,9 @@ export const BillingPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
             <Receipt className="w-4 h-4 text-brand-600" />
-            <h2 className="text-sm font-bold text-slate-900">Payment History</h2>
+            <h2 className="text-sm font-bold text-slate-900">
+              Payment History
+            </h2>
           </div>
 
           <div className="flex gap-2 w-full sm:w-auto">
@@ -240,7 +243,9 @@ export const BillingPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={11} className="text-center p-10 text-slate-400">Loading payments...</td>
+                  <td colSpan={11} className="text-center p-10 text-slate-400">
+                    Loading payments...
+                  </td>
                 </tr>
               ) : payments?.length === 0 ? (
                 <tr>
@@ -251,21 +256,42 @@ export const BillingPage: React.FC = () => {
                 </tr>
               ) : (
                 payments?.map((pay: any) => (
-                  <tr key={pay.id} className="hover:bg-slate-50 transition-colors">
+                  <tr
+                    key={pay.id}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
                     <td className="p-3">
-                      <div className="font-semibold text-slate-900">{pay.patientName}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">{pay.patientNumber}</div>
+                      <div className="font-semibold text-slate-900">
+                        {pay.patientName}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono">
+                        {pay.patientNumber}
+                      </div>
                     </td>
-                    <td className="p-3 text-slate-600">{pay.doctorName || '—'}</td>
-                    <td className="p-3 font-mono font-semibold">₹{pay.consultationFee?.toFixed(2)}</td>
-                    <td className="p-3 font-mono">{pay.additionalFee > 0 ? `₹${pay.additionalFee?.toFixed(2)}` : '—'}</td>
+                    <td className="p-3 text-slate-600">
+                      {pay.doctorName || "—"}
+                    </td>
+                    <td className="p-3 font-mono font-semibold">
+                      ₹{pay.consultationFee?.toFixed(2)}
+                    </td>
+                    <td className="p-3 font-mono">
+                      {pay.additionalFee > 0
+                        ? `₹${pay.additionalFee?.toFixed(2)}`
+                        : "—"}
+                    </td>
                     <td className="p-3 font-mono text-emerald-700">
-                      {pay.discount > 0 ? `-₹${pay.discount?.toFixed(2)}` : '—'}
+                      {pay.discount > 0 ? `-₹${pay.discount?.toFixed(2)}` : "—"}
                     </td>
-                    <td className="p-3 font-mono font-bold text-slate-900">₹{pay.totalAmount?.toFixed(2)}</td>
-                    <td className="p-3 font-mono font-bold text-emerald-700">₹{pay.paidAmount?.toFixed(2)}</td>
+                    <td className="p-3 font-mono font-bold text-slate-900">
+                      ₹{pay.totalAmount?.toFixed(2)}
+                    </td>
+                    <td className="p-3 font-mono font-bold text-emerald-700">
+                      ₹{pay.paidAmount?.toFixed(2)}
+                    </td>
                     <td className="p-3">
-                      <Badge variant="default" size="sm">{pay.paymentMethod}</Badge>
+                      <Badge variant="default" size="sm">
+                        {pay.paymentMethod}
+                      </Badge>
                     </td>
                     <td className="p-3">
                       <StatusBadge status={pay.paymentStatus} size="sm" />
@@ -274,17 +300,7 @@ export const BillingPage: React.FC = () => {
                       {new Date(pay.createdAt).toLocaleDateString()}
                     </td>
                     <td className="p-3 text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        leftIcon={<Receipt className="w-3.5 h-3.5" />}
-                        onClick={() => {
-                          setReceiptData(pay);
-                          setIsReceiptOpen(true);
-                        }}
-                      >
-                        View
-                      </Button>
+                      <StatusBadge status={pay.paymentStatus} size="sm" />
                     </td>
                   </tr>
                 ))
@@ -299,7 +315,11 @@ export const BillingPage: React.FC = () => {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         title="Collect Consultation Fee"
-        description={selectedApt ? `Patient: ${selectedApt.patientName} • Doctor: ${selectedApt.doctorName}` : ''}
+        description={
+          selectedApt
+            ? `Patient: ${selectedApt.patientName} • Doctor: ${selectedApt.doctorName}`
+            : ""
+        }
         maxWidth="lg"
       >
         {selectedApt && (
@@ -310,7 +330,12 @@ export const BillingPage: React.FC = () => {
                 type="number"
                 step="0.01"
                 value={payForm.consultationFee}
-                onChange={(e) => setPayForm({ ...payForm, consultationFee: parseFloat(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setPayForm({
+                    ...payForm,
+                    consultationFee: parseFloat(e.target.value) || 0,
+                  })
+                }
                 required
               />
               <Input
@@ -318,7 +343,12 @@ export const BillingPage: React.FC = () => {
                 type="number"
                 step="0.01"
                 value={payForm.additionalFee}
-                onChange={(e) => setPayForm({ ...payForm, additionalFee: parseFloat(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setPayForm({
+                    ...payForm,
+                    additionalFee: parseFloat(e.target.value) || 0,
+                  })
+                }
               />
             </div>
 
@@ -327,7 +357,12 @@ export const BillingPage: React.FC = () => {
               type="number"
               step="0.01"
               value={payForm.discount}
-              onChange={(e) => setPayForm({ ...payForm, discount: parseFloat(e.target.value) || 0 })}
+              onChange={(e) =>
+                setPayForm({
+                  ...payForm,
+                  discount: parseFloat(e.target.value) || 0,
+                })
+              }
             />
 
             {/* Total Preview */}
@@ -345,12 +380,14 @@ export const BillingPage: React.FC = () => {
               <Select
                 label="Payment Method"
                 value={payForm.paymentMethod}
-                onChange={(e) => setPayForm({ ...payForm, paymentMethod: e.target.value })}
+                onChange={(e) =>
+                  setPayForm({ ...payForm, paymentMethod: e.target.value })
+                }
                 options={[
-                  { value: 'CASH', label: '💵 Cash' },
-                  { value: 'UPI', label: '📱 UPI / QR Code' },
-                  { value: 'CARD', label: '💳 Card / POS' },
-                  { value: 'OTHER', label: 'Other' },
+                  { value: "CASH", label: "💵 Cash" },
+                  { value: "UPI", label: "📱 UPI / QR Code" },
+                  { value: "CARD", label: "💳 Card / POS" },
+                  { value: "OTHER", label: "Other" },
                 ]}
               />
               <Input
@@ -358,28 +395,44 @@ export const BillingPage: React.FC = () => {
                 type="number"
                 step="0.01"
                 value={payForm.paidAmount}
-                onChange={(e) => setPayForm({ ...payForm, paidAmount: parseFloat(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setPayForm({
+                    ...payForm,
+                    paidAmount: parseFloat(e.target.value) || 0,
+                  })
+                }
                 required
               />
             </div>
 
-            {payForm.paymentMethod !== 'CASH' && (
+            {payForm.paymentMethod !== "CASH" && (
               <Input
                 label="Transaction Reference / UTR"
                 placeholder="e.g. UPI Ref: T123456789"
                 value={payForm.transactionReference}
-                onChange={(e) => setPayForm({ ...payForm, transactionReference: e.target.value })}
+                onChange={(e) =>
+                  setPayForm({
+                    ...payForm,
+                    transactionReference: e.target.value,
+                  })
+                }
               />
             )}
 
             {payForm.paidAmount < totalAmount && payForm.paidAmount > 0 && (
               <div className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 border border-rose-200 rounded-lg">
-                ⚠️ Partial payment: ₹{(totalAmount - payForm.paidAmount).toFixed(2)} will remain pending
+                ⚠️ Partial payment: ₹
+                {(totalAmount - payForm.paidAmount).toFixed(2)} will remain
+                pending
               </div>
             )}
 
             <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-              <Button type="button" variant="secondary" onClick={() => setIsPaymentModalOpen(false)}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsPaymentModalOpen(false)}
+              >
                 Cancel
               </Button>
               <Button
@@ -388,19 +441,12 @@ export const BillingPage: React.FC = () => {
                 isLoading={recordPaymentMutation.isPending}
                 leftIcon={<CheckCircle2 className="w-4 h-4" />}
               >
-                Record Payment & Print Receipt
+                Record Payment
               </Button>
             </div>
           </form>
         )}
       </Modal>
-
-      {/* Receipt Print Modal */}
-      <ReceiptPrinter
-        isOpen={isReceiptOpen}
-        onClose={() => setIsReceiptOpen(false)}
-        data={receiptData}
-      />
     </div>
   );
 };
