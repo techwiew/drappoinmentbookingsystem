@@ -23,16 +23,6 @@ const REMEMBERED_EMAIL_KEY = "MediNovel_remembered_email";
 
 const quickRoles = [
   {
-    label: "Super Admin",
-    description: "Platform Owner",
-    email: "admin@MediNovel.com",
-    password: "Admin@123",
-    icon: ShieldCheck,
-    classes:
-      "border-violet-200 hover:border-violet-400 hover:bg-violet-50/40 text-violet-900",
-    iconClasses: "bg-violet-50 text-violet-600 border-violet-200",
-  },
-  {
     label: "Dr. Raj Sharma",
     description: "Cardiologist",
     email: "dr.raj@sharmaclinic.com",
@@ -66,9 +56,9 @@ const quickRoles = [
 
 type QuickRole = (typeof quickRoles)[number];
 
-export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState("dr.raj@sharmaclinic.com");
-  const [password, setPassword] = useState("Doctor@123");
+export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false }) => {
+  const [email, setEmail] = useState(adminOnly ? "" : "dr.raj@sharmaclinic.com");
+  const [password, setPassword] = useState(adminOnly ? "" : "Doctor@123");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberSession, setRememberSession] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -173,10 +163,10 @@ export const LoginPage: React.FC = () => {
               {LANDING_COPY.navigation.demo}
             </a>
             <a
-              href="/"
+              href={adminOnly ? "/login" : "/admin"}
               className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-[#00685f] px-3 py-2.5 text-sm font-bold text-white shadow-sm shadow-[#00685f]/20 transition-colors hover:bg-[#008378] lg:px-4"
             >
-              <ArrowRight className="h-4 w-4" /> Back to home
+              {adminOnly ? "Clinic sign in" : "Admin sign in"} <ArrowRight className="h-4 w-4" />
             </a>
           </div>
 
@@ -218,10 +208,10 @@ export const LoginPage: React.FC = () => {
                 {LANDING_COPY.navigation.demo}
               </a>
               <a
-                href="/"
+                href={adminOnly ? "/login" : "/admin"}
                 className="rounded-lg bg-[#00685f] px-3 py-2.5 text-sm font-bold text-white"
               >
-                Back to home
+                {adminOnly ? "Clinic sign in" : "Admin sign in"}
               </a>
             </nav>
           </div>
@@ -232,10 +222,12 @@ export const LoginPage: React.FC = () => {
         <div className="w-full max-w-[672px] py-4">
           <header className="mb-8">
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Sign In to Your Workspace
+              {adminOnly ? "Super Admin Sign In" : "Sign In to Your Workspace"}
             </h2>
             <p className="mt-1.5 text-sm text-slate-500 sm:text-base">
-              Enter your clinic credentials or pick a demo role below.
+              {adminOnly
+                ? "Enter your platform administrator credentials or choose a demo workspace."
+                : "Enter your clinic credentials or pick a demo role below."}
             </p>
           </header>
           {error && (
@@ -311,36 +303,7 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          <section
-            aria-label="Pre-configured system accounts"
-            className="mb-7 space-y-2.5"
-          >
-            <AccountCard
-              title="Real Super Admin Account"
-              credentials="superadmin@MediNovel.com · SuperAdmin@123"
-              buttonLabel="Use Real Admin"
-              color="emerald"
-              icon={<ShieldCheck className="h-4 w-4 text-emerald-600" />}
-              onClick={() =>
-                fillCredentials({
-                  ...quickRoles[0],
-                  email: "superadmin@MediNovel.com",
-                  password: "SuperAdmin@123",
-                })
-              }
-            />
-            <AccountCard
-              title="Demo Super Admin"
-              credentials="admin@MediNovel.com · Admin@123"
-              buttonLabel="Enter Demo"
-              color="indigo"
-              icon={<Zap className="h-4 w-4 text-indigo-600" />}
-              onClick={() => fillCredentials(quickRoles[0], true)}
-              isLoading={isLoading}
-            />
-          </section>
-
-          <section
+          {adminOnly && <section
             aria-label="1-click role switcher"
             className="border-t border-slate-100 pt-4"
           >
@@ -375,7 +338,7 @@ export const LoginPage: React.FC = () => {
                 );
               })}
             </div>
-          </section>
+          </section>}
 
           <footer className="mt-8 border-t border-slate-100 pt-4 text-center text-[11px] font-medium text-slate-400">
             <span className="inline-flex flex-wrap items-center justify-center gap-1.5">
@@ -389,49 +352,3 @@ export const LoginPage: React.FC = () => {
     </main>
   );
 };
-
-interface AccountCardProps {
-  title: string;
-  credentials: string;
-  buttonLabel: string;
-  color: "emerald" | "indigo";
-  icon: React.ReactNode;
-  onClick: () => void;
-  isLoading?: boolean;
-}
-
-const AccountCard: React.FC<AccountCardProps> = ({
-  title,
-  credentials,
-  buttonLabel,
-  color,
-  icon,
-  onClick,
-  isLoading,
-}) => (
-  <div
-    className={`flex flex-col items-start justify-between gap-3 rounded-xl border p-3.5 sm:flex-row sm:items-center sm:p-4 ${color === "emerald" ? "border-emerald-300/80 bg-emerald-50/50 hover:border-emerald-400" : "border-indigo-200 bg-indigo-50/40 hover:border-indigo-300"}`}
-  >
-    <div className="space-y-0.5">
-      <div
-        className={`flex items-center gap-2 text-sm font-semibold ${color === "emerald" ? "text-emerald-900" : "text-indigo-950"}`}
-      >
-        {icon}
-        {title}
-      </div>
-      <p
-        className={`font-mono text-xs ${color === "emerald" ? "text-emerald-800/80" : "text-indigo-800/80"}`}
-      >
-        {credentials}
-      </p>
-    </div>
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={isLoading}
-      className={`w-full shrink-0 rounded-md px-4 py-1.5 text-center text-xs font-semibold text-white shadow-sm transition disabled:opacity-60 sm:w-auto ${color === "emerald" ? "bg-emerald-700 hover:bg-emerald-800" : "bg-indigo-600 hover:bg-indigo-700"}`}
-    >
-      {buttonLabel}
-    </button>
-  </div>
-);
