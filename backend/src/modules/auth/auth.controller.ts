@@ -23,6 +23,24 @@ export class AuthController {
     }
   }
 
+  static async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.requestPasswordReset(req.body.email);
+      return sendSuccess(res, result, 'If an account exists, a reset link has been created.');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      await AuthService.resetPassword(req.body.token, req.body.newPassword);
+      return sendSuccess(res, { updated: true }, 'Password reset successfully. Please sign in.');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async logout(req: Request, res: Response, next: NextFunction) {
     try {
       if (req.user?.userId) {

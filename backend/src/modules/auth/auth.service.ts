@@ -6,8 +6,51 @@ import {
   verifyRefreshToken,
 } from '../../utils/jwt.js';
 import { logAudit } from '../../middlewares/audit.js';
+import { createHash, randomBytes } from 'crypto';
 
 export class AuthService {
+  static async requestPasswordReset(email: string) {
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!user || user.status !== 'ACTIVE') return { resetUrl: null };
+
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetTokenHash: tokenHash,
+        passwordResetExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173';
+    return {
+      resetUrl: process.env.NODE_ENV === 'production'
+        ? null
+        : `${frontendUrl.replace(/\/$/, '')}/reset-password?token=${token}`,
+    };
+  }
+
+  static async resetPassword(token: string, newPassword: string) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const user = await prisma.user.findFirst({
+      where: { passwordResetTokenHash: tokenHash, passwordResetExpiresAt: { gt: new Date() } },
+    });
+    if (!user) {
+      throw { statusCode: 400, code: 'INVALID_RESET_TOKEN', message: 'This password reset link is invalid or has expired.' };
+    }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await hashPassword(newPassword),
+        refreshTokenHash: null,
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null,
+      },
+    });
+    await logAudit({ clinicId: null, userId: user.id, action: 'PASSWORD_RESET', entityType: 'User', entityId: user.id });
+  }
+
   static async login(email: string, pass: string, ipAddress?: string) {
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },

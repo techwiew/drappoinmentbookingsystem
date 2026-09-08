@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { RoleGuard } from '../components/layout/RoleGuard.js';
 import { AppLayout } from '../components/layout/AppLayout.js';
 import { LoginPage } from '../features/auth/LoginPage.js';
+import { PasswordResetPage } from '../features/auth/PasswordResetPage.js';
 import { LandingPage } from "../features/landing/LandingPage.js";
 
 // Super Admin Pages
@@ -59,6 +60,8 @@ export const AppRoutes: React.FC = () => {
       {/* Public Route */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/admin" element={<LoginPage adminOnly />} />
+      <Route path="/forgot-password" element={<PasswordResetPage mode="request" />} />
+      <Route path="/reset-password" element={<PasswordResetPage mode="reset" />} />
 
       {/* Home redirect */}
       <Route path="/" element={<HomeRedirect />} />

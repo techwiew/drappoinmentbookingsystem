@@ -254,7 +254,7 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
               <span className="flex items-center">
                 Password <span className="ml-1 text-rose-500">*</span>
                 <a
-                  href="#forgot"
+                  href="/forgot-password"
                   className="ml-auto normal-case tracking-normal text-teal-700 hover:underline"
                 >
                   Forgot password?

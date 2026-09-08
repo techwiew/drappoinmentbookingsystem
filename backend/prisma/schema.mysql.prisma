@@ -90,6 +90,8 @@ model User {
   role             Role
   status           UserStatus   @default(ACTIVE)
   refreshTokenHash String?      @db.Text
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
   lastLoginAt      DateTime?
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
