@@ -1,4 +1,4 @@
-# MediNodes — REST API Reference Specification
+# MediNovel — REST API Reference Specification
 
 All API endpoints follow standardized JSON responses:
 

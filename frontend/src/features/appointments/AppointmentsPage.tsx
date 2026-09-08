@@ -40,6 +40,8 @@ export const AppointmentsPage: React.FC = () => {
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [pendingPatientPayload, setPendingPatientPayload] = useState<any>(null);
   const [bookingError, setBookingError] = useState("");
+  const [followUpToConfirm, setFollowUpToConfirm] = useState<any>(null);
+  const [confirmationTime, setConfirmationTime] = useState("");
   const [newPatientForm, setNewPatientForm] = useState({
     fullName: "",
     mobile: "",
@@ -121,6 +123,21 @@ export const AppointmentsPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+  });
+
+  const confirmFollowUpMutation = useMutation({
+    mutationFn: async ({ id, appointmentTime }: { id: string; appointmentTime: string }) => {
+      const res = await apiClient.patch(`/appointments/${id}`, {
+        status: "BOOKED",
+        appointmentTime: appointmentTime || undefined,
+      });
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      setFollowUpToConfirm(null);
+      setConfirmationTime("");
     },
   });
 
@@ -285,6 +302,7 @@ export const AppointmentsPage: React.FC = () => {
             <option value="IN_CONSULTATION">In Consultation</option>
             <option value="COMPLETED">Completed</option>
             <option value="BOOKED">Booked</option>
+            <option value="PENDING_CONFIRMATION">Pending Confirmation</option>
             <option value="CANCELLED">Cancelled</option>
           </select>
         </div>
@@ -357,7 +375,9 @@ export const AppointmentsPage: React.FC = () => {
                     <td className="p-3.5 text-slate-600">
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3 text-slate-400" />
-                        {apt.appointmentTime}
+                        {apt.appointmentTime || (
+                          <span className="text-amber-700 font-medium">To be confirmed</span>
+                        )}
                       </div>
                     </td>
                     <td className="p-3.5">
@@ -375,6 +395,19 @@ export const AppointmentsPage: React.FC = () => {
                       />
                     </td>
                     <td className="p-3.5 text-right space-x-1.5">
+                      {apt.status === "PENDING_CONFIRMATION" && (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          className="text-[11px]"
+                          onClick={() => {
+                            setFollowUpToConfirm(apt);
+                            setConfirmationTime(apt.appointmentTime || "");
+                          }}
+                        >
+                          Confirm Visit
+                        </Button>
+                      )}
                       {apt.status === "IN_CONSULTATION" && (
                         <Button
                           size="sm"
@@ -386,7 +419,8 @@ export const AppointmentsPage: React.FC = () => {
                         </Button>
                       )}
                       {(apt.status === "WAITING" ||
-                        apt.status === "BOOKED") && (
+                        apt.status === "BOOKED" ||
+                        apt.status === "PENDING_CONFIRMATION") && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -653,6 +687,38 @@ export const AppointmentsPage: React.FC = () => {
             </p>
           )}
         </form>
+      </Modal>
+      <Modal
+        isOpen={!!followUpToConfirm}
+        onClose={() => setFollowUpToConfirm(null)}
+        title="Confirm Follow-up Visit"
+        description={followUpToConfirm ? `Confirm ${followUpToConfirm.patientName}'s follow-up after speaking with the patient.` : undefined}
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Confirmed time (optional)"
+            type="time"
+            value={confirmationTime}
+            onChange={(event) => setConfirmationTime(event.target.value)}
+          />
+          <p className="text-xs text-slate-500">
+            Leave the time blank if the patient has confirmed the visit but the slot will be decided later.
+          </p>
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+            <Button variant="secondary" onClick={() => setFollowUpToConfirm(null)}>Cancel</Button>
+            <Button
+              variant="primary"
+              isLoading={confirmFollowUpMutation.isPending}
+              onClick={() => followUpToConfirm && confirmFollowUpMutation.mutate({
+                id: followUpToConfirm.id,
+                appointmentTime: confirmationTime,
+              })}
+            >
+              Confirm Appointment
+            </Button>
+          </div>
+        </div>
       </Modal>
       <DuplicatePatientModal
         isOpen={isDuplicateModalOpen}

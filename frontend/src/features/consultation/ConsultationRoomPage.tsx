@@ -43,6 +43,7 @@ interface ConsultationData {
   testsRecommended: string;
   advice: string;
   nextVisitDate: string;
+  nextVisitTime?: string;
   followUpNotes: string;
   status: "DRAFT" | "COMPLETED";
   prescription?: {
@@ -67,6 +68,7 @@ export const ConsultationRoomPage: React.FC = () => {
     testsRecommended: "",
     advice: "",
     nextVisitDate: "",
+    nextVisitTime: "",
     followUpNotes: "",
   });
 
@@ -133,6 +135,7 @@ export const ConsultationRoomPage: React.FC = () => {
         nextVisitDate: existingConsultation.nextVisitDate
           ? existingConsultation.nextVisitDate.split("T")[0]
           : "",
+        nextVisitTime: existingConsultation.nextVisitTime || "",
         followUpNotes: existingConsultation.followUpNotes || "",
       });
       if (existingConsultation.prescription?.items?.length) {
@@ -532,13 +535,22 @@ export const ConsultationRoomPage: React.FC = () => {
                 onChange={(e) => setForm({ ...form, advice: e.target.value })}
                 disabled={isLocked}
               />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Input
                   label="Next Visit Date"
                   type="date"
                   value={form.nextVisitDate}
                   onChange={(e) =>
                     setForm({ ...form, nextVisitDate: e.target.value })
+                  }
+                  disabled={isLocked}
+                />
+                <Input
+                  label="Next Visit Time (optional)"
+                  type="time"
+                  value={form.nextVisitTime}
+                  onChange={(e) =>
+                    setForm({ ...form, nextVisitTime: e.target.value })
                   }
                   disabled={isLocked}
                 />

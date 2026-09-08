@@ -1,6 +1,6 @@
-# MediNodes — Multi-Tenant Doctor Clinic Management SaaS
+# MediNovel — Multi-Tenant Doctor Clinic Management SaaS
 
-MediNodes is a high-performance, subscription-based multi-tenant healthcare software application built with modern web technologies: React 18, TypeScript, Vite, Tailwind CSS, Node.js, Express, and Prisma ORM with MySQL.
+MediNovel is a high-performance, subscription-based multi-tenant healthcare software application built with modern web technologies: React 18, TypeScript, Vite, Tailwind CSS, Node.js, Express, and Prisma ORM with MySQL.
 
 ---
 
@@ -53,8 +53,8 @@ npm run dev
 ---
 
 ## 🔑 Default Seed Credentials
-- **Super Admin**: `admin@medinodes.com` / `Admin@123`
-- **Real Super Admin**: `superadmin@medinodes.com` / `SuperAdmin@123`
+- **Super Admin**: `admin@MediNovel.com` / `Admin@123`
+- **Real Super Admin**: `superadmin@MediNovel.com` / `SuperAdmin@123`
 - **Doctor 1**: `dr.raj@sharmaclinic.com` / `Doctor@123`
 - **Doctor 2**: `dr.priya@sharmaclinic.com` / `Doctor@123`
 - **Receptionist**: `reception@sharmaclinic.com` / `Reception@123`

@@ -9,7 +9,8 @@ export const createAppointmentSchema = z.object({
     appointmentTime: z
       .string()
       .refine(isValidAppointmentTime, 'Appointment time must be a valid time')
-      .default('10:00 AM'),
+      .optional()
+      .or(z.literal('')),
     appointmentType: z.enum(['NEW_PATIENT', 'FOLLOW_UP', 'WALK_IN', 'EMERGENCY']).default('NEW_PATIENT'),
     consultationFee: z.number().optional(),
     notes: z.string().optional(),
@@ -29,6 +30,7 @@ export const updateAppointmentSchema = z.object({
       .optional(),
     appointmentType: z.enum(['NEW_PATIENT', 'FOLLOW_UP', 'WALK_IN', 'EMERGENCY']).optional(),
     status: z.enum([
+      'PENDING_CONFIRMATION',
       'BOOKED',
       'CHECKED_IN',
       'WAITING',

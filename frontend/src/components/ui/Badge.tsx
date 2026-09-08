@@ -80,6 +80,8 @@ export const StatusBadge: React.FC<{ status: string; size?: 'sm' | 'md'; classNa
       return <Badge variant="info" size={size} className={className}>Checked In</Badge>;
     case 'BOOKED':
       return <Badge variant="default" size={size} className={className}>Booked</Badge>;
+    case 'PENDING_CONFIRMATION':
+      return <Badge variant="warning" size={size} dot className={className}>Pending confirmation</Badge>;
     case 'COMPLETED':
       return <Badge variant="success" size={size} className={className}>Completed</Badge>;
     case 'SKIPPED':

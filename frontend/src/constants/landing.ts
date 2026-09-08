@@ -9,7 +9,7 @@ import {
 
 export const LANDING_COPY = {
   brand: {
-    name: "MediNodes",
+    name: "MediNovel",
     badge: "India Clinic OS",
     tagline: "A calmer operating system for care",
     portal: "Launch Clinic Portal",
@@ -30,7 +30,7 @@ export const LANDING_COPY = {
     demo: "Book a Live Demo",
   },
   preview: {
-    workspace: "MediNodes workspace / Dr. Sharma Clinic",
+    workspace: "MediNovel workspace / Dr. Sharma Clinic",
     live: "Live queue active",
     queueTitle: "Live OPD Queue",
     queueSummary: "14 patients waiting · avg 8 min",
@@ -83,7 +83,7 @@ export const LANDING_COPY = {
     eyebrow: "Our approach",
     title: "Less clinic chaos. More time for care.",
     paragraphs: [
-      "MediNodes brings the front desk and consultation room into one dependable rhythm. Every role sees the work that belongs to them, while the clinic owner gets a clear view of the day.",
+      "MediNovel brings the front desk and consultation room into one dependable rhythm. Every role sees the work that belongs to them, while the clinic owner gets a clear view of the day.",
       "It is designed for real outpatient settings: changing walk-ins, multiple doctors, returning patients, pending fees, and the small details that make a patient feel looked after.",
     ],
     stats: [
@@ -107,7 +107,7 @@ export const LANDING_COPY = {
   },
   demo: {
     eyebrow: "Personalized walkthrough",
-    title: "See MediNodes in your clinic's rhythm",
+    title: "See MediNovel in your clinic's rhythm",
     description:
       "Tell us a little about your setup and we'll show you the workflows that matter to your team.",
     benefits: [
@@ -136,7 +136,7 @@ export const LANDING_COPY = {
     disclaimer: "Your details are used only to arrange this walkthrough.",
   },
   portal: {
-    title: "Already running a MediNodes clinic?",
+    title: "Already running a MediNovel clinic?",
     description:
       "Open the workspace for your doctor, receptionist, or clinic administration team.",
     action: "Open Clinic Portal",
@@ -151,12 +151,12 @@ export const LANDING_COPY = {
     patientQueue: "Patient queue",
     consultations: "Consultations",
     billing: "Clinic billing",
-    about: "About MediNodes",
+    about: "About MediNovel",
     demo: "Book a demo",
-    supportEmail: "support@medinodes.app",
+    supportEmail: "support@MediNovel.app",
     supportHours: "Mon-Fri, 9:00 AM - 6:00 PM",
     login: "Clinic portal login",
-    copyright: "© 2026 MediNodes. Built for outpatient care teams.",
+    copyright: "© 2026 MediNovel. Built for outpatient care teams.",
     secure: "Secure, role-based clinic access",
   },
 };

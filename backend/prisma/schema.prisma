@@ -40,6 +40,7 @@ enum AppointmentType {
 }
 
 enum AppointmentStatus {
+  PENDING_CONFIRMATION
   BOOKED
   CHECKED_IN
   WAITING
@@ -261,7 +262,7 @@ model Appointment {
   patientId       String
   doctorId        String
   appointmentDate DateTime          @db.Date
-  appointmentTime String
+  appointmentTime String?
   appointmentType AppointmentType   @default(NEW_PATIENT)
   tokenNumber     Int
   status          AppointmentStatus @default(BOOKED)

@@ -8,10 +8,10 @@ router.get('/', async (req: Request, res: Response) => {
     await prisma.$queryRaw`SELECT 1`;
     return res.status(200).json({
       success: true,
-      status: 'ok',
+      status: "ok",
       timestamp: new Date().toISOString(),
-      service: 'MediNodes API Server',
-      database: 'connected',
+      service: "MediNovel API Server",
+      database: "connected",
     });
   } catch (error) {
     return res.status(503).json({

@@ -13,7 +13,7 @@ export const apiClient = axios.create({
 // Request Interceptor: Attach Access Token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('medinodes_token');
+    const token = localStorage.getItem("MediNovel_token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -52,10 +52,10 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      const refreshToken = localStorage.getItem('medinodes_refresh_token');
+      const refreshToken = localStorage.getItem("MediNovel_refresh_token");
       if (!refreshToken) {
-        localStorage.removeItem('medinodes_token');
-        localStorage.removeItem('medinodes_refresh_token');
+        localStorage.removeItem("MediNovel_token");
+        localStorage.removeItem("MediNovel_refresh_token");
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -82,9 +82,9 @@ apiClient.interceptors.response.use(
         });
 
         const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-        localStorage.setItem('medinodes_token', accessToken);
+        localStorage.setItem("MediNovel_token", accessToken);
         if (newRefreshToken) {
-          localStorage.setItem('medinodes_refresh_token', newRefreshToken);
+          localStorage.setItem("MediNovel_refresh_token", newRefreshToken);
         }
 
         apiClient.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
@@ -96,8 +96,8 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshErr) {
         processQueue(refreshErr, null);
-        localStorage.removeItem('medinodes_token');
-        localStorage.removeItem('medinodes_refresh_token');
+        localStorage.removeItem("MediNovel_token");
+        localStorage.removeItem("MediNovel_refresh_token");
         window.location.href = '/login';
         return Promise.reject(refreshErr);
       } finally {

@@ -35,7 +35,7 @@ const LoadingScreen = () => (
     <div className="flex flex-col items-center gap-3">
       <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
       <span className="text-sm font-medium text-slate-500">
-        Loading MediNodes...
+        Loading MediNovel...
       </span>
     </div>
   </div>

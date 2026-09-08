@@ -279,6 +279,49 @@ export class ConsultationService {
             },
           });
         }
+
+        // A next-visit date is an appointment in its own right. When no slot is
+        // selected it remains visible for the team to call and confirm later.
+        if (data.nextVisitDate) {
+          const followUpDate = new Date(data.nextVisitDate);
+          followUpDate.setHours(0, 0, 0, 0);
+          const nextDay = new Date(followUpDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const existingFollowUp = await tx.appointment.findFirst({
+            where: {
+              clinicId,
+              patientId,
+              doctorId: docId,
+              appointmentType: 'FOLLOW_UP',
+              appointmentDate: { gte: followUpDate, lt: nextDay },
+              status: { notIn: ['CANCELLED', 'COMPLETED'] },
+            },
+          });
+
+          if (!existingFollowUp) {
+            const appointmentTime = data.nextVisitTime
+              ? normalizeAppointmentTime(data.nextVisitTime)
+              : null;
+            const tokenNumber = (await tx.appointment.count({
+              where: { clinicId, doctorId: docId, appointmentDate: { gte: followUpDate, lt: nextDay } },
+            })) + 1;
+            await tx.appointment.create({
+              data: {
+                clinicId,
+                patientId,
+                doctorId: docId,
+                appointmentDate: followUpDate,
+                appointmentTime,
+                appointmentType: 'FOLLOW_UP',
+                tokenNumber,
+                status: appointmentTime ? 'BOOKED' : 'PENDING_CONFIRMATION',
+                consultationFee: appointment.doctor.consultationFee,
+                notes: toNullableString(data.followUpNotes) ?? null,
+                createdBy: doctorUserId,
+              },
+            });
+          }
+        }
       }
 
       return consultation;
@@ -621,6 +664,51 @@ export class ConsultationService {
               paymentStatus: 'PENDING',
             },
           });
+        }
+
+        if (data.nextVisitDate) {
+          const followUpDate = new Date(data.nextVisitDate);
+          followUpDate.setHours(0, 0, 0, 0);
+          const nextDay = new Date(followUpDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const existingFollowUp = await tx.appointment.findFirst({
+            where: {
+              clinicId,
+              patientId: consultation.patientId,
+              doctorId: consultation.doctor.id,
+              appointmentType: 'FOLLOW_UP',
+              appointmentDate: { gte: followUpDate, lt: nextDay },
+              status: { notIn: ['CANCELLED', 'COMPLETED'] },
+            },
+          });
+
+          if (!existingFollowUp) {
+            const appointmentTime = data.nextVisitTime
+              ? normalizeAppointmentTime(data.nextVisitTime)
+              : null;
+            const tokenNumber = (await tx.appointment.count({
+              where: {
+                clinicId,
+                doctorId: consultation.doctor.id,
+                appointmentDate: { gte: followUpDate, lt: nextDay },
+              },
+            })) + 1;
+            await tx.appointment.create({
+              data: {
+                clinicId,
+                patientId: consultation.patientId,
+                doctorId: consultation.doctor.id,
+                appointmentDate: followUpDate,
+                appointmentTime,
+                appointmentType: 'FOLLOW_UP',
+                tokenNumber,
+                status: appointmentTime ? 'BOOKED' : 'PENDING_CONFIRMATION',
+                consultationFee: consultation.appointment.consultationFee,
+                notes: toNullableString(data.followUpNotes) ?? null,
+                createdBy: doctorUserId,
+              },
+            });
+          }
         }
       }
 

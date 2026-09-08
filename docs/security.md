@@ -1,4 +1,4 @@
-# MediNodes — Security Architecture & Multi-Tenant Isolation
+# MediNovel — Security Architecture & Multi-Tenant Isolation
 
 ## 1. Zero-Trust Multi-Tenancy
 1. **Tenant Extraction from Token**:

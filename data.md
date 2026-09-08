@@ -1,6 +1,6 @@
-# MediNodes Database Schema & Seed Data Script
+# MediNovel Database Schema & Seed Data Script
 
-This document contains the complete database DDL schema and initial seed data for **MediNodes — Multi-Tenant Doctor Clinic Management SaaS**.
+This document contains the complete database DDL schema and initial seed data for **MediNovel — Multi-Tenant Doctor Clinic Management SaaS**.
 
 ---
 
@@ -27,7 +27,7 @@ You can run the following SQL script directly in **phpMyAdmin**, **MySQL Workben
 
 ```sql
 -- ====================================================================
--- MediNodes Multi-Tenant Database Schema (MySQL 8.0+)
+-- MediNovel Multi-Tenant Database Schema (MySQL 8.0+)
 -- ====================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -336,7 +336,7 @@ INSERT INTO `subscription_plans` (`id`, `name`, `code`, `price`, `billingCycle`,
 -- 2. Insert Super Admin User
 -- Password: Admin@123
 INSERT INTO `users` (`id`, `email`, `password`, `role`, `status`, `createdAt`, `updatedAt`) VALUES
-('user-super-admin', 'admin@medinodes.com', '$2a$10$m00nK0R2VfC7XwE1s8kU..x2lOqJ5lC8pD2mN1b7k2d8h4l9u8m12', 'SUPER_ADMIN', 'ACTIVE', NOW(), NOW());
+('user-super-admin', 'admin@MediNovel.com', '$2a$10$m00nK0R2VfC7XwE1s8kU..x2lOqJ5lC8pD2mN1b7k2d8h4l9u8m12', 'SUPER_ADMIN', 'ACTIVE', NOW(), NOW());
 
 -- 3. Insert Demo Clinic (Sharma Healthcare & Polyclinic)
 INSERT INTO `clinics` (`id`, `name`, `slug`, `address`, `phone`, `email`, `city`, `state`, `pincode`, `tokenPrefix`, `status`, `createdAt`, `updatedAt`) VALUES
@@ -386,7 +386,7 @@ INSERT INTO `receptionists` (`id`, `clinicId`, `userId`, `name`, `email`, `mobil
 
 | Role | Email | Password | Assigned Clinic |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@medinodes.com` | `Admin@123` | Platform Owner |
+| **Super Admin** | `admin@MediNovel.com` | `Admin@123` | Platform Owner |
 | **Doctor 1 (Cardiology)** | `dr.raj@sharmaclinic.com` | `Doctor@123` | Sharma Healthcare & Polyclinic |
 | **Doctor 2 (General Medicine)** | `dr.priya@sharmaclinic.com` | `Doctor@123` | Sharma Healthcare & Polyclinic |
 | **Receptionist** | `reception@sharmaclinic.com` | `Reception@123` | Sharma Healthcare & Polyclinic |

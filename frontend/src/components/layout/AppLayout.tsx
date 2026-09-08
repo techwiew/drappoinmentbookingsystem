@@ -78,7 +78,11 @@ export const AppLayout: React.FC = () => {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
         >
-          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {isMobileMenuOpen ? (
+            <X className="w-5 h-5" />
+          ) : (
+            <Menu className="w-5 h-5" />
+          )}
         </button>
       </div>
 
@@ -103,7 +107,9 @@ export const AppLayout: React.FC = () => {
           {/* Navigation Items */}
           <div className="flex-1 py-5 px-3 space-y-1 overflow-y-auto">
             <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              {role === 'SUPER_ADMIN' ? 'Platform Management' : 'Clinic Navigation'}
+              {role === "SUPER_ADMIN"
+                ? "Platform Management"
+                : "Clinic Navigation"}
             </div>
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -111,13 +117,17 @@ export const AppLayout: React.FC = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  end={item.path === '/super-admin' || item.path === '/doctor-dashboard' || item.path === '/reception-desk'}
+                  end={
+                    item.path === "/super-admin" ||
+                    item.path === "/doctor-dashboard" ||
+                    item.path === "/reception-desk"
+                  }
                   className={({ isActive }) =>
                     clsx(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                       isActive
-                        ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
-                        : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/70'
+                        ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30"
+                        : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/70",
                     )
                   }
                 >
@@ -130,7 +140,7 @@ export const AppLayout: React.FC = () => {
 
           {/* Footer Info */}
           <div className="p-4 border-t border-slate-800/80 text-[11px] text-slate-500 text-center">
-            MediNodes Enterprise v1.0.0
+            MediNovel Enterprise v1.0.0
           </div>
         </aside>
 
@@ -147,7 +157,7 @@ export const AppLayout: React.FC = () => {
                   <div className="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-xs">
                     MN
                   </div>
-                  <span className="font-bold text-white">MediNodes</span>
+                  <span className="font-bold text-white">MediNovel</span>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -165,13 +175,17 @@ export const AppLayout: React.FC = () => {
                       key={item.path}
                       to={item.path}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      end={item.path === '/super-admin' || item.path === '/doctor-dashboard' || item.path === '/reception-desk'}
+                      end={
+                        item.path === "/super-admin" ||
+                        item.path === "/doctor-dashboard" ||
+                        item.path === "/reception-desk"
+                      }
                       className={({ isActive }) =>
                         clsx(
-                          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                           isActive
-                            ? 'bg-brand-600 text-white'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                            ? "bg-brand-600 text-white"
+                            : "text-slate-400 hover:text-white hover:bg-slate-800",
                         )
                       }
                     >

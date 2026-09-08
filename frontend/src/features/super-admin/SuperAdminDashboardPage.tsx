@@ -376,7 +376,7 @@ export const SuperAdminDashboardPage: React.FC = () => {
             </div>
             <div className="space-y-2 text-xs">
               {[
-                { label: "Email", value: "admin@medinodes.com" },
+                { label: "Email", value: "admin@MediNovel.com" },
                 { label: "Password", value: "Admin@123" },
               ].map(({ label, value }) => (
                 <div
@@ -656,7 +656,12 @@ export const SuperAdminDashboardPage: React.FC = () => {
                 min="0"
                 step="0.01"
                 value={formData.planPrice}
-                onChange={(e) => setFormData({ ...formData, planPrice: parseFloat(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    planPrice: parseFloat(e.target.value) || 0,
+                  })
+                }
                 required
               />
               <Input
@@ -665,7 +670,12 @@ export const SuperAdminDashboardPage: React.FC = () => {
                 min="1"
                 step="1"
                 value={formData.activeMonths}
-                onChange={(e) => setFormData({ ...formData, activeMonths: parseInt(e.target.value, 10) || 1 })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    activeMonths: parseInt(e.target.value, 10) || 1,
+                  })
+                }
                 required
               />
             </div>

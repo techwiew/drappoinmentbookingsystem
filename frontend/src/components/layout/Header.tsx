@@ -46,7 +46,7 @@ export const Header: React.FC = () => {
               MN
             </div>
             <div className="text-sm font-bold text-slate-800">
-              MediNodes Platform Owner Console
+              MediNovel Platform Owner Console
             </div>
           </div>
         )}
@@ -59,7 +59,11 @@ export const Header: React.FC = () => {
         {/* User Pill */}
         <div className="flex items-center gap-2.5 pl-2 sm:pl-4 border-l border-slate-200">
           <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-semibold text-xs">
-            {user?.name ? user.name.charAt(0) : <UserIcon className="w-4 h-4" />}
+            {user?.name ? (
+              user.name.charAt(0)
+            ) : (
+              <UserIcon className="w-4 h-4" />
+            )}
           </div>
           <div className="hidden md:block text-left">
             <div className="text-xs font-semibold text-slate-800 leading-tight">

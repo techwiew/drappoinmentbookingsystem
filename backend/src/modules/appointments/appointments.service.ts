@@ -248,12 +248,22 @@ export class AppointmentService {
     });
 
     const tokenNumber = existingTokens + 1;
-    const initialStatus = data.directCheckIn ? 'WAITING' : 'BOOKED';
     const consultationFee =
       data.consultationFee !== undefined
         ? data.consultationFee
         : Number(doctor.consultationFee);
-    const appointmentTime = normalizeAppointmentTime(data.appointmentTime || getCurrentAppointmentTime());
+    // A follow-up can be recorded before the patient has confirmed a slot.
+    // Keep that appointment untimed instead of silently assigning the current time.
+    const appointmentTime = data.appointmentTime
+      ? normalizeAppointmentTime(data.appointmentTime)
+      : data.appointmentType === 'FOLLOW_UP'
+        ? null
+        : normalizeAppointmentTime(getCurrentAppointmentTime());
+    const initialStatus = data.directCheckIn
+      ? 'WAITING'
+      : data.appointmentType === 'FOLLOW_UP' && !appointmentTime
+        ? 'PENDING_CONFIRMATION'
+        : 'BOOKED';
 
     const appointment = await prisma.appointment.create({
       data: {
@@ -327,7 +337,11 @@ export class AppointmentService {
       d.setHours(0, 0, 0, 0);
       updateData.appointmentDate = d;
     }
-    if (data.appointmentTime) updateData.appointmentTime = normalizeAppointmentTime(data.appointmentTime);
+    if (data.appointmentTime !== undefined) {
+      updateData.appointmentTime = data.appointmentTime
+        ? normalizeAppointmentTime(data.appointmentTime)
+        : null;
+    }
     if (data.appointmentType) updateData.appointmentType = data.appointmentType;
     if (data.status) updateData.status = data.status;
     if (data.consultationFee !== undefined) updateData.consultationFee = data.consultationFee;

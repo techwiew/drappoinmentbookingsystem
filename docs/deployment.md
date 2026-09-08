@@ -1,6 +1,6 @@
-# MediNodes — Deployment Guide for MilesWeb / VPS Server
+# MediNovel — Deployment Guide for MilesWeb / VPS Server
 
-This document outlines the step-by-step production deployment process for hosting MediNodes on a standard Linux VPS or MilesWeb hosting environment without requiring containerization.
+This document outlines the step-by-step production deployment process for hosting MediNovel on a standard Linux VPS or MilesWeb hosting environment without requiring containerization.
 
 ---
 
@@ -17,7 +17,7 @@ This document outlines the step-by-step production deployment process for hostin
 ## 2. Architecture Layout on Server
 
 - **Domain mapping**:
-  - `app.yourdomain.com` $\rightarrow$ React SPA Static Files (`/var/www/medinodes/frontend/dist`)
+  - `app.yourdomain.com` $\rightarrow$ React SPA Static Files (`/var/www/MediNovel/frontend/dist`)
   - `api.yourdomain.com` $\rightarrow$ Reverse Proxy to Node.js backend port `5000` (`http://127.0.0.1:5000`)
 
 ---
@@ -25,17 +25,17 @@ This document outlines the step-by-step production deployment process for hostin
 ## 3. Deployment Steps
 
 ### Step 1: Clone and Configure Environment Variables
-Create `/var/www/medinodes/backend/.env`:
+Create `/var/www/MediNovel/backend/.env`:
 ```env
 NODE_ENV=production
 PORT=5000
-DATABASE_URL="mysql://clinicuser:SecurePass123!@localhost:3306/medinodes_db"
+DATABASE_URL="mysql://clinicuser:SecurePass123!@localhost:3306/MediNovel_db"
 JWT_SECRET="YOUR_SUPER_LONG_RANDOM_JWT_SECRET_KEY_MIN_32_CHARS"
 JWT_REFRESH_SECRET="YOUR_SUPER_LONG_RANDOM_REFRESH_SECRET_KEY"
 CORS_ORIGIN="https://app.yourdomain.com"
 ```
 
-Create `/var/www/medinodes/frontend/.env.production`:
+Create `/var/www/MediNovel/frontend/.env.production`:
 ```env
 VITE_API_URL="https://api.yourdomain.com/api"
 ```
@@ -43,7 +43,7 @@ VITE_API_URL="https://api.yourdomain.com/api"
 ### Step 2: Install Dependencies & Run Database Migrations
 ```bash
 # Backend Setup
-cd /var/www/medinodes/backend
+cd /var/www/MediNovel/backend
 npm install --production=false
 npx prisma migrate deploy
 npm run build
@@ -54,15 +54,15 @@ npx ts-node prisma/seed.ts
 
 ### Step 3: Build Frontend
 ```bash
-cd /var/www/medinodes/frontend
+cd /var/www/MediNovel/frontend
 npm install
 npm run build
 ```
 
 ### Step 4: Configure PM2 for Backend
 ```bash
-cd /var/www/medinodes/backend
-pm2 start dist/server.js --name "medinodes-api"
+cd /var/www/MediNovel/backend
+pm2 start dist/server.js --name "MediNovel-api"
 pm2 save
 pm2 startup
 ```
@@ -92,7 +92,7 @@ server {
 ```nginx
 server {
     server_name app.yourdomain.com;
-    root /var/www/medinodes/frontend/dist;
+    root /var/www/MediNovel/frontend/dist;
     index index.html;
 
     location / {

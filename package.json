@@ -1,9 +1,9 @@
 {
-  "name": "medinodes",
+  "name": "MediNovel",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "MediNodes — Multi-Tenant Doctor Clinic Management SaaS",
+  "description": "MediNovel — Multi-Tenant Doctor Clinic Management SaaS",
   "workspaces": [
     "backend",
     "frontend"
