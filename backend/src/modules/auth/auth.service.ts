@@ -48,7 +48,7 @@ export class AuthService {
         passwordResetExpiresAt: null,
       },
     });
-    await logAudit({ clinicId: null, userId: user.id, action: 'PASSWORD_RESET', entityType: 'User', entityId: user.id });
+    await logAudit({ userId: user.id, action: 'PASSWORD_RESET', entityType: 'User', entityId: user.id });
   }
 
   static async login(email: string, pass: string, ipAddress?: string) {

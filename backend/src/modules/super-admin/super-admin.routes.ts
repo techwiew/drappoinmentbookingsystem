@@ -3,7 +3,7 @@ import { SuperAdminController } from './super-admin.controller.js';
 import { authenticate } from '../../middlewares/auth.js';
 import { requireRole } from '../../middlewares/rbac.js';
 import { validateRequest } from '../../middlewares/validate.js';
-import { createClinicSchema, updateClinicStatusSchema } from './super-admin.schema.js';
+import { createClinicSchema, updateClinicSchema, updateClinicStatusSchema } from './super-admin.schema.js';
 
 const router = Router();
 
@@ -13,6 +13,7 @@ router.use(authenticate, requireRole('SUPER_ADMIN'));
 router.get('/dashboard', SuperAdminController.getDashboard);
 router.get('/clinics', SuperAdminController.listClinics);
 router.post('/clinics', validateRequest(createClinicSchema), SuperAdminController.createClinic);
+router.patch('/clinics/:id', validateRequest(updateClinicSchema), SuperAdminController.updateClinic);
 router.patch(
   '/clinics/:id/status',
   validateRequest(updateClinicStatusSchema),

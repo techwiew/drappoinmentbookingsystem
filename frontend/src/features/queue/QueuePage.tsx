@@ -30,6 +30,7 @@ export const QueuePage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId || '');
+  const [queueDate, setQueueDate] = useState(new Date().toISOString().split('T')[0]);
 
   const { data: doctors } = useQuery({
     queryKey: ['doctors-quick'],
@@ -43,10 +44,11 @@ export const QueuePage: React.FC = () => {
   const queueDoctorId = role === 'DOCTOR' ? doctorId : selectedDoctorId;
 
   const { data: queueData, isLoading } = useQuery({
-    queryKey: ['live-queue', queueDoctorId],
+    queryKey: ['live-queue', queueDoctorId, queueDate],
     queryFn: async () => {
       const params: any = {};
       if (queueDoctorId) params.doctorId = queueDoctorId;
+      params.date = queueDate;
       const res = await apiClient.get('/queue', { params });
       return res.data.data;
     },
@@ -123,6 +125,15 @@ export const QueuePage: React.FC = () => {
               ))}
             </select>
           )}
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+            Date
+            <input
+              type="date"
+              value={queueDate}
+              onChange={(event) => setQueueDate(event.target.value)}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </label>
         </div>
       </div>
 
@@ -322,10 +333,19 @@ export const QueuePage: React.FC = () => {
                           <div className="font-semibold text-slate-900">
                             {apt.patientName}
                           </div>
-                          <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {apt.patientMobile}
-                          </div>
+                          {apt.patientMobile ? (
+                            <a
+                              href={`tel:${apt.patientMobile}`}
+                              className="text-[11px] text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1 hover:underline"
+                              title={`Call ${apt.patientName} (${apt.patientMobile})`}
+                            >
+                              <Phone className="w-3 h-3 text-emerald-600" />
+                              <span>{apt.patientMobile}</span>
+                              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1 py-0.2 rounded border border-emerald-200">Call</span>
+                            </a>
+                          ) : (
+                            <div className="text-[11px] text-slate-400 font-mono">No phone</div>
+                          )}
                         </td>
                         <td className="p-3">
                           <Badge variant="default" size="sm">

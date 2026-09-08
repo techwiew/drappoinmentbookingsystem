@@ -15,6 +15,8 @@ export const createClinicSchema = z.object({
     adminEmail: z.string().email("Invalid admin email"),
     adminPassword: z.string().min(6, "Password must be at least 6 characters"),
     adminMobile: z.string().min(5, "Mobile number is required"),
+    maxDoctors: z.number().int().min(1).default(1),
+    maxReceptionists: z.number().int().min(0).default(2),
     specialization: z.string().default("General Medicine"),
     qualification: z.string().default("MBBS"),
     registrationNumber: z.string().default("MCI-REG-001"),
@@ -45,5 +47,7 @@ export const updateClinicSchema = z.object({
     pincode: z.string().optional(),
     tokenPrefix: z.string().optional(),
     planId: z.string().optional(),
+    maxDoctors: z.number().int().min(1).optional(),
+    maxReceptionists: z.number().int().min(0).optional(),
   }),
 });

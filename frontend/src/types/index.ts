@@ -53,6 +53,8 @@ export interface Clinic {
   state: string;
   pincode: string;
   tokenPrefix: string;
+  maxDoctors?: number;
+  maxReceptionists?: number;
   status: 'ACTIVE' | 'SUSPENDED' | 'TRIAL' | 'EXPIRED';
   subscription?: {
     id?: string;

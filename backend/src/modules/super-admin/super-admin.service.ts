@@ -166,6 +166,8 @@ export class SuperAdminService {
         doctorCount: c._count.doctors,
         receptionistCount: c._count.receptionists,
         patientCount: c._count.patients,
+        maxDoctors: c.maxDoctors,
+        maxReceptionists: c.maxReceptionists,
         createdAt: c.createdAt,
       })),
       meta: {
@@ -233,6 +235,8 @@ export class SuperAdminService {
           state: data.state,
           pincode: data.pincode,
           tokenPrefix,
+          maxDoctors: data.maxDoctors ?? 1,
+          maxReceptionists: data.maxReceptionists ?? 2,
           status: "ACTIVE",
         },
       });
@@ -326,6 +330,47 @@ export class SuperAdminService {
     });
 
     return clinic;
+  }
+
+  static async updateClinic(clinicId: string, data: any, superAdminId: string) {
+    const clinic = await prisma.clinic.findUnique({
+      where: { id: clinicId },
+      include: { _count: { select: { doctors: true, receptionists: true } } },
+    });
+    if (!clinic) {
+      throw { statusCode: 404, code: 'CLINIC_NOT_FOUND', message: 'Clinic not found' };
+    }
+    if (data.maxDoctors !== undefined && data.maxDoctors < clinic._count.doctors) {
+      throw { statusCode: 400, code: 'DOCTOR_QUOTA_TOO_LOW', message: 'Doctor quota cannot be lower than the current doctor count' };
+    }
+    if (data.maxReceptionists !== undefined && data.maxReceptionists < clinic._count.receptionists) {
+      throw { statusCode: 400, code: 'RECEPTIONIST_QUOTA_TOO_LOW', message: 'Receptionist quota cannot be lower than the current receptionist count' };
+    }
+
+    const updated = await prisma.clinic.update({
+      where: { id: clinicId },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.address !== undefined && { address: data.address }),
+        ...(data.phone !== undefined && { phone: data.phone }),
+        ...(data.email !== undefined && { email: data.email }),
+        ...(data.city !== undefined && { city: data.city }),
+        ...(data.state !== undefined && { state: data.state }),
+        ...(data.pincode !== undefined && { pincode: data.pincode }),
+        ...(data.tokenPrefix !== undefined && { tokenPrefix: data.tokenPrefix }),
+        ...(data.maxDoctors !== undefined && { maxDoctors: data.maxDoctors }),
+        ...(data.maxReceptionists !== undefined && { maxReceptionists: data.maxReceptionists }),
+      },
+    });
+
+    await logAudit({
+      userId: superAdminId,
+      action: 'CLINIC_UPDATED',
+      entityType: 'Clinic',
+      entityId: clinicId,
+      metadata: { maxDoctors: data.maxDoctors, maxReceptionists: data.maxReceptionists },
+    });
+    return updated;
   }
 
   static async listPlans() {

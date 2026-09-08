@@ -15,6 +15,7 @@ import {
   UserPlus,
   Clock,
   AlertCircle,
+  Phone,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -180,8 +181,24 @@ export const ReceptionistDashboardPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-3">
-                      <div className="font-semibold text-slate-900">{apt.patientName}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">{apt.patientNumber}</div>
+                      <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                        <span>{apt.patientName}</span>
+                        {apt.patientMobile && (
+                          <a
+                            href={`tel:${apt.patientMobile}`}
+                            className="p-1 rounded text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                            title={`Call ${apt.patientName} (${apt.patientMobile})`}
+                          >
+                            <Phone className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2">
+                        <span>{apt.patientNumber}</span>
+                        {apt.patientMobile && (
+                          <span className="text-slate-500">{apt.patientMobile}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-3 text-slate-700 font-medium">{apt.doctorName}</td>
                     <td className="p-3">

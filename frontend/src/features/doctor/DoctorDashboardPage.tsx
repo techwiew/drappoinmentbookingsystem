@@ -17,6 +17,7 @@ import {
   UserX,
   Stethoscope,
   IndianRupee,
+  Phone,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -181,6 +182,7 @@ export const DoctorDashboardPage: React.FC = () => {
                         {currentPatient.patientGender} • {currentPatient.patientAge ? `${currentPatient.patientAge} yrs` : '—'} • {currentPatient.patientNumber}
                       </div>
                     </div>
+                    {currentPatient.patientMobile && <a href={`tel:${currentPatient.patientMobile}`} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline" title={`Call ${currentPatient.patientName}`}><Phone className="h-3.5 w-3.5" /> Call patient</a>}
                   </div>
                   <div className="text-xs text-slate-600">
                     Type: <span className="font-semibold">{currentPatient.appointmentType?.replace(/_/g, ' ')}</span>
@@ -263,7 +265,7 @@ export const DoctorDashboardPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <StatusBadge status={pt.status} size="sm" />
+                    <div className="flex items-center gap-2"><StatusBadge status={pt.status} size="sm" />{pt.patientMobile && <a href={`tel:${pt.patientMobile}`} onClick={(event) => event.stopPropagation()} className="text-emerald-700" title={`Call ${pt.patientName}`}><Phone className="h-3.5 w-3.5" /></a>}</div>
                   </div>
                 ))}
               </div>

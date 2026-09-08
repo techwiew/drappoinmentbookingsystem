@@ -38,6 +38,14 @@ export class DoctorService {
   }
 
   static async createDoctor(clinicId: string, data: any, creatorUserId: string) {
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { maxDoctors: true } });
+    if (!clinic) {
+      throw { statusCode: 404, code: 'CLINIC_NOT_FOUND', message: 'Clinic not found' };
+    }
+    const doctorCount = await prisma.doctor.count({ where: { clinicId, status: 'ACTIVE' } });
+    if (doctorCount >= clinic.maxDoctors) {
+      throw { statusCode: 409, code: 'DOCTOR_QUOTA_EXCEEDED', message: `This clinic has reached its limit of ${clinic.maxDoctors} active doctors` };
+    }
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email.toLowerCase() },
     });

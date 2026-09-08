@@ -18,6 +18,7 @@ import {
   User,
   Stethoscope,
   Filter,
+  Phone,
 } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
@@ -359,14 +360,27 @@ export const AppointmentsPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-3.5">
-                      <div
-                        className="font-semibold text-slate-900 cursor-pointer hover:text-brand-700"
-                        onClick={() => navigate(`/patients/${apt.patientId}`)}
-                      >
-                        {apt.patientName}
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="font-semibold text-slate-900 cursor-pointer hover:text-brand-700"
+                          onClick={() => navigate(`/patients/${apt.patientId}`)}
+                        >
+                          {apt.patientName}
+                        </span>
+                        {apt.patientMobile && (
+                          <a
+                            href={`tel:${apt.patientMobile}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1 rounded text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                            title={`Call ${apt.patientName} (${apt.patientMobile})`}
+                          >
+                            <Phone className="w-3 h-3" />
+                          </a>
+                        )}
                       </div>
-                      <div className="text-[11px] text-slate-400 font-mono">
-                        {apt.patientNumber}
+                      <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2">
+                        <span>{apt.patientNumber}</span>
+                        {apt.patientMobile && <span>{apt.patientMobile}</span>}
                       </div>
                     </td>
                     <td className="p-3.5 text-slate-700 font-medium">

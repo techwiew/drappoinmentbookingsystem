@@ -11,6 +11,14 @@ export class ReceptionistService {
   }
 
   static async createReceptionist(clinicId: string, data: any, creatorUserId: string) {
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { maxReceptionists: true } });
+    if (!clinic) {
+      throw { statusCode: 404, code: 'CLINIC_NOT_FOUND', message: 'Clinic not found' };
+    }
+    const receptionistCount = await prisma.receptionist.count({ where: { clinicId, status: 'ACTIVE' } });
+    if (receptionistCount >= clinic.maxReceptionists) {
+      throw { statusCode: 409, code: 'RECEPTIONIST_QUOTA_EXCEEDED', message: `This clinic has reached its limit of ${clinic.maxReceptionists} active receptionists` };
+    }
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email.toLowerCase() },
     });

@@ -23,6 +23,8 @@ import {
   Lock,
   IndianRupee,
   Calculator,
+  Phone,
+  Bed,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -56,7 +58,7 @@ export const ConsultationRoomPage: React.FC = () => {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { doctorId } = useAuth();
+  const { doctorId, role } = useAuth();
 
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -409,11 +411,23 @@ export const ConsultationRoomPage: React.FC = () => {
                 Token #{appointment?.tokenNumber}
               </span>
             </div>
+            {(role === 'DOCTOR' || role === 'RECEPTIONIST') && appointment?.patientId && (
+              <Button
+                size="sm"
+                variant="primary"
+                className="mb-3 w-full bg-brand-500 hover:bg-brand-400"
+                leftIcon={<Bed className="h-3.5 w-3.5" />}
+                onClick={() => navigate(`/admissions?patientId=${appointment.patientId}`)}
+              >
+                Admit Patient to IPD
+              </Button>
+            )}
             <div className="space-y-2 text-xs text-slate-300">
               <div className="flex justify-between">
                 <span className="text-slate-400">Patient:</span>
-                <span className="font-bold text-white">
+                <span className="flex items-center gap-2 font-bold text-white">
                   {appointment?.patientName}
+                  {appointment?.patientMobile && <a href={`tel:${appointment.patientMobile}`} className="text-emerald-300" title={`Call ${appointment.patientName}`}><Phone className="h-3.5 w-3.5" /></a>}
                 </span>
               </div>
               <div className="flex justify-between">

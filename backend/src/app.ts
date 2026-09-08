@@ -20,6 +20,7 @@ import prescriptionRoutes from './modules/prescriptions/prescriptions.routes.js'
 import billingRoutes from './modules/billing/billing.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
 import subscriptionRoutes from './modules/subscriptions/subscriptions.routes.js';
+import admissionRoutes from './modules/admissions/admissions.routes.js';
 import healthRoutes from './modules/health/health.routes.js';
 
 export const createApp = (): Express => {
@@ -65,6 +66,7 @@ export const createApp = (): Express => {
   app.use('/api/payments', billingRoutes);
   app.use('/api/reports', reportsRoutes);
   app.use('/api/subscriptions', subscriptionRoutes);
+  app.use('/api/admissions', admissionRoutes);
 
   // 404 Handler
   app.use('*', (req, res) => {

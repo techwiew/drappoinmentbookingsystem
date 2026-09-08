@@ -46,6 +46,15 @@ export class SuperAdminController {
     }
   }
 
+  static async updateClinic(req: Request, res: Response, next: NextFunction) {
+    try {
+      const clinic = await SuperAdminService.updateClinic(req.params.id, req.body, req.user!.userId);
+      return sendSuccess(res, clinic, 'Clinic updated');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async listPlans(req: Request, res: Response, next: NextFunction) {
     try {
       const plans = await SuperAdminService.listPlans();

@@ -17,6 +17,7 @@ import {
   CreditCard,
   Calendar,
   Clock,
+  Bed,
 } from "lucide-react";
 
 export const PatientProfilePage: React.FC = () => {
@@ -170,6 +171,16 @@ export const PatientProfilePage: React.FC = () => {
           </div>
 
           <div className="flex gap-2 shrink-0">
+            {role === "RECEPTIONIST" && (
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => navigate(`/admissions?patientId=${patient.id}`)}
+                leftIcon={<Bed className="w-3.5 h-3.5" />}
+              >
+                Admit to IPD
+              </Button>
+            )}
             {(role === "DOCTOR" || role === "RECEPTIONIST") && (
               <Button
                 size="sm"

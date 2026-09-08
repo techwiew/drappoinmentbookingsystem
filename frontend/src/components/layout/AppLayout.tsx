@@ -18,6 +18,7 @@ import {
   X,
   PlusCircle,
   Stethoscope,
+  Bed,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -43,6 +44,7 @@ export const AppLayout: React.FC = () => {
         { label: 'Appointments', path: '/appointments', icon: Calendar },
         { label: 'Prescriptions', path: '/prescriptions', icon: FileText },
         { label: 'Billing & POS', path: '/billing', icon: CreditCard },
+        { label: 'IPD Admissions', path: '/admissions', icon: Bed },
         { label: 'Clinic Staff', path: '/staff', icon: UserCheck },
         { label: 'Financial Reports', path: '/reports', icon: BarChart3 },
         { label: 'Clinic Settings', path: '/settings', icon: Settings },
@@ -56,6 +58,7 @@ export const AppLayout: React.FC = () => {
       { label: 'Patient Directory', path: '/patients', icon: Users },
       { label: 'Appointments', path: '/appointments', icon: Calendar },
       { label: 'Fee Collection', path: '/billing', icon: CreditCard },
+      { label: 'IPD Admissions', path: '/admissions', icon: Bed },
       { label: 'Doctors Roster', path: '/staff', icon: UserCheck },
     ];
   };

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /super-admin/
+Disallow: /doctor-dashboard/
+Disallow: /reception-desk/
+
+Sitemap: https://medinovel.com/sitemap.xml

@@ -49,8 +49,8 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="landing-page min-h-screen overflow-x-hidden bg-[#f5faf8] text-[#171d1c]">
-      <header className="sticky top-0 z-50 border-b border-[#bcc9c6]/50 bg-white/90 backdrop-blur-md">
+    <div className="landing-page min-h-screen overflow-x-clip bg-[#f5faf8] text-[#171d1c]">
+      <header className="sticky top-0 z-50 border-b border-[#bcc9c6]/50 bg-white/95 shadow-sm backdrop-blur-md">
         <div className="mx-auto flex h-[76px] max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <a
             href="#home"
@@ -63,9 +63,6 @@ export const LandingPage: React.FC = () => {
             <span className="flex shrink-0 flex-col">
               <span className="flex items-center gap-2 whitespace-nowrap text-base font-extrabold tracking-tight text-[#00685f] sm:text-lg">
                 {LANDING_COPY.brand.name}
-                <span className="hidden rounded-full bg-[#89f5e7] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#005049] sm:inline-flex">
-                  {LANDING_COPY.brand.badge}
-                </span>
               </span>
               <span className="hidden text-[11px] leading-none text-[#3d4947] md:block">
                 {LANDING_COPY.brand.tagline}
@@ -86,6 +83,16 @@ export const LandingPage: React.FC = () => {
           </nav>
 
           <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            <a
+              href="https://wa.me/919834007250?text=Hello%20Team%2C%20Can%20you%20please%20share%20the%20plan%20details%3F"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-emerald-500/40 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 hover:border-emerald-600 lg:px-3.5"
+              title="Chat with us on WhatsApp"
+            >
+              <MessageSquare className="h-4 w-4 text-emerald-600" />
+              <span>WhatsApp</span>
+            </a>
             <a
               href="#demo"
               className="whitespace-nowrap rounded-lg border border-[#bcc9c6] bg-white px-3 py-2 text-sm font-semibold text-[#171d1c] transition-colors hover:border-[#00685f] hover:bg-[#f0f5f2] lg:px-4"
@@ -128,6 +135,15 @@ export const LandingPage: React.FC = () => {
                   {label}
                 </a>
               ))}
+              <a
+                href="https://wa.me/919834007250?text=Hello%20Team%2C%20Can%20you%20please%20share%20the%20plan%20details%3F"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 flex items-center justify-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-50 px-3 py-2.5 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
+              >
+                <MessageSquare className="h-4 w-4 text-emerald-600" />
+                Chat on WhatsApp (+91 9834007250)
+              </a>
               <button
                 type="button"
                 onClick={goToLogin}
@@ -723,7 +739,9 @@ export const LandingPage: React.FC = () => {
               {LANDING_COPY.footer.contact}
             </h3>
             <div className="mt-4 space-y-2 text-sm text-[#3d4947]">
-              <p>{LANDING_COPY.footer.supportEmail}</p>
+              <p>Email: <a href="mailto:info@medinovel.com" className="text-[#00685f] hover:underline">info@medinovel.com</a></p>
+              <p>Phone: +91 9923569431 / +91 7875433447</p>
+              <p>WhatsApp: <a href="https://wa.me/919834007250?text=Hello%20Team%2C%20Can%20you%20please%20share%20the%20plan%20details%3F" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 hover:underline">+91 9834007250</a></p>
               <p>{LANDING_COPY.footer.supportHours}</p>
               <button
                 type="button"
@@ -742,6 +760,19 @@ export const LandingPage: React.FC = () => {
           </span>
         </div>
       </footer>
+
+      {/* Floating WhatsApp CTA Button */}
+      <a
+        href="https://wa.me/919834007250?text=Hello%20Team%2C%20Can%20you%20please%20share%20the%20plan%20details%3F"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-bold text-white shadow-xl shadow-emerald-900/30 transition-all hover:scale-105 hover:bg-[#20ba5a] active:scale-95"
+        aria-label="Chat with MediNovel Team on WhatsApp"
+        title="Chat with us on WhatsApp"
+      >
+        <MessageSquare className="h-5 w-5 fill-white" />
+        <span className="hidden sm:inline">WhatsApp Us</span>
+      </a>
     </div>
   );
 };

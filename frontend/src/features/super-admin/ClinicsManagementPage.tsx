@@ -16,6 +16,7 @@ import {
   Users,
   ExternalLink,
   ShieldCheck,
+  Pencil,
 } from 'lucide-react';
 
 export const ClinicsManagementPage: React.FC = () => {
@@ -23,6 +24,7 @@ export const ClinicsManagementPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingClinic, setEditingClinic] = useState<any>(null);
 
   // Form State for New Clinic Wizard
   const [formData, setFormData] = useState({
@@ -43,6 +45,8 @@ export const ClinicsManagementPage: React.FC = () => {
     qualification: "MBBS",
     registrationNumber: "REG-1001",
     consultationFee: 500,
+    maxDoctors: 1,
+    maxReceptionists: 2,
   });
 
   const { data: clinicsData, isLoading } = useQuery({
@@ -83,7 +87,21 @@ export const ClinicsManagementPage: React.FC = () => {
         qualification: "MBBS",
         registrationNumber: "REG-1001",
         consultationFee: 500,
+        maxDoctors: 1,
+        maxReceptionists: 2,
       });
+    },
+  });
+
+  const updateClinicMutation = useMutation({
+    mutationFn: async ({ id, maxDoctors, maxReceptionists }: { id: string; maxDoctors: number; maxReceptionists: number }) => {
+      const res = await apiClient.patch(`/super-admin/clinics/${id}`, { maxDoctors, maxReceptionists });
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin-clinics'] });
+      queryClient.invalidateQueries({ queryKey: ['super-admin-dashboard'] });
+      setEditingClinic(null);
     },
   });
 
@@ -244,6 +262,15 @@ export const ClinicsManagementPage: React.FC = () => {
                       <StatusBadge status={clinic.status} size="sm" />
                     </td>
                     <td className="p-3.5 text-right space-x-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingClinic({ ...clinic, maxDoctors: clinic.maxDoctors ?? 1, maxReceptionists: clinic.maxReceptionists ?? 2 })}
+                        className="text-[11px] px-2 py-1"
+                        title="Edit staff quotas"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </Button>
                       {clinic.status === "ACTIVE" ? (
                         <Button
                           size="sm"
@@ -303,6 +330,10 @@ export const ClinicsManagementPage: React.FC = () => {
               onChange={handleNameChange}
               required
             />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input label="Maximum Doctors" type="number" min="1" value={formData.maxDoctors} onChange={(e) => setFormData({ ...formData, maxDoctors: parseInt(e.target.value, 10) || 1 })} required />
+            <Input label="Maximum Receptionists" type="number" min="0" value={formData.maxReceptionists} onChange={(e) => setFormData({ ...formData, maxReceptionists: parseInt(e.target.value, 10) || 0 })} required />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -486,6 +517,34 @@ export const ClinicsManagementPage: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+      <Modal
+        isOpen={Boolean(editingClinic)}
+        onClose={() => setEditingClinic(null)}
+        title={`Edit ${editingClinic?.name || 'Clinic'} quotas`}
+        description="Adjust active staff limits without changing the clinic subscription."
+      >
+        {editingClinic && (
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              updateClinicMutation.mutate({
+                id: editingClinic.id,
+                maxDoctors: Number(editingClinic.maxDoctors),
+                maxReceptionists: Number(editingClinic.maxReceptionists),
+              });
+            }}
+          >
+            {updateClinicMutation.isError && <p className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{(updateClinicMutation.error as any)?.response?.data?.error?.message || 'Unable to update quotas.'}</p>}
+            <Input label="Maximum Doctors" type="number" min="1" value={editingClinic.maxDoctors} onChange={(e) => setEditingClinic({ ...editingClinic, maxDoctors: parseInt(e.target.value, 10) || 1 })} required />
+            <Input label="Maximum Receptionists" type="number" min="0" value={editingClinic.maxReceptionists} onChange={(e) => setEditingClinic({ ...editingClinic, maxReceptionists: parseInt(e.target.value, 10) || 0 })} required />
+            <div className="flex justify-end gap-3 border-t border-slate-100 pt-3">
+              <Button type="button" variant="secondary" onClick={() => setEditingClinic(null)}>Cancel</Button>
+              <Button type="submit" variant="primary" isLoading={updateClinicMutation.isPending}>Save Quotas</Button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );

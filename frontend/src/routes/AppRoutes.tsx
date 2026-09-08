@@ -29,6 +29,7 @@ import { BillingPage } from "../features/billing/BillingPage.js";
 import { StaffPage } from "../features/staff/StaffPage.js";
 import { ReportsPage } from "../features/reports/ReportsPage.js";
 import { ClinicSettingsPage } from "../features/settings/ClinicSettingsPage.js";
+import { AdmissionsPage } from "../features/admissions/AdmissionsPage.js";
 import { Loader2 } from "lucide-react";
 
 const LoadingScreen = () => (
@@ -101,6 +102,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/queue" element={<QueuePage />} />
           <Route path="/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/billing" element={<BillingPage />} />
+          <Route path="/admissions" element={<AdmissionsPage />} />
           <Route path="/queue/:appointmentId/consult" element={<ConsultationRoomPage />} />
         </Route>
       </Route>

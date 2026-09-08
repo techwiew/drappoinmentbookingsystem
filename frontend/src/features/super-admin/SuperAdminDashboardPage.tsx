@@ -48,6 +48,8 @@ export const SuperAdminDashboardPage: React.FC = () => {
     qualification: "MBBS",
     registrationNumber: "REG-1001",
     consultationFee: 500,
+    maxDoctors: 1,
+    maxReceptionists: 2,
   });
 
   const { data: stats, isLoading } = useQuery({
@@ -120,6 +122,8 @@ export const SuperAdminDashboardPage: React.FC = () => {
       qualification: "MBBS",
       registrationNumber: "REG-1001",
       consultationFee: 500,
+      maxDoctors: 1,
+      maxReceptionists: 2,
     });
   };
 
@@ -676,6 +680,24 @@ export const SuperAdminDashboardPage: React.FC = () => {
                     activeMonths: parseInt(e.target.value, 10) || 1,
                   })
                 }
+                required
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Maximum Doctors"
+                type="number"
+                min="1"
+                value={formData.maxDoctors}
+                onChange={(e) => setFormData({ ...formData, maxDoctors: parseInt(e.target.value, 10) || 1 })}
+                required
+              />
+              <Input
+                label="Maximum Receptionists"
+                type="number"
+                min="0"
+                value={formData.maxReceptionists}
+                onChange={(e) => setFormData({ ...formData, maxReceptionists: parseInt(e.target.value, 10) || 0 })}
                 required
               />
             </div>

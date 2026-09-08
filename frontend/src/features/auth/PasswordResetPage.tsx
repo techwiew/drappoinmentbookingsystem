@@ -1,6 +1,6 @@
 import React, { FormEvent, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, HeartPulse, KeyRound, Mail } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, HeartPulse, KeyRound, Mail } from 'lucide-react';
 import { apiClient } from '../../api/client.js';
 
 export const PasswordResetPage: React.FC<{ mode: 'request' | 'reset' }> = ({ mode }) => {
@@ -37,10 +37,15 @@ export const PasswordResetPage: React.FC<{ mode: 'request' | 'reset' }> = ({ mod
   return (
     <main className="min-h-screen bg-slate-50 px-5 py-12 text-slate-900">
       <div className="mx-auto w-full max-w-md">
-        <Link to="/login" className="mb-10 inline-flex items-center gap-2 text-sm font-semibold text-teal-700 hover:text-teal-800">
-          <HeartPulse className="h-5 w-5" /> MediNovel
-        </Link>
-        <section className="border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <Link to="/login" className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700 hover:text-teal-800">
+            <HeartPulse className="h-5 w-5" /> MediNovel
+          </Link>
+          <Link to="/login" className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Sign In
+          </Link>
+        </div>
+        <section className="border border-slate-200 bg-white p-6 shadow-sm sm:p-8 rounded-xl">
           <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
             {isRequest ? <Mail className="h-5 w-5" /> : <KeyRound className="h-5 w-5" />}
           </div>
