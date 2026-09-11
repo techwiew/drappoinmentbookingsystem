@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk ls:*)",
+      "Bash(rtk npm:*)",
+      "Bash(*)","Edit", "Read","Write",
+      "Bash(rtk grep:*)",
+      "Bash(rtk tsc:*)",
+      "Bash(rtk find:*)", "Editor(.*)", "FileSystem(.*)", "Bash(rtk git:*)", "Bash(rtk yarn:*)", "Bash(rtk pnpm:*)", "Bash(rtk npx:*)", "Bash(rtk rm:*)", "Bash(rtk mv:*)", "Bash(rtk cp:*)", "Bash(rtk mkdir:*)", "Bash(rtk touch:*)"
+    ]
+  }
+}
