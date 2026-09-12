@@ -268,10 +268,7 @@ export const LandingPage: React.FC = () => {
                   <span>
                     {LANDING_COPY.preview.queueUpdates} <b className="text-[#00685f]">{LANDING_COPY.preview.automatic}</b>
                   </span>
-                  <span className="font-semibold text-[#00685f]">
-                    {LANDING_COPY.preview.displaySync}
-                  </span>
-                </div>
+                                  </div>
               </div>
               <div className="p-5 lg:col-span-5">
                 <div className="mb-4 flex items-center justify-between">

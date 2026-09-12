@@ -130,9 +130,6 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
             <span className="flex shrink-0 flex-col">
               <span className="flex items-center gap-2 whitespace-nowrap text-base font-extrabold tracking-tight text-[#00685f] sm:text-lg">
                 {LANDING_COPY.brand.name}
-                <span className="hidden rounded-full bg-[#89f5e7] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#005049] sm:inline-flex">
-                  {LANDING_COPY.brand.badge}
-                </span>
               </span>
               <span className="hidden text-[11px] leading-none text-[#3d4947] md:block">
                 {LANDING_COPY.brand.tagline}
@@ -162,13 +159,7 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
             >
               {LANDING_COPY.navigation.demo}
             </a>
-            <a
-              href={adminOnly ? "/login" : "/admin"}
-              className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-[#00685f] px-3 py-2.5 text-sm font-bold text-white shadow-sm shadow-[#00685f]/20 transition-colors hover:bg-[#008378] lg:px-4"
-            >
-              {adminOnly ? "Clinic sign in" : "Admin sign in"} <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
+                      </div>
 
           <button
             type="button"
@@ -206,12 +197,6 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
                 className="mt-2 rounded-lg border border-[#bcc9c6] px-3 py-2.5 text-sm font-semibold text-[#171d1c] hover:bg-[#f0f5f2]"
               >
                 {LANDING_COPY.navigation.demo}
-              </a>
-              <a
-                href={adminOnly ? "/login" : "/admin"}
-                className="rounded-lg bg-[#00685f] px-3 py-2.5 text-sm font-bold text-white"
-              >
-                {adminOnly ? "Clinic sign in" : "Admin sign in"}
               </a>
             </nav>
           </div>

@@ -22,7 +22,7 @@ export const LANDING_COPY = {
     demo: "Book a Demo",
   },
   hero: {
-    badge: "Built for Indian doctors, reception teams, and growing clinics",
+    badge: "Built for doctors, reception teams, and growing clinics/hospitals",
     titleBefore: "The modern operating system for",
     titleHighlight: "hospital and clinics",
     description:
