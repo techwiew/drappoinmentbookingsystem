@@ -30,3 +30,12 @@ export const changePasswordSchema = z.object({
     newPassword: z.string().min(6, 'New password must be at least 6 characters'),
   }),
 });
+
+export const verifyAndChangePasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+    mobile: z.string().min(10, 'Mobile number is required'),
+    oldPassword: z.string().min(1, 'Old password is required'),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+  }),
+});

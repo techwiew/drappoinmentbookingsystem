@@ -7,10 +7,12 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  CircleAlert,
   Clock3,
   CreditCard,
   FileText,
   HeartPulse,
+  Loader2,
   Menu,
   MessageSquare,
   MonitorSmartphone,
@@ -37,15 +39,52 @@ export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const goToLogin = () => {
     setIsMenuOpen(false);
     navigate("/login");
   };
 
-  const handleDemoSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleDemoSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSubmitted(true);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Get form values
+      const form = event.target as HTMLFormElement;
+      const formData = new FormData(form);
+
+      const data = {
+        name: formData.get('name') as string,
+        phone: formData.get('phone') as string,
+        clinicType: formData.get('clinicType') as string,
+        city: formData.get('city') as string,
+      };
+
+      // Call the API endpoint
+      const response = await fetch('/api/contact/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit inquiry');
+      }
+
+      // Reset form and show success
+      form.reset();
+      setIsSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -619,6 +658,7 @@ export const LandingPage: React.FC = () => {
                     {LANDING_COPY.demo.nameLabel}
                     <input
                       required
+                      name="name"
                       className="mt-1.5 w-full rounded-lg border border-[#bcc9c6] bg-[#f5faf8] px-3.5 py-2.5 text-sm font-normal normal-case tracking-normal outline-none focus:border-[#00685f] focus:ring-2 focus:ring-[#89f5e7]"
                       placeholder={LANDING_COPY.demo.namePlaceholder}
                     />
@@ -627,6 +667,7 @@ export const LandingPage: React.FC = () => {
                     {LANDING_COPY.demo.phoneLabel}
                     <input
                       required
+                      name="phone"
                       type="tel"
                       className="mt-1.5 w-full rounded-lg border border-[#bcc9c6] bg-[#f5faf8] px-3.5 py-2.5 text-sm font-normal normal-case tracking-normal outline-none focus:border-[#00685f] focus:ring-2 focus:ring-[#89f5e7]"
                       placeholder={LANDING_COPY.demo.phonePlaceholder}
@@ -634,14 +675,19 @@ export const LandingPage: React.FC = () => {
                   </label>
                   <label className="text-xs font-bold uppercase tracking-[0.08em] text-[#3d4947]">
                     {LANDING_COPY.demo.clinicTypeLabel}
-                    <select className="mt-1.5 w-full rounded-lg border border-[#bcc9c6] bg-[#f5faf8] px-3.5 py-2.5 text-sm font-normal normal-case tracking-normal outline-none focus:border-[#00685f] focus:ring-2 focus:ring-[#89f5e7]">
-                      {LANDING_COPY.demo.clinicTypes.map((clinicType) => <option key={clinicType}>{clinicType}</option>)}
+                    <select
+                      required
+                      name="clinicType"
+                      className="mt-1.5 w-full rounded-lg border border-[#bcc9c6] bg-[#f5faf8] px-3.5 py-2.5 text-sm font-normal normal-case tracking-normal outline-none focus:border-[#00685f] focus:ring-2 focus:ring-[#89f5e7]"
+                    >
+                      {LANDING_COPY.demo.clinicTypes.map((clinicType) => <option key={clinicType} value={clinicType}>{clinicType}</option>)}
                     </select>
                   </label>
                   <label className="text-xs font-bold uppercase tracking-[0.08em] text-[#3d4947]">
                     {LANDING_COPY.demo.cityLabel}
                     <input
                       required
+                      name="city"
                       className="mt-1.5 w-full rounded-lg border border-[#bcc9c6] bg-[#f5faf8] px-3.5 py-2.5 text-sm font-normal normal-case tracking-normal outline-none focus:border-[#00685f] focus:ring-2 focus:ring-[#89f5e7]"
                       placeholder={LANDING_COPY.demo.cityPlaceholder}
                     />
@@ -655,12 +701,30 @@ export const LandingPage: React.FC = () => {
                     </span>
                   </div>
                 ) : (
-                  <button
-                    type="submit"
-                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#00685f] px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-[#008378]"
-                  >
-                    {LANDING_COPY.demo.submit} <ArrowRight className="h-4 w-4" />
-                  </button>
+                  <>
+                    {error && (
+                      <div className="mb-4 flex items-start gap-3 rounded-lg border border-[#f87171] bg-[#fef2f2] p-4 text-sm text-[#991b1b]">
+                        <CircleAlert className="h-5 w-5 shrink-0" />
+                        <span>{error}</span>
+                      </div>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className={`mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-[#00685f] px-4 py-3.5 text-sm font-bold text-white transition-colors hover:bg-[#008378] ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2" />
+                          <span>{LANDING_COPY.demo.submit}</span>
+                        </>
+                      ) : (
+                        <>
+                          {LANDING_COPY.demo.submit} <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
                 <p className="mt-3 text-center text-[11px] text-[#3d4947]">
                   {LANDING_COPY.demo.disclaimer}

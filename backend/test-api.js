@@ -10,7 +10,7 @@ async function test() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'superadmin@medinodes.com',
+        email: 'superadmin@medinovel.com',
         password: 'SuperAdmin@123'
       })
     });

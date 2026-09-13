@@ -15,7 +15,7 @@ export const admitPatientSchema = z.object({
     attendingDoctorId: z.string().optional().or(z.literal('')),
     roomNumber: z.string().optional().or(z.literal('')),
     bedNumber: z.string().optional().or(z.literal('')),
-    reason: z.string().min(2, 'Admission reason is required'),
+    reason: z.string().min(1, 'Admission reason is required'),
     diagnosis: z.string().optional().or(z.literal('')),
     notes: z.string().optional().or(z.literal('')),
     totalAmount: z.number().min(0).default(0),

@@ -22,6 +22,7 @@ import reportsRoutes from './modules/reports/reports.routes.js';
 import subscriptionRoutes from './modules/subscriptions/subscriptions.routes.js';
 import admissionRoutes from './modules/admissions/admissions.routes.js';
 import healthRoutes from './modules/health/health.routes.js';
+import contactRoutes from './modules/contact/contact.routes.js';
 
 export const createApp = (): Express => {
   const app = express();
@@ -53,6 +54,7 @@ export const createApp = (): Express => {
 
   // API Routes
   app.use('/api/health', healthRoutes);
+  app.use('/api/contact', contactRoutes);
   app.use('/api/auth', authRoutes);
   app.use('/api/super-admin', superAdminRoutes);
   app.use('/api/clinics', clinicRoutes);

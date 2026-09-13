@@ -74,6 +74,7 @@ export class AdmissionService {
     }
 
     const count = await prisma.admission.count({ where: { clinicId } });
+    const initialPayment = data.totalAmount || 0;
     const admission = await prisma.admission.create({
       data: {
         clinicId,
@@ -85,8 +86,9 @@ export class AdmissionService {
         reason: data.reason,
         diagnosis: data.diagnosis || null,
         notes: data.notes || null,
-        totalAmount: data.totalAmount || 0,
-        pendingAmount: data.totalAmount || 0,
+        totalAmount: initialPayment, // Sum of payments made
+        paidAmount: initialPayment,  // Sum of payments made
+        pendingAmount: 0,            // No pending amount since we only track payments made
       },
       include: admissionInclude,
     });
@@ -122,17 +124,15 @@ export class AdmissionService {
     if (!existing) throw { statusCode: 404, code: 'ADMISSION_NOT_FOUND', message: 'Admission not found' };
     if (existing.status !== 'ADMITTED') throw { statusCode: 400, code: 'ADMISSION_CLOSED', message: 'Cannot record payment for a discharged admission' };
 
-    const paidAmount = Number(existing.paidAmount) + Number(data.amount);
-    const totalAmount = Number(existing.totalAmount);
-    if (totalAmount > 0 && paidAmount > totalAmount) {
-      throw { statusCode: 400, code: 'OVERPAYMENT', message: 'Payment exceeds the admission balance' };
-    }
+    const paymentAmount = Number(data.amount);
+    const newTotal = Number(existing.totalAmount) + paymentAmount;
+    const newPaid = Number(existing.paidAmount) + paymentAmount;
 
     const admission = await prisma.$transaction(async (tx) => {
       await tx.admissionPayment.create({
         data: {
           admissionId,
-          amount: data.amount,
+          amount: paymentAmount,
           paymentMethod: data.paymentMethod || 'CASH',
           transactionReference: data.transactionReference || null,
           notes: data.notes || null,
@@ -140,7 +140,11 @@ export class AdmissionService {
       });
       return tx.admission.update({
         where: { id: admissionId },
-        data: { paidAmount, pendingAmount: Math.max(0, totalAmount - paidAmount) },
+        data: {
+          totalAmount: newTotal,
+          paidAmount: newPaid,
+          pendingAmount: 0
+        },
         include: admissionInclude,
       });
     });
@@ -154,17 +158,13 @@ export class AdmissionService {
     if (!existing) throw { statusCode: 404, code: 'ADMISSION_NOT_FOUND', message: 'Admission not found' };
     if (existing.status !== 'ADMITTED') throw { statusCode: 400, code: 'ALREADY_DISCHARGED', message: 'Admission is already discharged' };
 
-    const totalAmount = data.totalAmount !== undefined ? Number(data.totalAmount) : Number(existing.totalAmount);
-    const paidAmount = Number(existing.paidAmount);
-    if (paidAmount > totalAmount) throw { statusCode: 400, code: 'TOTAL_BELOW_PAID', message: 'Total amount cannot be lower than payments already received' };
-
     const admission = await prisma.admission.update({
       where: { id: admissionId },
       data: {
         status: 'DISCHARGED',
         dischargedAt: new Date(),
-        totalAmount,
-        pendingAmount: Math.max(0, totalAmount - paidAmount),
+        // Keep totalAmount and paidAmount as they are (sum of payments made)
+        // pendingAmount is always 0 with our new logic
         dischargeSummary: data.dischargeSummary,
       },
       include: admissionInclude,

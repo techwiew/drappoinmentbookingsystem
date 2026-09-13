@@ -119,6 +119,7 @@ MediNovel is a subscription-based multi-tenant doctor clinic management SaaS bui
   - Update seed data in `prisma/seed.ts` if needed
 - Never hardcode `clinicId` in queries; Prisma middleware automatically filters by tenant context
 - Run `npm run prisma:seed` after significant schema changes to refresh test data
+- **Important**: Always update `@MediNovel_MilesWeb_Fresh_Database.sql` when making changes to the database schema to ensure consistency across environments
 
 ### Testing
 - Backend tests: Use Vitest with Supertest for API integration tests (`backend/test/` directory)

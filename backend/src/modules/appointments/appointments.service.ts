@@ -3,6 +3,19 @@ import { logAudit } from '../../middlewares/audit.js';
 import { getCurrentAppointmentTime, normalizeAppointmentTime } from '../../utils/time.js';
 
 export class AppointmentService {
+  private static normalizeDateString(dateString: any): string {
+    if (typeof dateString !== 'string') {
+      // If it's not a string, we assume it's already a Date object or something else that Prisma can handle.
+      return dateString;
+    }
+    // If the string already contains a time part, return as is.
+    if (dateString.includes('T') || dateString.includes(':')) {
+      return dateString;
+    }
+    // Otherwise, assume it's a date in YYYY-MM-DD format and append time.
+    return `${dateString}T00:00:00.000Z`;
+  }
+
   static async getAppointmentById(clinicId: string, appointmentId: string) {
     const appointment = await prisma.appointment.findFirst({
       where: { id: appointmentId, clinicId },
@@ -102,15 +115,7 @@ export class AppointmentService {
     const where: any = { clinicId };
 
     if (query.date) {
-      const d = new Date(query.date);
-      d.setHours(0, 0, 0, 0);
-      const nextDay = new Date(d);
-      nextDay.setDate(d.getDate() + 1);
-
-      where.appointmentDate = {
-        gte: d,
-        lt: nextDay,
-      };
+      where.appointmentDate = AppointmentService.normalizeDateString(query.date);
     }
 
     if (query.doctorId && query.doctorId !== 'ALL') {
@@ -230,20 +235,13 @@ export class AppointmentService {
       throw { statusCode: 404, code: 'DOCTOR_NOT_FOUND', message: 'Doctor not found in this clinic' };
     }
 
-    const apptDate = new Date(data.appointmentDate);
-    apptDate.setHours(0, 0, 0, 0);
-    const nextDay = new Date(apptDate);
-    nextDay.setDate(apptDate.getDate() + 1);
-
     // Calculate next token number for this clinic + doctor + date
+    const normalizedDate = AppointmentService.normalizeDateString(data.appointmentDate);
     const existingTokens = await prisma.appointment.count({
       where: {
         clinicId,
         doctorId: data.doctorId,
-        appointmentDate: {
-          gte: apptDate,
-          lt: nextDay,
-        },
+        appointmentDate: normalizedDate,
       },
     });
 
@@ -270,7 +268,7 @@ export class AppointmentService {
         clinicId,
         patientId: data.patientId,
         doctorId: data.doctorId,
-        appointmentDate: apptDate,
+        appointmentDate: normalizedDate,
         appointmentTime,
         appointmentType: data.appointmentType || 'NEW_PATIENT',
         tokenNumber,
@@ -333,9 +331,7 @@ export class AppointmentService {
 
     const updateData: any = {};
     if (data.appointmentDate) {
-      const d = new Date(data.appointmentDate);
-      d.setHours(0, 0, 0, 0);
-      updateData.appointmentDate = d;
+      updateData.appointmentDate = data.appointmentDate;
     }
     if (data.appointmentTime !== undefined) {
       updateData.appointmentTime = data.appointmentTime

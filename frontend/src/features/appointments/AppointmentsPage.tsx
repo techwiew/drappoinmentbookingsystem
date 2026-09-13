@@ -117,7 +117,7 @@ export const AppointmentsPage: React.FC = () => {
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await apiClient.patch(`/appointments/${id}/status`, {
+      const res = await apiClient.patch(`/appointments/${id}`, {
         status: "CANCELLED",
       });
       return res.data.data;

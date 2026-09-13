@@ -308,4 +308,48 @@ export class AuthService {
 
     return true;
   }
+
+  static async verifyAndChangePassword(email: string, mobile: string, oldPassword: string, newPassword: string) {
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+      include: {
+        doctor: true,
+        receptionist: true,
+      }
+    });
+
+    if (!user) {
+      throw { statusCode: 404, code: 'USER_NOT_FOUND', message: 'User not found with this email' };
+    }
+
+    // Verify user has either doctor or receptionist profile with matching mobile
+    const isDoctorMatch = user.doctor && user.doctor.mobile === mobile.trim();
+    const isReceptionistMatch = user.receptionist && user.receptionist.mobile === mobile.trim();
+
+    if (!isDoctorMatch && !isReceptionistMatch) {
+      throw { statusCode: 400, code: 'INVALID_MOBILE', message: 'Mobile number does not match our records for this email' };
+    }
+
+    // Verify old password
+    const isPasswordMatch = await comparePassword(oldPassword, user.passwordHash);
+    if (!isPasswordMatch) {
+      throw { statusCode: 400, code: 'INVALID_PASSWORD', message: 'Current password is incorrect' };
+    }
+
+    // Update password and invalidate refresh tokens
+    const newHash = await hashPassword(newPassword);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newHash,
+        refreshTokenHash: null,
+      },
+    });
+
+    // Log the audit
+    await logAudit({ userId: user.id, action: 'PASSWORD_CHANGED_WITH_VERIFICATION', entityType: 'User', entityId: user.id });
+
+    return true;
+  }
 }

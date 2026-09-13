@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from './auth.controller.js';
 import { validateRequest } from '../../middlewares/validate.js';
-import { loginSchema, refreshSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
+import { loginSchema, refreshSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema, verifyAndChangePasswordSchema } from './auth.schema.js';
 import { authenticate } from '../../middlewares/auth.js';
 
 const router = Router();
@@ -17,6 +17,11 @@ router.post(
   authenticate,
   validateRequest(changePasswordSchema),
   AuthController.changePassword
+);
+router.post(
+  '/verify-and-change-password',
+  validateRequest(verifyAndChangePasswordSchema),
+  AuthController.verifyAndChangePassword
 );
 
 export default router;

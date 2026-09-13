@@ -61,8 +61,8 @@ export const AppRoutes: React.FC = () => {
       {/* Public Route */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/admin" element={<LoginPage adminOnly />} />
-      <Route path="/forgot-password" element={<PasswordResetPage mode="request" />} />
-      <Route path="/reset-password" element={<PasswordResetPage mode="reset" />} />
+      <Route path="/forgot-password" element={<PasswordResetPage />} />
+      <Route path="/reset-password" element={<PasswordResetPage />} />
 
       {/* Home redirect */}
       <Route path="/" element={<HomeRedirect />} />

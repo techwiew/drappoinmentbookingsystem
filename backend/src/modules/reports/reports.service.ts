@@ -1,17 +1,24 @@
 import { prisma } from '../../lib/prisma.js';
 
 export class ReportsService {
+  private static normalizeDateToISOString(dateStr: string): string {
+    // Assumes dateStr is in YYYY-MM-DD format
+    return `${dateStr}T00:00:00.000Z`;
+  }
+
   static async getDoctorDashboard(clinicId: string, doctorId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + 1);
+    const todayStr = this.normalizeDateToISOString(today.toISOString().split('T')[0]);
+    const nextDayStr = this.normalizeDateToISOString(nextDay.toISOString().split('T')[0]);
 
     const whereAppt: any = {
       clinicId,
       appointmentDate: {
-        gte: today,
-        lt: nextDay,
+        gte: todayStr,
+        lt: nextDayStr,
       },
     };
 
@@ -43,8 +50,8 @@ export class ReportsService {
       where: {
         clinicId,
         createdAt: {
-          gte: today,
-          lt: nextDay,
+          gte: todayStr,
+          lt: nextDayStr,
         },
         ...(doctorId && doctorId !== 'ALL' ? { doctorId } : {}),
       },
@@ -58,8 +65,8 @@ export class ReportsService {
       where: {
         clinicId,
         nextVisitDate: {
-          gte: today,
-          lt: nextDay,
+          gte: todayStr,
+          lt: nextDayStr,
         },
         ...(doctorId && doctorId !== 'ALL' ? { doctorId } : {}),
       },
@@ -154,6 +161,8 @@ export class ReportsService {
     today.setHours(0, 0, 0, 0);
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + 1);
+    const todayStr = this.normalizeDateToISOString(today.toISOString().split('T')[0]);
+    const nextDayStr = this.normalizeDateToISOString(nextDay.toISOString().split('T')[0]);
 
     const doctors = await prisma.doctor.findMany({
       where: { clinicId, status: 'ACTIVE' },
@@ -161,8 +170,8 @@ export class ReportsService {
         appointments: {
           where: {
             appointmentDate: {
-              gte: today,
-              lt: nextDay,
+              gte: todayStr,
+              lt: nextDayStr,
             },
           },
           include: { patient: true },
@@ -175,8 +184,8 @@ export class ReportsService {
       where: {
         clinicId,
         createdAt: {
-          gte: today,
-          lt: nextDay,
+          gte: todayStr,
+          lt: nextDayStr,
         },
       },
     });

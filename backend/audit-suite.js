@@ -16,7 +16,7 @@ async function runFullAudit() {
     const loginRes = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'superadmin@medinodes.com', password: 'SuperAdmin@123' })
+      body: JSON.stringify({ email: 'superadmin@medinovel.com', password: 'SuperAdmin@123' })
     });
     const loginData = await loginRes.json();
     

@@ -18,12 +18,12 @@ export const AdmissionsPage: React.FC = () => {
   const [selectedAdmission, setSelectedAdmission] = useState<any>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [dischargeSummary, setDischargeSummary] = useState('');
-  const [form, setForm] = useState({ patientId: '', attendingDoctorId: doctorId || '', roomNumber: '', bedNumber: '', reason: '', diagnosis: '', notes: '', totalAmount: 0 });
+  const [form, setForm] = useState({ patientId: '', attendingDoctorId: doctorId || '', roomNumber: '', bedNumber: '', reason: '', diagnosis: '', notes: '', initialPayment: 0 });
 
   useEffect(() => {
     const patientId = searchParams.get('patientId');
     if (patientId && (role === 'DOCTOR' || role === 'RECEPTIONIST')) {
-      setForm((current) => ({ ...current, patientId }));
+      setForm((current) => ({ ...current, patientId, initialPayment: 0 }));
       setIsAdmitOpen(true);
     }
   }, [role, searchParams]);
@@ -44,8 +44,21 @@ export const AdmissionsPage: React.FC = () => {
   });
 
   const admitMutation = useMutation({
-    mutationFn: async () => (await apiClient.post('/admissions', form)).data.data,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admissions'] }); setIsAdmitOpen(false); setForm({ patientId: '', attendingDoctorId: doctorId || '', roomNumber: '', bedNumber: '', reason: '', diagnosis: '', notes: '', totalAmount: 0 }); },
+    mutationFn: async () => {
+      // Transform form data to match backend expectations
+      const admissionData = {
+        ...form,
+        totalAmount: form.initialPayment, // Map initialPayment to totalAmount for backend
+      };
+      // Remove initialPayment since backend doesn't expect it
+      delete admissionData.initialPayment;
+      return (await apiClient.post('/admissions', admissionData)).data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admissions'] });
+      setIsAdmitOpen(false);
+      setForm({ patientId: '', attendingDoctorId: doctorId || '', roomNumber: '', bedNumber: '', reason: '', diagnosis: '', notes: '', initialPayment: 0 });
+    },
   });
   const paymentMutation = useMutation({
     mutationFn: async () => (await apiClient.post(`/admissions/${selectedAdmission.id}/payments`, { amount: Number(paymentAmount), paymentMethod: 'CASH' })).data.data,
@@ -66,7 +79,7 @@ export const AdmissionsPage: React.FC = () => {
       {isLoading ? <p className="text-sm text-slate-500">Loading admitted patients...</p> : admissions.length === 0 ? <Card><div className="py-10 text-center text-sm text-slate-500">No patients are currently admitted.</div></Card> : <div className="grid gap-4 lg:grid-cols-2">{admissions.map((admission: any) => <Card key={admission.id} className="border-l-4 border-l-brand-500"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h2 className="font-bold text-slate-900">{admission.patientName}</h2><Badge variant="warning">{admission.admissionNumber}</Badge></div><p className="mt-1 text-xs text-slate-500">{admission.reason} · Room {admission.roomNumber || 'Unassigned'} / Bed {admission.bedNumber || 'Unassigned'}</p></div><a className="rounded-lg p-2 text-emerald-700 hover:bg-emerald-50" href={`tel:${admission.patientMobile}`} title={`Call ${admission.patientName}`}><Phone className="h-4 w-4" /></a></div><div className="mt-4 grid grid-cols-3 gap-2 text-xs"><div><span className="text-slate-500">Doctor</span><strong className="mt-1 block">{admission.attendingDoctorName || 'Not assigned'}</strong></div><div><span className="text-slate-500">Paid</span><strong className="mt-1 block text-emerald-700">₹{admission.paidAmount.toLocaleString()}</strong></div><div><span className="text-slate-500">Pending</span><strong className="mt-1 block text-rose-700">₹{admission.pendingAmount.toLocaleString()}</strong></div></div><div className="mt-4 flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setSelectedAdmission(admission)} leftIcon={<CreditCard className="h-3.5 w-3.5" />}>Payment / Discharge</Button>{role === 'DOCTOR' && <Button size="sm" variant="secondary" onClick={() => setSelectedAdmission(admission)} leftIcon={<Stethoscope className="h-3.5 w-3.5" />}>Clinical Round</Button>}</div></Card>)}</div>}
 
       <Modal isOpen={isAdmitOpen} onClose={() => setIsAdmitOpen(false)} title="Admit Patient" description="Create an active inpatient admission.">
-        <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); admitMutation.mutate(); }}><label className="block text-sm font-semibold">Patient<select className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" required value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })}><option value="">Select patient</option>{patients.map((patient: any) => <option key={patient.id} value={patient.id}>{patient.fullName} · {patient.mobile}</option>)}</select></label><label className="block text-sm font-semibold">Attending doctor<select className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" value={form.attendingDoctorId} onChange={(e) => setForm({ ...form, attendingDoctorId: e.target.value })}><option value="">Select doctor</option>{doctors.map((doctor: any) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select></label><div className="grid grid-cols-2 gap-3"><Input label="Room" value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} /><Input label="Bed" value={form.bedNumber} onChange={(e) => setForm({ ...form, bedNumber: e.target.value })} /></div><Input label="Admission reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} required /><Input label="Initial total (₹)" type="number" min="0" value={form.totalAmount} onChange={(e) => setForm({ ...form, totalAmount: Number(e.target.value) || 0 })} /><div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setIsAdmitOpen(false)}>Cancel</Button><Button type="submit" variant="primary" isLoading={admitMutation.isPending}>Admit Patient</Button></div></form>
+        <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); admitMutation.mutate(); }}><label className="block text-sm font-semibold">Patient<select className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" required value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })}><option value="">Select patient</option>{patients.map((patient: any) => <option key={patient.id} value={patient.id}>{patient.fullName} · {patient.mobile}</option>)}</select></label><label className="block text-sm font-semibold">Attending doctor<select className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" value={form.attendingDoctorId} onChange={(e) => setForm({ ...form, attendingDoctorId: e.target.value })}><option value="">Select doctor</option>{doctors.map((doctor: any) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select></label><div className="grid grid-cols-2 gap-3"><Input label="Room" value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} /><Input label="Bed" value={form.bedNumber} onChange={(e) => setForm({ ...form, bedNumber: e.target.value })} /></div><Input label="Admission reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} required /><Input label="Initial payment made (₹)" type="number" min="0" value={form.initialPayment} onChange={(e) => setForm({ ...form, initialPayment: Number(e.target.value) || 0 })} /><div className="flex justify-end gap-3"><Button type="button" variant="secondary" onClick={() => setIsAdmitOpen(false)}>Cancel</Button><Button type="submit" variant="primary" isLoading={admitMutation.isPending}>Admit Patient</Button></div></form>
       </Modal>
 
       <Modal isOpen={Boolean(selectedAdmission)} onClose={() => setSelectedAdmission(null)} title={selectedAdmission ? `${selectedAdmission.patientName} · ${selectedAdmission.admissionNumber}` : 'Admission'} description="Record a payment or complete the discharge process.">

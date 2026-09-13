@@ -70,4 +70,14 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async verifyAndChangePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, mobile, oldPassword, newPassword } = req.body;
+      await AuthService.verifyAndChangePassword(email, mobile, oldPassword, newPassword);
+      return sendSuccess(res, { updated: true }, 'Password changed successfully. Please sign in with your new password.');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
