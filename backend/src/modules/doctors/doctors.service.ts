@@ -140,4 +140,64 @@ export class DoctorService {
 
     return updated;
   }
+
+  static async deleteDoctor(clinicId: string, doctorId: string, deleterUserId: string) {
+    const doctor = await prisma.doctor.findFirst({
+      where: { id: doctorId, clinicId },
+    });
+    if (!doctor) {
+      throw { statusCode: 404, code: 'DOCTOR_NOT_FOUND', message: 'Doctor not found in this clinic' };
+    }
+
+    // Check if doctor has any active appointments or consultations
+    const activeAppointments = await prisma.appointment.count({
+      where: {
+        doctorId: doctorId,
+        status: { in: ['BOOKED', 'CHECKED_IN', 'WAITING', 'IN_CONSULTATION'] },
+      },
+    });
+
+    const activeConsultations = await prisma.consultation.count({
+      where: {
+        doctorId: doctorId,
+        status: { in: ['DRAFT', 'IN_CONSULTATION'] },
+      },
+    });
+
+    if (activeAppointments > 0 || activeConsultations > 0) {
+      throw {
+        statusCode: 409,
+        code: 'DOCTOR_HAS_ACTIVE_RECORDS',
+        message: 'Cannot delete doctor with active appointments or consultations',
+      };
+    }
+
+    // Delete clinic-user relationship first
+    await prisma.clinicUser.deleteMany({
+      where: {
+        clinicId: clinicId,
+        userId: doctor.userId,
+      },
+    });
+
+    // Delete the user account
+    await prisma.user.delete({
+      where: { id: doctor.userId },
+    });
+
+    // Delete the doctor record
+    const deleted = await prisma.doctor.delete({
+      where: { id: doctorId },
+    });
+
+    await logAudit({
+      clinicId,
+      userId: deleterUserId,
+      action: 'DOCTOR_DELETED',
+      entityType: 'Doctor',
+      entityId: doctorId,
+    });
+
+    return deleted;
+  }
 }

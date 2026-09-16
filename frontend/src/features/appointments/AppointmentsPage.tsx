@@ -28,12 +28,23 @@ export const AppointmentsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // Helper function to get current time in HH:MM format
+  const getCurrentTime = (): string => {
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  // Helper function to get today's date in YYYY-MM-DD format
+  const getTodayDate = (): string => {
+    return new Date().toISOString().split("T")[0];
+  };
+
   const [isBookModalOpen, setIsBookModalOpen] = useState(
     !!searchParams.get("patientId"),
   );
-  const [dateFilter, setDateFilter] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [dateFilter, setDateFilter] = useState(getTodayDate);
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const [isNewPatient, setIsNewPatient] = useState(false);
@@ -56,8 +67,8 @@ export const AppointmentsPage: React.FC = () => {
   const [bookForm, setBookForm] = useState({
     patientId: searchParams.get("patientId") || "",
     doctorId: doctorId || "",
-    appointmentDate: new Date().toISOString().split("T")[0],
-    appointmentTime: "09:00",
+    appointmentDate: getTodayDate(),
+    appointmentTime: getCurrentTime(),
     appointmentType: "WALK_IN",
     directCheckIn: true,
     notes: "",
@@ -182,6 +193,17 @@ export const AppointmentsPage: React.FC = () => {
 
     if (!(bookForm.doctorId || doctorId)) {
       setBookingError("Select a doctor before generating a queue token.");
+      return;
+    }
+
+    // Validate that the appointment date and time are not in the past
+    const [inputYear, inputMonth, inputDay] = bookForm.appointmentDate.split('-').map(Number);
+    const [inputHours, inputMinutes] = bookForm.appointmentTime.split(':').map(Number);
+    const appointmentDate = new Date(inputYear, inputMonth - 1, inputDay, inputHours, inputMinutes);
+    const now = new Date();
+
+    if (appointmentDate < now) {
+      setBookingError("Appointment date and time must be in the future.");
       return;
     }
 
@@ -634,15 +656,31 @@ export const AppointmentsPage: React.FC = () => {
               onChange={(e) =>
                 setBookForm({ ...bookForm, appointmentDate: e.target.value })
               }
+              min={getTodayDate()}
             />
             <Input
               label="Appointment Time"
               type="time"
               required
               value={bookForm.appointmentTime}
-              onChange={(e) =>
-                setBookForm({ ...bookForm, appointmentTime: e.target.value })
-              }
+              onChange={(e) => {
+                const timeValue = e.target.value;
+                // Validate that the time is not in the past for today's date
+                if (bookForm.appointmentDate === getTodayDate()) {
+                  const [inputHours, inputMinutes] = timeValue.split(':').map(Number);
+                  const now = new Date();
+                  const currentHours = now.getHours();
+                  const currentMinutes = now.getMinutes();
+
+                  // Only allow time if it's in the future or equal to current time
+                  if (inputHours < currentHours ||
+                      (inputHours === currentHours && inputMinutes < currentMinutes)) {
+                    // Don't update the time if it's in the past
+                    return;
+                  }
+                }
+                setBookForm({ ...bookForm, appointmentTime: timeValue });
+              }}
             />
           </div>
 

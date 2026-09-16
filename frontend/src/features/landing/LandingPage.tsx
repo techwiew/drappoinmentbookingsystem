@@ -74,7 +74,19 @@ export const LandingPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit inquiry');
+        // Try to get error details from response
+        let errorMessage = 'Failed to submit inquiry';
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error?.message) {
+            errorMessage = errorData.error.message;
+          }
+        } catch (e) {
+          // If we can't parse the error response, use the default message
+        }
+        throw new Error(errorMessage);
       }
 
       // Reset form and show success

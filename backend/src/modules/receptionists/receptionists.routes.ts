@@ -29,4 +29,10 @@ router.patch(
   ReceptionistController.updateReceptionist
 );
 
+router.delete(
+  '/:id',
+  requireRole('DOCTOR'),
+  ReceptionistController.deleteReceptionist
+);
+
 export default router;

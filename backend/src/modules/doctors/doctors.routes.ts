@@ -28,4 +28,10 @@ router.patch(
   DoctorController.updateDoctor
 );
 
+router.delete(
+  '/:id',
+  requireRole('DOCTOR'),
+  DoctorController.deleteDoctor
+);
+
 export default router;

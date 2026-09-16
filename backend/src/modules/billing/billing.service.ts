@@ -134,9 +134,6 @@ export class BillingService {
       if (existingPayment) {
         const totalAmount = Number(existingPayment.totalAmount);
         const newPaidAmount = Number(existingPayment.paidAmount) + paidAmount;
-        if (newPaidAmount > totalAmount) {
-          throw { statusCode: 400, code: 'OVERPAYMENT', message: `Payment exceeds the remaining balance of ${Math.max(0, totalAmount - Number(existingPayment.paidAmount)).toFixed(2)}` };
-        }
         const newPendingAmount = Math.max(0, totalAmount - newPaidAmount);
         let newPaymentStatus = existingPayment.paymentStatus;
         if (newPaidAmount >= totalAmount && totalAmount > 0) {
@@ -166,9 +163,6 @@ export class BillingService {
         const additionalFee = Number(data.additionalFee || 0);
         const discount = Number(data.discount || 0);
         const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
-        if (paidAmount > totalAmount) {
-          throw { statusCode: 400, code: 'OVERPAYMENT', message: `Payment exceeds the invoice total of ${totalAmount.toFixed(2)}` };
-        }
         const pendingAmount = Math.max(0, totalAmount - paidAmount);
         const paymentStatus = paidAmount >= totalAmount && totalAmount > 0 ? 'PAID' : 'PARTIALLY_PAID';
         // No existing payment, create new

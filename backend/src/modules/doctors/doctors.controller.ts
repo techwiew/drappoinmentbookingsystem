@@ -38,4 +38,17 @@ export class DoctorController {
       next(error);
     }
   }
+
+  static async deleteDoctor(req: Request, res: Response, next: NextFunction) {
+    try {
+      const doctor = await DoctorService.deleteDoctor(
+        req.tenant!.clinicId,
+        req.params.id,
+        req.user!.userId
+      );
+      return sendSuccess(res, doctor, 'Doctor deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

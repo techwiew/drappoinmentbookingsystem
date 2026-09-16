@@ -79,6 +79,20 @@ export const QueuePage: React.FC = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['live-queue'] }),
   });
 
+  const openConsultationMutation = useMutation({
+    mutationFn: async (data: { patientId: string; doctorId?: string }) => {
+      const res = await apiClient.post('/consultations/open', data);
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['live-queue'] });
+      // Navigate to consultation room if appointmentId is returned
+      if (data.appointmentId) {
+        navigate(`/queue/${data.appointmentId}/consult`);
+      }
+    },
+  });
+
   const summary = queueData?.summary;
   const currentPatient = queueData?.currentPatient;
   const waitingList = queueData?.waitingList || [];
@@ -356,6 +370,17 @@ export const QueuePage: React.FC = () => {
                           {apt.appointmentTime}
                         </td>
                         <td className="p-3 text-right space-x-1">
+                          {(role === "DOCTOR" || role === "RECEPTIONIST") && (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              className="text-[11px]"
+                              isLoading={openConsultationMutation.isPending}
+                              onClick={() => openConsultationMutation.mutate({ patientId: apt.patientId, doctorId: apt.doctorId })}
+                            >
+                              Open Consultation
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="primary"
@@ -411,6 +436,19 @@ export const QueuePage: React.FC = () => {
                   #{apt.tokenNumber}
                 </span>
                 <span className="text-emerald-800">{apt.patientName}</span>
+                {(role === "DOCTOR" || role === "RECEPTIONIST") && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-[11px] text-blue-600 hover:bg-blue-50"
+                    onClick={() => {
+                      // Navigate to consultation room for completed consultation
+                      navigate(`/queue/${apt.id}/consult`);
+                    }}
+                  >
+                    View Consultation
+                  </Button>
+                )}
                 <StatusBadge
                   status={apt.paymentStatus || "PENDING"}
                   size="sm"

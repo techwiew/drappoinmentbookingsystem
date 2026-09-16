@@ -105,7 +105,7 @@ export const BillingPage: React.FC = () => {
       consultationFee,
       additionalFee,
       discount,
-      paidAmount: 0, // amount to pay in this transaction
+      paidAmount: consultationFee, // default to consultation fee as suggested by user
       paymentMethod: existingPayment ? existingPayment.paymentMethod : 'CASH',
       transactionReference: existingPayment ? existingPayment.transactionReference || '' : '',
     });
@@ -130,17 +130,13 @@ export const BillingPage: React.FC = () => {
     e.preventDefault();
     if (!selectedApt) return;
 
-    // Compute remaining amount for validation
+    // Compute remaining amount for reference (but don't validate against it)
     const existingPaidAmount = selectedApt._existingPayment?.paidAmount || 0;
     const invoiceTotal = Math.max(0, (payForm.consultationFee || 0) + (payForm.additionalFee || 0) - (payForm.discount || 0));
     const remaining = Math.max(0, invoiceTotal - existingPaidAmount);
 
     if (payForm.paidAmount <= 0) {
       setPaymentError('Amount to pay must be greater than zero');
-      return;
-    }
-    if (payForm.paidAmount > remaining) {
-      setPaymentError(`Amount to pay exceeds remaining balance of ₹${remaining.toFixed(2)}`);
       return;
     }
 
@@ -490,12 +486,7 @@ export const BillingPage: React.FC = () => {
               </span>
             </div>
 
-            {payForm.paidAmount > remaining && (
-              <div className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 border border-rose-200 rounded-lg">
-                ⚠️ Amount to pay exceeds remaining balance. Please adjust.
-              </div>
-            )}
-
+            
             {paymentError && (
               <div className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 border border-rose-200 rounded-lg">
                 {paymentError}

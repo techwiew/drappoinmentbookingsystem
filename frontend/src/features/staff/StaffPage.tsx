@@ -83,6 +83,26 @@ export const StaffPage: React.FC = () => {
     },
   });
 
+  const deleteDoctorMutation = useMutation({
+    mutationFn: async (doctorId: string) => {
+      const res = await apiClient.delete(`/doctors/${doctorId}`);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['doctors'] });
+    },
+  });
+
+  const deleteReceptionistMutation = useMutation({
+    mutationFn: async (receptionistId: string) => {
+      const res = await apiClient.delete(`/receptionists/${receptionistId}`);
+      return res.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['receptionists'] });
+    },
+  });
+
   const weekdays = [
     { code: 'MON', label: 'Mon' },
     { code: 'TUE', label: 'Tue' },
@@ -227,6 +247,22 @@ export const StaffPage: React.FC = () => {
                   <span>Reg: {doc.registrationNumber || 'N/A'}</span>
                   <span>{doc.qualification}</span>
                 </div>
+
+                {(role === 'SUPER_ADMIN') && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full mt-3"
+                    isLoading={deleteDoctorMutation.isPending}
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete Dr. ${doc.name}? This action cannot be undone.`)) {
+                        deleteDoctorMutation.mutate(doc.id);
+                      }
+                    }}
+                  >
+                    Delete Doctor
+                  </Button>
+                )}
               </Card>
             ))
           )}
@@ -267,6 +303,22 @@ export const StaffPage: React.FC = () => {
                   <div className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-400" />{rec.mobile}</div>
                   <div className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-slate-400" />{rec.email}</div>
                 </div>
+
+                {(role === 'SUPER_ADMIN') && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full mt-3"
+                    isLoading={deleteReceptionistMutation.isPending}
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete Receptionist ${rec.name}? This action cannot be undone.`)) {
+                        deleteReceptionistMutation.mutate(rec.id);
+                      }
+                    }}
+                  >
+                    Delete Receptionist
+                  </Button>
+                )}
               </Card>
             ))
           )}

@@ -100,4 +100,66 @@ export class ReceptionistService {
 
     return updated;
   }
+
+  static async deleteReceptionist(clinicId: string, receptionistId: string, deleterUserId: string) {
+    const receptionist = await prisma.receptionist.findFirst({
+      where: { id: receptionistId, clinicId },
+    });
+    if (!receptionist) {
+      throw { statusCode: 404, code: 'RECEPTIONIST_NOT_FOUND', message: 'Receptionist not found in this clinic' };
+    }
+
+    // Check if receptionist has any active appointments today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextDay = new Date(today);
+    nextDay.setDate(today.getDate() + 1);
+
+    const activeAppointmentsToday = await prisma.appointment.count({
+      where: {
+        receptionistId: receptionistId,
+        appointmentDate: {
+          gte: today,
+          lt: nextDay,
+        },
+        status: { in: ['BOOKED', 'CHECKED_IN', 'WAITING', 'IN_CONSULTATION'] },
+      },
+    });
+
+    if (activeAppointmentsToday > 0) {
+      throw {
+        statusCode: 409,
+        code: 'RECEPTIONIST_HAS_ACTIVE_RECORDS',
+        message: 'Cannot delete receptionist with active appointments today',
+      };
+    }
+
+    // Delete clinic-user relationship first
+    await prisma.clinicUser.deleteMany({
+      where: {
+        clinicId: clinicId,
+        userId: receptionist.userId,
+      },
+    });
+
+    // Delete the user account
+    await prisma.user.delete({
+      where: { id: receptionist.userId },
+    });
+
+    // Delete the receptionist record
+    const deleted = await prisma.receptionist.delete({
+      where: { id: receptionistId },
+    });
+
+    await logAudit({
+      clinicId,
+      userId: deleterUserId,
+      action: 'RECEPTIONIST_DELETED',
+      entityType: 'Receptionist',
+      entityId: receptionistId,
+    });
+
+    return deleted;
+  }
 }

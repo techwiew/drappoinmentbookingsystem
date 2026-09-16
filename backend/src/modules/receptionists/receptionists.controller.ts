@@ -38,4 +38,17 @@ export class ReceptionistController {
       next(error);
     }
   }
+
+  static async deleteReceptionist(req: Request, res: Response, next: NextFunction) {
+    try {
+      const receptionist = await ReceptionistService.deleteReceptionist(
+        req.tenant!.clinicId,
+        req.params.id,
+        req.user!.userId
+      );
+      return sendSuccess(res, receptionist, 'Receptionist deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
