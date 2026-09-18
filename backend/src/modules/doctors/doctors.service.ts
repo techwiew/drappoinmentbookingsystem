@@ -114,6 +114,16 @@ export class DoctorService {
       throw { statusCode: 404, code: 'DOCTOR_NOT_FOUND', message: 'Doctor not found in this clinic' };
     }
 
+    if (data.status === 'ACTIVE' && doctor.status !== 'ACTIVE') {
+      const [clinic, activeDoctors] = await Promise.all([
+        prisma.clinic.findUnique({ where: { id: clinicId }, select: { maxDoctors: true } }),
+        prisma.doctor.count({ where: { clinicId, status: 'ACTIVE' } }),
+      ]);
+      if (clinic && activeDoctors >= clinic.maxDoctors) {
+        throw { statusCode: 409, code: 'DOCTOR_QUOTA_EXCEEDED', message: `This clinic has reached its limit of ${clinic.maxDoctors} active doctors` };
+      }
+    }
+
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.mobile !== undefined) updateData.mobile = data.mobile;
@@ -149,45 +159,28 @@ export class DoctorService {
       throw { statusCode: 404, code: 'DOCTOR_NOT_FOUND', message: 'Doctor not found in this clinic' };
     }
 
-    // Check if doctor has any active appointments or consultations
-    const activeAppointments = await prisma.appointment.count({
-      where: {
-        doctorId: doctorId,
-        status: { in: ['BOOKED', 'CHECKED_IN', 'WAITING', 'IN_CONSULTATION'] },
-      },
-    });
+    // Appointment and consultation relations cascade on doctor deletion, so
+    // preserve clinical history by refusing to delete a doctor with records.
+    const [appointments, consultations, prescriptions] = await Promise.all([
+      prisma.appointment.count({ where: { doctorId } }),
+      prisma.consultation.count({ where: { doctorId } }),
+      prisma.prescription.count({ where: { doctorId } }),
+    ]);
 
-    const activeConsultations = await prisma.consultation.count({
-      where: {
-        doctorId: doctorId,
-        status: { in: ['DRAFT', 'IN_CONSULTATION'] },
-      },
-    });
-
-    if (activeAppointments > 0 || activeConsultations > 0) {
+    if (appointments > 0 || consultations > 0 || prescriptions > 0) {
       throw {
         statusCode: 409,
-        code: 'DOCTOR_HAS_ACTIVE_RECORDS',
-        message: 'Cannot delete doctor with active appointments or consultations',
+        code: 'DOCTOR_HAS_CLINICAL_RECORDS',
+        message: 'Cannot delete a doctor with clinical records; deactivate the doctor instead',
       };
     }
 
-    // Delete clinic-user relationship first
-    await prisma.clinicUser.deleteMany({
-      where: {
-        clinicId: clinicId,
-        userId: doctor.userId,
-      },
-    });
-
-    // Delete the user account
-    await prisma.user.delete({
-      where: { id: doctor.userId },
-    });
-
-    // Delete the doctor record
-    const deleted = await prisma.doctor.delete({
-      where: { id: doctorId },
+    // Deleting the user cascades to its doctor and clinic-user records.
+    // Keep the entire operation atomic so a failed delete cannot leave a partial account.
+    const deleted = await prisma.$transaction(async (tx) => {
+      const removed = await tx.doctor.delete({ where: { id: doctorId } });
+      await tx.user.delete({ where: { id: doctor.userId } });
+      return removed;
     });
 
     await logAudit({

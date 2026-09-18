@@ -167,6 +167,10 @@ export class PatientService {
       // Auto-assign if only 1 doctor exists
       assignedDoctorIds = [clinicDoctors[0].id];
     }
+    const activeDoctorIds = new Set(clinicDoctors.map((doctor) => doctor.id));
+    if (assignedDoctorIds.some((id) => !activeDoctorIds.has(id))) {
+      throw { statusCode: 400, code: 'INVALID_DOCTOR', message: 'Assigned doctors must be active members of this clinic' };
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const patient = await tx.patient.create({
@@ -313,6 +317,7 @@ export class PatientService {
         totalAmount: Number(p.totalAmount),
         paidAmount: Number(p.paidAmount),
         pendingAmount: Number(p.pendingAmount),
+        excessAmount: Math.max(0, Number(p.paidAmount) - Number(p.totalAmount)),
         paymentMethod: p.paymentMethod,
         paymentStatus: p.paymentStatus,
         transactionReference: p.transactionReference,

@@ -136,7 +136,11 @@ export class ConsultationService {
       throw { statusCode: 404, code: 'APPOINTMENT_NOT_FOUND', message: 'Appointment not found' };
     }
 
-    const docId = data.doctorId || appointment.doctorId || doctorId;
+    if (appointment.doctorId !== doctorId || (data.doctorId && data.doctorId !== doctorId)) {
+      throw { statusCode: 403, code: 'DOCTOR_MISMATCH', message: 'This appointment belongs to another doctor' };
+    }
+
+    const docId = doctorId;
     const patientId = appointment.patientId;
     const chiefComplaint = toConsultationText(data.chiefComplaint) ?? '';
     const diagnosis = toConsultationText(data.diagnosis) ?? '';
@@ -369,12 +373,16 @@ export class ConsultationService {
       throw { statusCode: 404, code: 'PATIENT_NOT_FOUND', message: 'Patient not found' };
     }
 
+    if (!actor.doctorId || (data.doctorId && data.doctorId !== actor.doctorId)) {
+      throw { statusCode: 403, code: 'DOCTOR_MISMATCH', message: 'Only the assigned doctor can open this consultation' };
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + 1);
 
-    const requestedDoctorId = data.doctorId || actor.doctorId || undefined;
+    const requestedDoctorId = actor.doctorId;
 
     let appointment = await prisma.appointment.findFirst({
       where: {
@@ -544,7 +552,8 @@ export class ConsultationService {
     clinicId: string,
     consultationId: string,
     data: any,
-    doctorUserId: string
+    doctorUserId: string,
+    doctorId: string
   ) {
     const consultation = await prisma.consultation.findFirst({
       where: { id: consultationId, clinicId },
@@ -557,6 +566,10 @@ export class ConsultationService {
 
     if (!consultation) {
       throw { statusCode: 404, code: 'NOT_FOUND', message: 'Consultation not found' };
+    }
+
+    if (consultation.doctorId !== doctorId) {
+      throw { statusCode: 403, code: 'DOCTOR_MISMATCH', message: 'This consultation belongs to another doctor' };
     }
 
     if (consultation.status === 'COMPLETED') {

@@ -5,7 +5,8 @@ import { sendSuccess } from '../../utils/response.js';
 export class ReportsController {
   static async getDoctorDashboard(req: Request, res: Response, next: NextFunction) {
     try {
-      const doctorId = (req.query.doctorId as string) || req.tenant?.doctorId;
+      const doctorId = req.tenant!.doctorId;
+      if (!doctorId) throw { statusCode: 403, code: 'DOCTOR_REQUIRED', message: 'Doctor profile required' };
       const data = await ReportsService.getDoctorDashboard(
         req.tenant!.clinicId,
         doctorId

@@ -20,29 +20,29 @@ router.get('/:id', ConsultationController.getById);
 
 router.post(
   '/open',
-  requireRole('DOCTOR', 'RECEPTIONIST'),
+  requireRole('DOCTOR'),
   validateRequest(openConsultationSchema),
   ConsultationController.open
 );
 
-// Both DOCTOR and RECEPTIONIST can create or update consultations
+// Clinical records may only be written by the assigned doctor.
 router.post(
   '/',
-  requireRole('DOCTOR', 'RECEPTIONIST'),
+  requireRole('DOCTOR'),
   validateRequest(createConsultationSchema),
   ConsultationController.create
 );
 
 router.patch(
   '/:id',
-  requireRole('DOCTOR', 'RECEPTIONIST'),
+  requireRole('DOCTOR'),
   validateRequest(updateConsultationSchema),
   ConsultationController.update
 );
 
 router.put(
   '/:id',
-  requireRole('DOCTOR', 'RECEPTIONIST'),
+  requireRole('DOCTOR'),
   validateRequest(updateConsultationSchema),
   ConsultationController.update
 );

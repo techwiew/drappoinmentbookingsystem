@@ -3,6 +3,12 @@ SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 SET time_zone = '+00:00';
 SET NAMES utf8mb4;
 
+-- Fresh setup: the DROP statements below replace all existing application data.
+-- Demo appointments use the Asia/Kolkata calendar date even when MySQL runs in UTC.
+SET @demo_today = DATE(UTC_TIMESTAMP() + INTERVAL 330 MINUTE);
+
+-- For local testing, make this database name match backend/.env DATABASE_URL.
+-- Change both CREATE DATABASE and USE below if your local schema has another name.
 CREATE DATABASE IF NOT EXISTS `yrrxigfu_medinovel.com`
 DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
@@ -17,6 +23,7 @@ DROP TABLE IF EXISTS `subscription_payments`;
 DROP TABLE IF EXISTS `subscriptions`;
 DROP TABLE IF EXISTS `admission_payments`;
 DROP TABLE IF EXISTS `admissions`;
+DROP TABLE IF EXISTS `payment_receipts`;
 DROP TABLE IF EXISTS `payments`;
 DROP TABLE IF EXISTS `prescription_items`;
 DROP TABLE IF EXISTS `prescriptions`;
@@ -28,6 +35,7 @@ DROP TABLE IF EXISTS `receptionists`;
 DROP TABLE IF EXISTS `doctors`;
 DROP TABLE IF EXISTS `clinic_users`;
 DROP TABLE IF EXISTS `audit_logs`;
+DROP TABLE IF EXISTS `inquiries`;
 DROP TABLE IF EXISTS `subscription_plans`;
 DROP TABLE IF EXISTS `clinics`;
 DROP TABLE IF EXISTS `users`;
@@ -266,6 +274,7 @@ CREATE TABLE `appointments` (
         'BOOKED',
         'CHECKED_IN',
         'WAITING',
+        'READY_FOR_DOCTOR',
         'IN_CONSULTATION',
         'COMPLETED',
         'CANCELLED',
@@ -274,6 +283,7 @@ CREATE TABLE `appointments` (
     ) NOT NULL DEFAULT 'BOOKED',
     `consultationFee` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `notes` TEXT NULL,
+    `reasonForVisit` TEXT NULL,
     `createdBy` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
@@ -376,6 +386,8 @@ CREATE TABLE `payments` (
     `additionalFee` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `discount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `totalAmount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    -- paidAmount may exceed totalAmount; the difference is excess received.
+    -- pendingAmount remains zero once the invoice is fully covered.
     `paidAmount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `pendingAmount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `paymentMethod` ENUM('CASH','UPI','CARD','OTHER') NOT NULL DEFAULT 'CASH',
@@ -389,6 +401,28 @@ CREATE TABLE `payments` (
     INDEX `payments_patientId_idx` (`patientId`),
     INDEX `payments_appointmentId_idx` (`appointmentId`),
     INDEX `payments_paymentStatus_idx` (`paymentStatus`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+DEFAULT CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+-- =========================================================
+-- PAYMENT RECEIPTS
+-- =========================================================
+
+-- Payment collections are separate from invoices so a fee collected today
+-- remains in today's dashboard even if its invoice was created earlier.
+CREATE TABLE `payment_receipts` (
+    `id` VARCHAR(191) NOT NULL,
+    `clinicId` VARCHAR(191) NOT NULL,
+    `paymentId` VARCHAR(191) NOT NULL,
+    `doctorId` VARCHAR(191) NULL,
+    `amount` DECIMAL(10,2) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `payment_receipts_clinicId_createdAt_idx` (`clinicId`,`createdAt`),
+    INDEX `payment_receipts_doctorId_createdAt_idx` (`doctorId`,`createdAt`),
+    INDEX `payment_receipts_paymentId_idx` (`paymentId`),
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB
 DEFAULT CHARACTER SET utf8mb4
@@ -529,6 +563,26 @@ DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
 -- =========================================================
+-- CONTACT INQUIRIES
+-- =========================================================
+
+CREATE TABLE `inquiries` (
+    `id` VARCHAR(191) NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `phone` VARCHAR(191) NOT NULL,
+    `clinicType` VARCHAR(191) NOT NULL,
+    `city` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+        ON UPDATE CURRENT_TIMESTAMP(3),
+
+    INDEX `inquiries_createdAt_idx` (`createdAt`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+DEFAULT CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+-- =========================================================
 -- FOREIGN KEYS
 -- =========================================================
 
@@ -659,6 +713,21 @@ ALTER TABLE `payments`
 
 ALTER TABLE `payments`
     ADD CONSTRAINT `payments_doctorId_fkey`
+    FOREIGN KEY (`doctorId`) REFERENCES `doctors` (`id`)
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `payment_receipts`
+    ADD CONSTRAINT `payment_receipts_clinicId_fkey`
+    FOREIGN KEY (`clinicId`) REFERENCES `clinics` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `payment_receipts`
+    ADD CONSTRAINT `payment_receipts_paymentId_fkey`
+    FOREIGN KEY (`paymentId`) REFERENCES `payments` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `payment_receipts`
+    ADD CONSTRAINT `payment_receipts_doctorId_fkey`
     FOREIGN KEY (`doctorId`) REFERENCES `doctors` (`id`)
     ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -1373,7 +1442,8 @@ INSERT INTO `appointments`
     `tokenNumber`,
     `status`,
     `consultationFee`,
-    `notes`
+    `notes`,
+    `reasonForVisit`
 )
 VALUES
 (
@@ -1381,65 +1451,70 @@ VALUES
     'clinic-sharma',
     'pat-1001',
     'doc-raj',
-    CURDATE(),
+    @demo_today,
     '09:30 AM',
     'FOLLOW_UP',
     1,
     'COMPLETED',
     700.00,
-    'Blood pressure check follow-up'
+    'Blood pressure check follow-up',
+    'Routine blood pressure review'
 ),
 (
     'appt-2',
     'clinic-sharma',
     'pat-1003',
     'doc-raj',
-    CURDATE(),
+    @demo_today,
     '10:15 AM',
     'NEW_PATIENT',
     2,
     'IN_CONSULTATION',
     700.00,
-    'Palpitations after workout'
+    'Palpitations after workout',
+    'Palpitations after exercise'
 ),
 (
     'appt-3',
     'clinic-sharma',
     'pat-1004',
     'doc-raj',
-    CURDATE(),
+    @demo_today,
     '10:45 AM',
     'FOLLOW_UP',
     3,
     'WAITING',
     700.00,
-    'Checked in at desk at 10:10 AM'
+    'Checked in at desk at 10:10 AM',
+    'Diabetes and cholesterol follow-up'
 ),
 (
     'appt-4',
     'clinic-sharma',
     'pat-1002',
     'doc-priya',
-    CURDATE(),
+    @demo_today,
     '10:00 AM',
     'FOLLOW_UP',
     1,
     'WAITING',
     500.00,
-    'Thyroid report evaluation'
+    'Thyroid report evaluation',
+    'Review thyroid test results'
 ),
 (
     'appt-5',
     'clinic-sharma',
     'pat-1005',
     'doc-priya',
-    CURDATE(),
+    @demo_today,
     '10:30 AM',
     'NEW_PATIENT',
     2,
     'CHECKED_IN',
     500.00,
-    'Migraine complaints'
+    'Migraine complaints',
+    'Recurring migraine headaches'
 )
 ON DUPLICATE KEY UPDATE
     `status` = VALUES(`status`);
@@ -1477,7 +1552,7 @@ VALUES
     'Heart sounds normal, S1/S2 heard clearly. Patient is compliant with morning medication.',
     'Maintain low-sodium diet (less than 3g/day). 30 minutes brisk walking 5 days a week.',
     'Lipid Profile, Serum Creatinine in 3 months',
-    DATE_ADD(CURDATE(), INTERVAL 30 DAY),
+    DATE_ADD(@demo_today, INTERVAL 30 DAY),
     'COMPLETED'
 )
 ON DUPLICATE KEY UPDATE
@@ -1582,6 +1657,11 @@ VALUES
 )
 ON DUPLICATE KEY UPDATE
     `paymentStatus` = VALUES(`paymentStatus`);
+
+INSERT INTO `payment_receipts`
+(`id`,`clinicId`,`paymentId`,`doctorId`,`amount`)
+VALUES
+('receipt-pay-1','clinic-sharma','pay-1','doc-raj',700.00);
 
 -- =========================================================
 -- FINISH

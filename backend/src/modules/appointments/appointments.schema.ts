@@ -5,7 +5,7 @@ export const createAppointmentSchema = z.object({
   body: z.object({
     patientId: z.string().min(1, 'Patient ID is required'),
     doctorId: z.string().min(1, 'Doctor ID is required'),
-    appointmentDate: z.string().min(1, 'Appointment date is required'),
+    appointmentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Appointment date must use YYYY-MM-DD'),
     appointmentTime: z
       .string()
       .refine(isValidAppointmentTime, 'Appointment time must be a valid time')
@@ -14,6 +14,7 @@ export const createAppointmentSchema = z.object({
     appointmentType: z.enum(['NEW_PATIENT', 'FOLLOW_UP', 'WALK_IN', 'EMERGENCY']).default('NEW_PATIENT'),
     consultationFee: z.number().optional(),
     notes: z.string().optional(),
+    reasonForVisit: z.string().trim().min(1, 'Reason for visit is required').max(2000).optional(),
     directCheckIn: z.boolean().optional().default(false),
   }),
 });
@@ -32,16 +33,11 @@ export const updateAppointmentSchema = z.object({
     status: z.enum([
       'PENDING_CONFIRMATION',
       'BOOKED',
-      'CHECKED_IN',
-      'WAITING',
-      'IN_CONSULTATION',
-      'COMPLETED',
       'CANCELLED',
-      'NO_SHOW',
-      'SKIPPED',
     ]).optional(),
     consultationFee: z.number().optional(),
     notes: z.string().optional(),
+    reasonForVisit: z.string().trim().min(1).max(2000).optional(),
     doctorId: z.string().optional(),
   }),
 });

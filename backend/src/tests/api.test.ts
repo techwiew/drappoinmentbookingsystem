@@ -11,6 +11,7 @@ let doctorTokenClinicB = '';
 let clinicAId = '';
 let clinicBId = '';
 let doctorAId = '';
+let doctorBId = '';
 let patientAId = '';
 let appointmentAId = '';
 
@@ -65,6 +66,10 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
         pincode: "560001",
         tokenPrefix: "APO",
         planId,
+        planPrice: 1999,
+        activeMonths: 1,
+        maxDoctors: 1,
+        maxReceptionists: 1,
         adminName: "Dr. Vikram Apollo",
         adminEmail: docBEmail,
         adminPassword: "Doctor@123",
@@ -85,6 +90,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
     });
     expect(docBLogin.status).toBe(200);
     doctorTokenClinicB = docBLogin.body.data.accessToken;
+    doctorBId = docBLogin.body.data.user.doctor.id;
   });
 
   describe("1. Authentication & RBAC Checks", () => {
@@ -187,6 +193,13 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
   });
 
   describe("3. Multi-Tenant Strict Data Isolation (Clinic A vs Clinic B)", () => {
+    it("rejects assigning a Clinic B doctor to a Clinic A patient", async () => {
+      const res = await request(app)
+        .post("/api/patients")
+        .set("Authorization", `Bearer ${receptionistTokenClinicA}`)
+        .send({ fullName: "Cross Clinic Patient", mobile: "9820199988", doctorIds: [doctorBId] });
+      expect(res.status).toBe(400);
+    });
     it("PREVENTS Clinic B Doctor from accessing Clinic A Patient", async () => {
       const res = await request(app)
         .get(`/api/patients/${patientAId}`)
@@ -210,7 +223,9 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
 
   describe("4. Appointment Booking & Daily Queue State Machine", () => {
     it("books appointment and generates token", async () => {
-      const todayStr = new Date().toISOString().split("T")[0];
+      const slot = new Date(Date.now() + 5 * 60 * 1000);
+      const todayStr = `${slot.getFullYear()}-${String(slot.getMonth() + 1).padStart(2, '0')}-${String(slot.getDate()).padStart(2, '0')}`;
+      const appointmentTime = `${String(slot.getHours()).padStart(2, '0')}:${String(slot.getMinutes()).padStart(2, '0')}`;
       const res = await request(app)
         .post("/api/appointments")
         .set("Authorization", `Bearer ${receptionistTokenClinicA}`)
@@ -218,14 +233,15 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
           patientId: patientAId,
           doctorId: doctorAId,
           appointmentDate: todayStr,
-          appointmentTime: "11:30 AM",
+          appointmentTime,
           appointmentType: "NEW_PATIENT",
           directCheckIn: true,
+          reasonForVisit: "Severe migraine",
         });
 
       expect(res.status).toBe(201);
       expect(res.body.data.tokenNumber).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.status).toBe("WAITING");
+      expect(res.body.data.status).toBe("CHECKED_IN");
       appointmentAId = res.body.data.id;
     });
 
@@ -239,6 +255,17 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
     });
 
     it("transitions appointment to IN_CONSULTATION when doctor starts consultation", async () => {
+      const blocked = await request(app)
+        .post(`/api/queue/${appointmentAId}/start`)
+        .set("Authorization", `Bearer ${receptionistTokenClinicA}`);
+      expect(blocked.status).toBe(403);
+
+      const sent = await request(app)
+        .post(`/api/queue/${appointmentAId}/send`)
+        .set("Authorization", `Bearer ${receptionistTokenClinicA}`);
+      expect(sent.status).toBe(200);
+      expect(sent.body.data.status).toBe("READY_FOR_DOCTOR");
+
       const res = await request(app)
         .post(`/api/queue/${appointmentAId}/start`)
         .set("Authorization", `Bearer ${doctorTokenClinicA}`);

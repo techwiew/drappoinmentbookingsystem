@@ -28,17 +28,22 @@ export const AppointmentsPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Helper function to get current time in HH:MM format
-  const getCurrentTime = (): string => {
-    const now = new Date();
+  const getSuggestedSlot = () => {
+    const now = new Date(Date.now() + 2 * 60 * 1000);
+    if (now.getSeconds() > 0 || now.getMilliseconds() > 0) now.setMinutes(now.getMinutes() + 1);
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
+    return {
+      appointmentDate: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+      appointmentTime: `${hours}:${minutes}`,
+    };
   };
+  const getCurrentTime = () => getSuggestedSlot().appointmentTime;
 
   // Helper function to get today's date in YYYY-MM-DD format
   const getTodayDate = (): string => {
-    return new Date().toISOString().split("T")[0];
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   };
 
   const [isBookModalOpen, setIsBookModalOpen] = useState(
@@ -67,11 +72,12 @@ export const AppointmentsPage: React.FC = () => {
   const [bookForm, setBookForm] = useState({
     patientId: searchParams.get("patientId") || "",
     doctorId: doctorId || "",
-    appointmentDate: getTodayDate(),
+    appointmentDate: getSuggestedSlot().appointmentDate,
     appointmentTime: getCurrentTime(),
     appointmentType: "WALK_IN",
-    directCheckIn: true,
+    directCheckIn: false,
     notes: "",
+    reasonForVisit: "",
   });
 
   const { data: appointments, isLoading } = useQuery({
@@ -87,7 +93,7 @@ export const AppointmentsPage: React.FC = () => {
   });
 
   const { data: patients } = useQuery({
-    queryKey: ["patients-list"],
+    queryKey: ["patients-list", search],
     queryFn: async () => {
       const res = await apiClient.get("/patients", { params: { search } });
       return res.data.data;
@@ -112,6 +118,7 @@ export const AppointmentsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["live-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["reception-queue"] });
       setIsBookModalOpen(false);
     },
   });
@@ -135,6 +142,8 @@ export const AppointmentsPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["live-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["reception-queue"] });
     },
   });
 
@@ -202,8 +211,8 @@ export const AppointmentsPage: React.FC = () => {
     const appointmentDate = new Date(inputYear, inputMonth - 1, inputDay, inputHours, inputMinutes);
     const now = new Date();
 
-    if (appointmentDate < now) {
-      setBookingError("Appointment date and time must be in the future.");
+    if (appointmentDate.getTime() < now.getTime() + 2 * 60 * 1000) {
+      setBookingError("Appointment time must be at least two minutes from now.");
       return;
     }
 
@@ -289,7 +298,7 @@ export const AppointmentsPage: React.FC = () => {
         </div>
         <Button
           variant="primary"
-          onClick={() => setIsBookModalOpen(true)}
+          onClick={() => { setBookForm((current) => ({ ...current, ...getSuggestedSlot() })); setIsBookModalOpen(true); }}
           leftIcon={<Plus className="w-4 h-4" />}
         >
           Book Appointment
@@ -364,7 +373,7 @@ export const AppointmentsPage: React.FC = () => {
                     <Button
                       className="mt-3"
                       size="sm"
-                      onClick={() => setIsBookModalOpen(true)}
+                      onClick={() => { setBookForm((current) => ({ ...current, ...getSuggestedSlot() })); setIsBookModalOpen(true); }}
                     >
                       Book First Appointment
                     </Button>
@@ -444,7 +453,7 @@ export const AppointmentsPage: React.FC = () => {
                           Confirm Visit
                         </Button>
                       )}
-                      {apt.status === "IN_CONSULTATION" && (
+                      {role === 'DOCTOR' && apt.status === "IN_CONSULTATION" && (
                         <Button
                           size="sm"
                           variant="primary"
@@ -454,7 +463,9 @@ export const AppointmentsPage: React.FC = () => {
                           Open Consultation
                         </Button>
                       )}
-                      {(apt.status === "WAITING" ||
+                      {(apt.status === "READY_FOR_DOCTOR" ||
+                        apt.status === "CHECKED_IN" ||
+                        apt.status === "WAITING" ||
                         apt.status === "BOOKED" ||
                         apt.status === "PENDING_CONFIRMATION") && (
                         <Button
@@ -662,27 +673,18 @@ export const AppointmentsPage: React.FC = () => {
               label="Appointment Time"
               type="time"
               required
+              min={bookForm.appointmentDate === getTodayDate() ? getCurrentTime() : undefined}
               value={bookForm.appointmentTime}
-              onChange={(e) => {
-                const timeValue = e.target.value;
-                // Validate that the time is not in the past for today's date
-                if (bookForm.appointmentDate === getTodayDate()) {
-                  const [inputHours, inputMinutes] = timeValue.split(':').map(Number);
-                  const now = new Date();
-                  const currentHours = now.getHours();
-                  const currentMinutes = now.getMinutes();
-
-                  // Only allow time if it's in the future or equal to current time
-                  if (inputHours < currentHours ||
-                      (inputHours === currentHours && inputMinutes < currentMinutes)) {
-                    // Don't update the time if it's in the past
-                    return;
-                  }
-                }
-                setBookForm({ ...bookForm, appointmentTime: timeValue });
-              }}
+              onChange={(e) => setBookForm({ ...bookForm, appointmentTime: e.target.value })}
             />
           </div>
+
+          <Textarea
+            label="Reason for Visit"
+            required
+            value={bookForm.reasonForVisit}
+            onChange={(e) => setBookForm({ ...bookForm, reasonForVisit: e.target.value })}
+          />
 
           <Select
             label="Appointment Type"
@@ -712,8 +714,7 @@ export const AppointmentsPage: React.FC = () => {
               htmlFor="directCheckIn"
               className="text-xs font-medium text-slate-700"
             >
-              Direct Check-In (Patient is present now — add to today's WAITING
-              queue immediately)
+              Check in patient now (reception must still use Send to Dr)
             </label>
           </div>
 

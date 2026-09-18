@@ -12,7 +12,7 @@ router.get('/current', async (req: Request, res: Response, next: NextFunction) =
   try {
     const subscription = await prisma.subscription.findUnique({
       where: { clinicId: req.tenant!.clinicId },
-      include: { plan: true },
+      include: { plan: true, clinic: { select: { maxDoctors: true, maxReceptionists: true } } },
     });
 
     return sendSuccess(res, {
@@ -26,8 +26,8 @@ router.get('/current', async (req: Request, res: Response, next: NextFunction) =
             startDate: subscription.startDate,
             endDate: subscription.endDate,
             billingCycle: subscription.billingCycle,
-            maxDoctors: subscription.plan.maxDoctors,
-            maxReceptionists: subscription.plan.maxReceptionists,
+            maxDoctors: subscription.clinic.maxDoctors,
+            maxReceptionists: subscription.clinic.maxReceptionists,
             features: JSON.parse(subscription.plan.features || '[]'),
           }
         : null,

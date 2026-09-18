@@ -46,12 +46,11 @@ export const AdmissionsPage: React.FC = () => {
   const admitMutation = useMutation({
     mutationFn: async () => {
       // Transform form data to match backend expectations
+      const { initialPayment, ...admissionFields } = form;
       const admissionData = {
-        ...form,
-        totalAmount: form.initialPayment, // Map initialPayment to totalAmount for backend
+        ...admissionFields,
+        totalAmount: initialPayment,
       };
-      // Remove initialPayment since backend doesn't expect it
-      delete admissionData.initialPayment;
       return (await apiClient.post('/admissions', admissionData)).data.data;
     },
     onSuccess: () => {

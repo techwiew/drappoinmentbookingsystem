@@ -1,25 +1,17 @@
 import { prisma } from '../../lib/prisma.js';
+import { dateOnlyRange, localDateKey } from '../../utils/time.js';
 
 export class ReportsService {
-  private static normalizeDateToISOString(dateStr: string): string {
-    // Assumes dateStr is in YYYY-MM-DD format
-    return `${dateStr}T00:00:00.000Z`;
-  }
-
   static async getDoctorDashboard(clinicId: string, doctorId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + 1);
-    const todayStr = this.normalizeDateToISOString(today.toISOString().split('T')[0]);
-    const nextDayStr = this.normalizeDateToISOString(nextDay.toISOString().split('T')[0]);
+    const appointmentDateRange = dateOnlyRange(localDateKey(today));
 
     const whereAppt: any = {
       clinicId,
-      appointmentDate: {
-        gte: todayStr,
-        lt: nextDayStr,
-      },
+      appointmentDate: appointmentDateRange,
     };
 
     if (doctorId && doctorId !== 'ALL') {
@@ -38,7 +30,7 @@ export class ReportsService {
     });
 
     const totalToday = todayAppointments.length;
-    const waitingCount = todayAppointments.filter((a) => a.status === 'WAITING' || a.status === 'CHECKED_IN').length;
+    const waitingCount = todayAppointments.filter((a) => ['WAITING', 'CHECKED_IN', 'READY_FOR_DOCTOR'].includes(a.status)).length;
     const inConsultationCount = todayAppointments.filter((a) => a.status === 'IN_CONSULTATION').length;
     const completedCount = todayAppointments.filter((a) => a.status === 'COMPLETED').length;
     const noShowCount = todayAppointments.filter((a) => a.status === 'NO_SHOW').length;
@@ -49,25 +41,23 @@ export class ReportsService {
     const todayPayments = await prisma.payment.findMany({
       where: {
         clinicId,
-        createdAt: {
-          gte: todayStr,
-          lt: nextDayStr,
-        },
+        createdAt: { gte: today, lt: nextDay },
         ...(doctorId && doctorId !== 'ALL' ? { doctorId } : {}),
       },
     });
 
-    const todayCollection = todayPayments.reduce((sum, p) => sum + Number(p.paidAmount), 0);
+    const todayReceipts = await prisma.paymentReceipt.findMany({
+      where: { clinicId, createdAt: { gte: today, lt: nextDay }, ...(doctorId && doctorId !== 'ALL' ? { doctorId } : {}) },
+      select: { amount: true },
+    });
+    const todayCollection = todayReceipts.reduce((sum, receipt) => sum + Number(receipt.amount), 0);
     const pendingPayments = todayPayments.reduce((sum, p) => sum + Number(p.pendingAmount), 0);
 
     // Follow-ups due today
     const followUpsDue = await prisma.consultation.findMany({
       where: {
         clinicId,
-        nextVisitDate: {
-          gte: todayStr,
-          lt: nextDayStr,
-        },
+        nextVisitDate: appointmentDateRange,
         ...(doctorId && doctorId !== 'ALL' ? { doctorId } : {}),
       },
       include: {
@@ -81,7 +71,7 @@ export class ReportsService {
     sevenDaysAgo.setDate(today.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    const pastPayments = await prisma.payment.findMany({
+    const pastPayments = await prisma.paymentReceipt.findMany({
       where: {
         clinicId,
         createdAt: {
@@ -90,9 +80,8 @@ export class ReportsService {
         ...(doctorId && doctorId !== 'ALL' ? { doctorId } : {}),
       },
       select: {
-        paidAmount: true,
+        amount: true,
         createdAt: true,
-        paymentMethod: true,
       },
     });
 
@@ -100,14 +89,14 @@ export class ReportsService {
     for (let i = 0; i < 7; i++) {
       const d = new Date(sevenDaysAgo);
       d.setDate(d.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = localDateKey(d);
       dailyRevenueMap[dateStr] = 0;
     }
 
     pastPayments.forEach((p) => {
-      const dateStr = p.createdAt.toISOString().split('T')[0];
+      const dateStr = localDateKey(p.createdAt);
       if (dailyRevenueMap[dateStr] !== undefined) {
-        dailyRevenueMap[dateStr] += Number(p.paidAmount);
+        dailyRevenueMap[dateStr] += Number(p.amount);
       }
     });
 
@@ -161,18 +150,14 @@ export class ReportsService {
     today.setHours(0, 0, 0, 0);
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + 1);
-    const todayStr = this.normalizeDateToISOString(today.toISOString().split('T')[0]);
-    const nextDayStr = this.normalizeDateToISOString(nextDay.toISOString().split('T')[0]);
+    const appointmentDateRange = dateOnlyRange(localDateKey(today));
 
     const doctors = await prisma.doctor.findMany({
       where: { clinicId, status: 'ACTIVE' },
       include: {
         appointments: {
           where: {
-            appointmentDate: {
-              gte: todayStr,
-              lt: nextDayStr,
-            },
+            appointmentDate: appointmentDateRange,
           },
           include: { patient: true },
           orderBy: { tokenNumber: 'asc' },
@@ -183,17 +168,18 @@ export class ReportsService {
     const todayPayments = await prisma.payment.findMany({
       where: {
         clinicId,
-        createdAt: {
-          gte: todayStr,
-          lt: nextDayStr,
-        },
+        createdAt: { gte: today, lt: nextDay },
       },
     });
 
-    const todayCollection = todayPayments.reduce((sum, p) => sum + Number(p.paidAmount), 0);
+    const todayReceipts = await prisma.paymentReceipt.findMany({
+      where: { clinicId, createdAt: { gte: today, lt: nextDay } },
+      select: { amount: true },
+    });
+    const todayCollection = todayReceipts.reduce((sum, receipt) => sum + Number(receipt.amount), 0);
     const totalAppointments = doctors.reduce((sum, d) => sum + d.appointments.length, 0);
     const waitingTokens = doctors.reduce(
-      (sum, d) => sum + d.appointments.filter((a) => a.status === 'WAITING' || a.status === 'CHECKED_IN').length,
+      (sum, d) => sum + d.appointments.filter((a) => ['WAITING', 'CHECKED_IN', 'READY_FOR_DOCTOR'].includes(a.status)).length,
       0
     );
     const completedTokens = doctors.reduce(
@@ -217,9 +203,9 @@ export class ReportsService {
         totalTokens: d.appointments.length,
         currentConsultation: d.appointments.find((a) => a.status === 'IN_CONSULTATION')?.patient.fullName || null,
         currentTokenNumber: d.appointments.find((a) => a.status === 'IN_CONSULTATION')?.tokenNumber || null,
-        nextWaitingPatient: d.appointments.find((a) => a.status === 'WAITING' || a.status === 'CHECKED_IN')?.patient.fullName || null,
-        nextWaitingToken: d.appointments.find((a) => a.status === 'WAITING' || a.status === 'CHECKED_IN')?.tokenNumber || null,
-        waitingCount: d.appointments.filter((a) => a.status === 'WAITING' || a.status === 'CHECKED_IN').length,
+        nextWaitingPatient: d.appointments.find((a) => ['WAITING', 'CHECKED_IN', 'READY_FOR_DOCTOR'].includes(a.status))?.patient.fullName || null,
+        nextWaitingToken: d.appointments.find((a) => ['WAITING', 'CHECKED_IN', 'READY_FOR_DOCTOR'].includes(a.status))?.tokenNumber || null,
+        waitingCount: d.appointments.filter((a) => ['WAITING', 'CHECKED_IN', 'READY_FOR_DOCTOR'].includes(a.status)).length,
         completedCount: d.appointments.filter((a) => a.status === 'COMPLETED').length,
       })),
     };

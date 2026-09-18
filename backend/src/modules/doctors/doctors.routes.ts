@@ -16,7 +16,7 @@ router.get('/', DoctorController.listDoctors);
 // Only DOCTOR with clinic admin rights or doctor role can register new doctor
 router.post(
   '/',
-  requireRole('DOCTOR'),
+  requireRole('DOCTOR', 'RECEPTIONIST'),
   validateRequest(createDoctorSchema),
   DoctorController.createDoctor
 );

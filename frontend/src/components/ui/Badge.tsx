@@ -76,6 +76,8 @@ export const StatusBadge: React.FC<{ status: string; size?: 'sm' | 'md'; classNa
       return <Badge variant="primary" size={size} dot className={className}>In Consultation</Badge>;
     case 'WAITING':
       return <Badge variant="warning" size={size} dot className={className}>Waiting</Badge>;
+    case 'READY_FOR_DOCTOR':
+      return <Badge variant="info" size={size} dot className={className}>Sent to Doctor</Badge>;
     case 'CHECKED_IN':
       return <Badge variant="info" size={size} className={className}>Checked In</Badge>;
     case 'BOOKED':

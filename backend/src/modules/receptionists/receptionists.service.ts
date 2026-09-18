@@ -81,6 +81,16 @@ export class ReceptionistService {
       throw { statusCode: 404, code: 'RECEPTIONIST_NOT_FOUND', message: 'Receptionist not found in this clinic' };
     }
 
+    if (data.status === 'ACTIVE' && receptionist.status !== 'ACTIVE') {
+      const [clinic, activeReceptionists] = await Promise.all([
+        prisma.clinic.findUnique({ where: { id: clinicId }, select: { maxReceptionists: true } }),
+        prisma.receptionist.count({ where: { clinicId, status: 'ACTIVE' } }),
+      ]);
+      if (clinic && activeReceptionists >= clinic.maxReceptionists) {
+        throw { statusCode: 409, code: 'RECEPTIONIST_QUOTA_EXCEEDED', message: `This clinic has reached its limit of ${clinic.maxReceptionists} active receptionists` };
+      }
+    }
+
     const updated = await prisma.receptionist.update({
       where: { id: receptionistId },
       data: {
@@ -109,47 +119,11 @@ export class ReceptionistService {
       throw { statusCode: 404, code: 'RECEPTIONIST_NOT_FOUND', message: 'Receptionist not found in this clinic' };
     }
 
-    // Check if receptionist has any active appointments today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const nextDay = new Date(today);
-    nextDay.setDate(today.getDate() + 1);
-
-    const activeAppointmentsToday = await prisma.appointment.count({
-      where: {
-        receptionistId: receptionistId,
-        appointmentDate: {
-          gte: today,
-          lt: nextDay,
-        },
-        status: { in: ['BOOKED', 'CHECKED_IN', 'WAITING', 'IN_CONSULTATION'] },
-      },
-    });
-
-    if (activeAppointmentsToday > 0) {
-      throw {
-        statusCode: 409,
-        code: 'RECEPTIONIST_HAS_ACTIVE_RECORDS',
-        message: 'Cannot delete receptionist with active appointments today',
-      };
-    }
-
-    // Delete clinic-user relationship first
-    await prisma.clinicUser.deleteMany({
-      where: {
-        clinicId: clinicId,
-        userId: receptionist.userId,
-      },
-    });
-
-    // Delete the user account
-    await prisma.user.delete({
-      where: { id: receptionist.userId },
-    });
-
-    // Delete the receptionist record
-    const deleted = await prisma.receptionist.delete({
-      where: { id: receptionistId },
+    // Clinic-user and receptionist rows cascade from the user account.
+    const deleted = await prisma.$transaction(async (tx) => {
+      const removed = await tx.receptionist.delete({ where: { id: receptionistId } });
+      await tx.user.delete({ where: { id: receptionist.userId } });
+      return removed;
     });
 
     await logAudit({

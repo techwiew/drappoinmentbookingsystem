@@ -30,7 +30,7 @@ export const ReceptionistDashboardPage: React.FC = () => {
       const res = await apiClient.get('/queue');
       return res.data.data;
     },
-    refetchInterval: 8000,
+    refetchInterval: 3000,
   });
 
   const { data: todayStats } = useQuery({
@@ -42,9 +42,24 @@ export const ReceptionistDashboardPage: React.FC = () => {
     refetchInterval: 30000,
   });
 
+  const sendMutation = useMutation({
+    mutationFn: async (id: string) => (await apiClient.post(`/queue/${id}/send`)).data.data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reception-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['live-queue'] });
+    },
+  });
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => (await apiClient.post(`/queue/${id}/cancel`)).data.data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reception-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['live-queue'] });
+    },
+  });
+
   const allQueue: any[] = queueData?.allQueue || [];
   const currentPatients = allQueue.filter((a) => a.status === 'IN_CONSULTATION');
-  const waitingList = allQueue.filter((a) => a.status === 'WAITING' || a.status === 'CHECKED_IN');
+  const waitingList = allQueue.filter((a) => ['WAITING', 'CHECKED_IN', 'READY_FOR_DOCTOR'].includes(a.status));
   const completedToday = allQueue.filter((a) => a.status === 'COMPLETED');
 
   return (
@@ -212,6 +227,16 @@ export const ReceptionistDashboardPage: React.FC = () => {
                       <StatusBadge status={apt.paymentStatus || 'PENDING'} size="sm" />
                     </td>
                     <td className="p-3 text-right">
+                      {['BOOKED', 'CHECKED_IN', 'WAITING'].includes(apt.status) && (
+                        <Button size="sm" variant="primary" isLoading={sendMutation.isPending} onClick={() => sendMutation.mutate(apt.id)}>
+                          Send to Dr
+                        </Button>
+                      )}
+                      {['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'].includes(apt.status) && (
+                        <Button size="sm" variant="danger" className="ml-1" isLoading={cancelMutation.isPending} onClick={() => cancelMutation.mutate(apt.id)}>
+                          Cancel
+                        </Button>
+                      )}
                       {apt.status === 'COMPLETED' && apt.paymentStatus !== 'PAID' && (
                         <Button
                           size="sm"

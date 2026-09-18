@@ -68,6 +68,10 @@ export const StaffPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['clinic-doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors-list'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors-quick'] });
+      queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
       setIsAddDocModalOpen(false);
     },
   });
@@ -79,6 +83,7 @@ export const StaffPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['receptionists'] });
+      queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
       setIsAddRecModalOpen(false);
     },
   });
@@ -90,6 +95,10 @@ export const StaffPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['clinic-doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors-list'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors-quick'] });
+      queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
     },
   });
 
@@ -100,6 +109,7 @@ export const StaffPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['receptionists'] });
+      queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
     },
   });
 
@@ -135,7 +145,7 @@ export const StaffPage: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          {role === 'DOCTOR' && activeTab === 'doctors' && (
+          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && activeTab === 'doctors' && (
             <Button
               variant="primary"
               size="sm"
@@ -143,16 +153,6 @@ export const StaffPage: React.FC = () => {
               onClick={() => setIsAddDocModalOpen(true)}
             >
               Add Doctor
-            </Button>
-          )}
-          {role === 'RECEPTIONIST' && activeTab === 'receptionists' && (
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Plus className="w-4 h-4" />}
-              onClick={() => setIsAddRecModalOpen(true)}
-            >
-              Add Receptionist
             </Button>
           )}
           {role === 'DOCTOR' && activeTab === 'receptionists' && (
@@ -248,9 +248,9 @@ export const StaffPage: React.FC = () => {
                   <span>{doc.qualification}</span>
                 </div>
 
-                {(role === 'SUPER_ADMIN') && (
+                {role === 'DOCTOR' && doc.id !== doctorId && (
                   <Button
-                    variant="destructive"
+                    variant="danger"
                     size="sm"
                     className="w-full mt-3"
                     isLoading={deleteDoctorMutation.isPending}
@@ -267,7 +267,7 @@ export const StaffPage: React.FC = () => {
             ))
           )}
 
-          {role === 'DOCTOR' && (
+          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && (
             <button
               onClick={() => setIsAddDocModalOpen(true)}
               className="h-48 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 transition-all group"
@@ -304,9 +304,9 @@ export const StaffPage: React.FC = () => {
                   <div className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-slate-400" />{rec.email}</div>
                 </div>
 
-                {(role === 'SUPER_ADMIN') && (
+                {role === 'DOCTOR' && (
                   <Button
-                    variant="destructive"
+                    variant="danger"
                     size="sm"
                     className="w-full mt-3"
                     isLoading={deleteReceptionistMutation.isPending}

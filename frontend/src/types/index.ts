@@ -156,6 +156,7 @@ export interface Appointment {
     | 'BOOKED'
     | 'CHECKED_IN'
     | 'WAITING'
+    | 'READY_FOR_DOCTOR'
     | 'IN_CONSULTATION'
     | 'COMPLETED'
     | 'CANCELLED'
@@ -163,6 +164,7 @@ export interface Appointment {
     | 'SKIPPED';
   consultationFee: number;
   notes?: string;
+  reasonForVisit?: string;
   consultationId?: string | null;
   consultationStatus?: string | null;
   paymentStatus?: 'PAID' | 'PENDING' | 'PARTIALLY_PAID';

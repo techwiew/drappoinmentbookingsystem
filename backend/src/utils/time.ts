@@ -1,6 +1,21 @@
 const TWELVE_HOUR_TIME_REGEX = /^(0?[1-9]|1[0-2]):([0-5]\d)\s?(AM|PM)$/i;
 const TWENTY_FOUR_HOUR_TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
+export const localDateKey = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+// Prisma stores appointmentDate and nextVisitDate as SQL DATE values.
+// Query those dates at UTC midnight so local timezone offsets cannot shift the day.
+export const dateOnlyRange = (dateKey: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || Number.isNaN(Date.parse(`${dateKey}T00:00:00.000Z`))) {
+    throw { statusCode: 400, code: 'INVALID_DATE', message: 'Date must use YYYY-MM-DD format' };
+  }
+  const start = new Date(`${dateKey}T00:00:00.000Z`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { gte: start, lt: end };
+};
+
 const formatTwelveHourTime = (hours: number, minutes: string) => {
   const meridiem = hours >= 12 ? 'PM' : 'AM';
   const normalizedHours = hours % 12 || 12;
@@ -46,7 +61,8 @@ export const normalizeAppointmentTime = (value?: string | null) => {
   };
 };
 
-export const getCurrentAppointmentTime = () => {
-  const now = new Date();
+export const getCurrentAppointmentTime = (minutesFromNow = 0) => {
+  const now = new Date(Date.now() + minutesFromNow * 60 * 1000);
+  if (minutesFromNow > 0 && now.getSeconds() > 0) now.setMinutes(now.getMinutes() + 1);
   return formatTwelveHourTime(now.getHours(), now.getMinutes().toString().padStart(2, '0'));
 };

@@ -21,7 +21,10 @@ export class AppointmentController {
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
       const date = req.query.date as string;
-      const doctorId = req.query.doctorId as string;
+      const doctorId = req.user!.role === 'DOCTOR' ? req.tenant!.doctorId : req.query.doctorId as string;
+      if (req.user!.role === 'DOCTOR' && !doctorId) {
+        throw { statusCode: 403, code: 'DOCTOR_REQUIRED', message: 'Doctor profile required' };
+      }
       const status = req.query.status as string;
 
       const result = await AppointmentService.listAppointments(req.tenant!.clinicId, {

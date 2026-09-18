@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
@@ -22,7 +22,7 @@ import { useSearchParams } from 'react-router-dom';
 
 export const BillingPage: React.FC = () => {
   const { role } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState('');
@@ -39,6 +39,17 @@ export const BillingPage: React.FC = () => {
     transactionReference: '',
   });
   const [paymentError, setPaymentError] = useState('');
+  const autoOpenedAppointmentRef = useRef<string | null>(null);
+  const closePaymentModal = () => {
+    setIsPaymentModalOpen(false);
+    if (searchParams.has('appointmentId')) {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current);
+        next.delete('appointmentId');
+        return next;
+      }, { replace: true });
+    }
+  };
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ['payments', search, statusFilter],
@@ -58,7 +69,7 @@ export const BillingPage: React.FC = () => {
     queryKey: ['pending-payment-apts'],
     queryFn: async () => {
       const res = await apiClient.get('/appointments', {
-        params: { date: new Date().toISOString().split('T')[0] },
+        params: { date: `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}` },
       });
       return (res.data.data || []).filter(
         (a: any) => a.status === 'COMPLETED' && a.paymentStatus !== 'PAID'
@@ -72,14 +83,20 @@ export const BillingPage: React.FC = () => {
       const res = await apiClient.post('/payments', payload);
       return res.data.data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['pending-payment-apts'] });
-      setIsPaymentModalOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['doctor-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['reception-today'] });
+      closePaymentModal();
+    },
+    onError: (error: any) => {
+      setPaymentError(error.response?.data?.error?.message || 'Unable to record payment. Please try again.');
     },
   });
 
   const openPaymentModal = async (apt: any) => {
+    setPaymentError('');
     setSelectedApt(apt);
     // Fetch existing payment for this appointment, if any
     let existingPayment = null;
@@ -105,16 +122,11 @@ export const BillingPage: React.FC = () => {
       consultationFee,
       additionalFee,
       discount,
-      paidAmount: consultationFee, // default to consultation fee as suggested by user
+      paidAmount: remainingAmount,
       paymentMethod: existingPayment ? existingPayment.paymentMethod : 'CASH',
       transactionReference: existingPayment ? existingPayment.transactionReference || '' : '',
     });
 
-    // Store the remaining amount in the component state? We'll use a ref or just compute in the modal.
-    // We'll create a state variable for remaining amount.
-    // But we can compute it in the modal using the payForm and the existing payment data.
-    // Instead, we'll store the existing payment in a separate state or in the selectedApt.
-    // For simplicity, we'll store the existing payment in selectedApt._existingPayment.
     setSelectedApt((prev: any) => ({
       ...prev,
       _existingPayment: existingPayment,
@@ -123,17 +135,9 @@ export const BillingPage: React.FC = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const totalAmount =
-    (payForm.consultationFee || 0) + (payForm.additionalFee || 0) - (payForm.discount || 0);
-
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedApt) return;
-
-    // Compute remaining amount for reference (but don't validate against it)
-    const existingPaidAmount = selectedApt._existingPayment?.paidAmount || 0;
-    const invoiceTotal = Math.max(0, (payForm.consultationFee || 0) + (payForm.additionalFee || 0) - (payForm.discount || 0));
-    const remaining = Math.max(0, invoiceTotal - existingPaidAmount);
 
     if (payForm.paidAmount <= 0) {
       setPaymentError('Amount to pay must be greater than zero');
@@ -157,16 +161,14 @@ export const BillingPage: React.FC = () => {
   const totalRevenue = payments?.reduce((sum: number, p: any) => sum + (p.paidAmount || 0), 0) || 0;
   const totalPending = (pendingApts?.length || 0);
 
-// Compute invoice total, existing paid amount, and remaining amount for the selected appointment
-  const existingPaidAmount = Number(selectedApt?._existingPayment?.paidAmount || 0);
+  // Keep the invoice preview; the entered amount is recorded as received.
   const invoiceTotal = Math.max(0, (payForm.consultationFee || 0) + (payForm.additionalFee || 0) - (payForm.discount || 0));
-  const alreadyPaid = existingPaidAmount + payForm.paidAmount;
-  const remaining = Math.max(0, invoiceTotal - alreadyPaid);
 
   useEffect(() => {
     const appointmentId = searchParams.get('appointmentId');
     const appointment = pendingApts?.find((item: any) => item.id === appointmentId);
-    if (appointment && !isPaymentModalOpen) {
+    if (appointment && !isPaymentModalOpen && autoOpenedAppointmentRef.current !== appointmentId) {
+      autoOpenedAppointmentRef.current = appointmentId;
       void openPaymentModal(appointment);
     }
   }, [pendingApts, searchParams, isPaymentModalOpen]);
@@ -371,7 +373,7 @@ export const BillingPage: React.FC = () => {
       {/* Collect Payment Modal */}
       <Modal
         isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
+        onClose={closePaymentModal}
         title="Collect Consultation Fee"
         description={
           selectedApt
@@ -476,16 +478,6 @@ export const BillingPage: React.FC = () => {
               />
             )}
 
-            {/* Show remaining amount and payment status */}
-            <div className="text-sm flex items-center justify-between mt-2">
-              <span>
-                Already paid: ₹{alreadyPaid.toFixed(2)} / Total: ₹{invoiceTotal.toFixed(2)}
-              </span>
-              <span>
-                Remaining: ₹{remaining.toFixed(2)}
-              </span>
-            </div>
-
             
             {paymentError && (
               <div className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 border border-rose-200 rounded-lg">
@@ -497,7 +489,7 @@ export const BillingPage: React.FC = () => {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setIsPaymentModalOpen(false)}
+                onClick={closePaymentModal}
               >
                 Cancel
               </Button>

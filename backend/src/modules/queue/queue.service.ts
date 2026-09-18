@@ -1,19 +1,13 @@
 import { prisma } from '../../lib/prisma.js';
 import { logAudit } from '../../middlewares/audit.js';
+import { dateOnlyRange, localDateKey } from '../../utils/time.js';
 
 export class QueueService {
-  static async getDoctorQueue(clinicId: string, doctorId?: string, dateStr?: string) {
-    const targetDate = dateStr ? new Date(dateStr) : new Date();
-    targetDate.setHours(0, 0, 0, 0);
-    const nextDay = new Date(targetDate);
-    nextDay.setDate(targetDate.getDate() + 1);
-
+  static async getDoctorQueue(clinicId: string, doctorId?: string, dateStr?: string, doctorView = false) {
+    const dateKey = dateStr || localDateKey(new Date());
     const where: any = {
       clinicId,
-      appointmentDate: {
-        gte: targetDate,
-        lt: nextDay,
-      },
+      appointmentDate: dateOnlyRange(dateKey),
     };
 
     if (doctorId && doctorId !== 'ALL') {
@@ -82,6 +76,7 @@ export class QueueService {
       status: a.status,
       consultationFee: Number(a.consultationFee),
       notes: a.notes,
+      reasonForVisit: a.reasonForVisit,
       consultationId: a.consultation?.id || null,
       consultationStatus: a.consultation?.status || null,
       paymentStatus: a.payments[0]?.paymentStatus || 'PENDING',
@@ -89,7 +84,9 @@ export class QueueService {
     }));
 
     const currentPatient = mapped.find((a) => a.status === 'IN_CONSULTATION') || null;
-    const waitingList = mapped.filter((a) => a.status === 'WAITING' || a.status === 'CHECKED_IN');
+    const waitingList = mapped.filter((a) => doctorView
+      ? a.status === 'READY_FOR_DOCTOR' || a.status === 'WAITING'
+      : ['READY_FOR_DOCTOR', 'WAITING', 'CHECKED_IN'].includes(a.status));
     const nextPatient = waitingList[0] || null;
     const completedList = mapped.filter((a) => a.status === 'COMPLETED');
     const skippedList = mapped.filter((a) => a.status === 'SKIPPED');
@@ -97,7 +94,7 @@ export class QueueService {
     const noShowList = mapped.filter((a) => a.status === 'NO_SHOW');
 
     return {
-      date: targetDate.toISOString().split('T')[0],
+      date: dateKey,
       currentPatient,
       nextPatient,
       waitingList,
@@ -124,10 +121,12 @@ export class QueueService {
     });
     if (!appointment) throw { statusCode: 404, code: 'NOT_FOUND', message: 'Appointment not found' };
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: { status: 'WAITING' },
+    const changed = await prisma.appointment.updateMany({
+      where: { id: appointmentId, clinicId, status: 'BOOKED' },
+      data: { status: 'CHECKED_IN' },
     });
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_CHECK_IN_ELIGIBLE', message: 'Only a booked appointment can be checked in' };
+    const updated = await prisma.appointment.findUnique({ where: { id: appointmentId } });
 
     await logAudit({
       clinicId,
@@ -141,16 +140,39 @@ export class QueueService {
     return updated;
   }
 
-  static async startConsultation(clinicId: string, appointmentId: string, doctorUserId: string) {
+  static async sendToDoctor(clinicId: string, appointmentId: string, userId: string) {
+    const changed = await prisma.appointment.updateMany({
+      where: { id: appointmentId, clinicId, status: { in: ['BOOKED', 'CHECKED_IN', 'WAITING'] }, doctor: { clinicId, status: 'ACTIVE' } },
+      data: { status: 'READY_FOR_DOCTOR' },
+    });
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_SENDABLE', message: 'This appointment cannot be sent to the doctor' };
+    await logAudit({ clinicId, userId, action: 'PATIENT_SENT_TO_DOCTOR', entityType: 'Appointment', entityId: appointmentId });
+    return prisma.appointment.findUnique({ where: { id: appointmentId } });
+  }
+
+  static async cancel(clinicId: string, appointmentId: string, userId: string) {
+    const changed = await prisma.appointment.updateMany({
+      where: { id: appointmentId, clinicId, status: { in: ['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'] } },
+      data: { status: 'CANCELLED' },
+    });
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_CANCELLABLE', message: 'This appointment cannot be cancelled' };
+    await logAudit({ clinicId, userId, action: 'APPOINTMENT_CANCELLED', entityType: 'Appointment', entityId: appointmentId });
+    return prisma.appointment.findUnique({ where: { id: appointmentId } });
+  }
+
+  static async startConsultation(clinicId: string, appointmentId: string, doctorUserId: string, doctorId: string) {
+    if (!doctorId) throw { statusCode: 403, code: 'DOCTOR_REQUIRED', message: 'Doctor profile required' };
     const appointment = await prisma.appointment.findFirst({
-      where: { id: appointmentId, clinicId },
+      where: { id: appointmentId, clinicId, doctorId },
     });
     if (!appointment) throw { statusCode: 404, code: 'NOT_FOUND', message: 'Appointment not found' };
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
+    const changed = await prisma.appointment.updateMany({
+      where: { id: appointmentId, clinicId, doctorId, status: { in: ['READY_FOR_DOCTOR', 'WAITING'] } },
       data: { status: 'IN_CONSULTATION' },
     });
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_READY', message: 'Reception must send this patient to the doctor first' };
+    const updated = await prisma.appointment.findUnique({ where: { id: appointmentId } });
 
     await logAudit({
       clinicId,
@@ -164,16 +186,19 @@ export class QueueService {
     return updated;
   }
 
-  static async completeConsultation(clinicId: string, appointmentId: string, doctorUserId: string) {
+  static async completeConsultation(clinicId: string, appointmentId: string, doctorUserId: string, doctorId: string) {
+    if (!doctorId) throw { statusCode: 403, code: 'DOCTOR_REQUIRED', message: 'Doctor profile required' };
     const appointment = await prisma.appointment.findFirst({
-      where: { id: appointmentId, clinicId },
+      where: { id: appointmentId, clinicId, doctorId },
     });
     if (!appointment) throw { statusCode: 404, code: 'NOT_FOUND', message: 'Appointment not found' };
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
+    const changed = await prisma.appointment.updateMany({
+      where: { id: appointmentId, clinicId, doctorId, status: 'IN_CONSULTATION' },
       data: { status: 'COMPLETED' },
     });
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_IN_CONSULTATION', message: 'Consultation has not started' };
+    const updated = await prisma.appointment.findUnique({ where: { id: appointmentId } });
 
     await logAudit({
       clinicId,
@@ -187,16 +212,19 @@ export class QueueService {
     return updated;
   }
 
-  static async skipToken(clinicId: string, appointmentId: string, userId: string) {
+  static async skipToken(clinicId: string, appointmentId: string, userId: string, doctorId: string) {
+    if (!doctorId) throw { statusCode: 403, code: 'DOCTOR_REQUIRED', message: 'Doctor profile required' };
     const appointment = await prisma.appointment.findFirst({
-      where: { id: appointmentId, clinicId },
+      where: { id: appointmentId, clinicId, doctorId },
     });
     if (!appointment) throw { statusCode: 404, code: 'NOT_FOUND', message: 'Appointment not found' };
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
+    const changed = await prisma.appointment.updateMany({
+      where: { id: appointmentId, clinicId, doctorId, status: { in: ['READY_FOR_DOCTOR', 'WAITING'] } },
       data: { status: 'SKIPPED' },
     });
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_READY', message: 'Patient is not in the doctor queue' };
+    const updated = await prisma.appointment.findUnique({ where: { id: appointmentId } });
 
     await logAudit({
       clinicId,
@@ -210,16 +238,19 @@ export class QueueService {
     return updated;
   }
 
-  static async markNoShow(clinicId: string, appointmentId: string, userId: string) {
+  static async markNoShow(clinicId: string, appointmentId: string, userId: string, doctorId: string) {
+    if (!doctorId) throw { statusCode: 403, code: 'DOCTOR_REQUIRED', message: 'Doctor profile required' };
     const appointment = await prisma.appointment.findFirst({
-      where: { id: appointmentId, clinicId },
+      where: { id: appointmentId, clinicId, doctorId },
     });
     if (!appointment) throw { statusCode: 404, code: 'NOT_FOUND', message: 'Appointment not found' };
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
+    const changed = await prisma.appointment.updateMany({
+      where: { id: appointmentId, clinicId, doctorId, status: { in: ['READY_FOR_DOCTOR', 'WAITING'] } },
       data: { status: 'NO_SHOW' },
     });
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_READY', message: 'Patient is not in the doctor queue' };
+    const updated = await prisma.appointment.findUnique({ where: { id: appointmentId } });
 
     await logAudit({
       clinicId,

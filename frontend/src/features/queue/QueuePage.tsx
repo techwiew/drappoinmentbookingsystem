@@ -30,7 +30,10 @@ export const QueuePage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId || '');
-  const [queueDate, setQueueDate] = useState(new Date().toISOString().split('T')[0]);
+  const [queueDate, setQueueDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  });
 
   const { data: doctors } = useQuery({
     queryKey: ['doctors-quick'],
@@ -60,7 +63,10 @@ export const QueuePage: React.FC = () => {
       const res = await apiClient.post(`/queue/${aptId}/start`);
       return res.data.data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['live-queue'] }),
+    onSuccess: (_data, aptId) => {
+      queryClient.invalidateQueries({ queryKey: ['live-queue'] });
+      navigate(`/queue/${aptId}/consult`);
+    },
   });
 
   const skipMutation = useMutation({
@@ -79,23 +85,27 @@ export const QueuePage: React.FC = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['live-queue'] }),
   });
 
-  const openConsultationMutation = useMutation({
-    mutationFn: async (data: { patientId: string; doctorId?: string }) => {
-      const res = await apiClient.post('/consultations/open', data);
-      return res.data.data;
-    },
-    onSuccess: (data) => {
+  const sendMutation = useMutation({
+    mutationFn: async (aptId: string) => (await apiClient.post(`/queue/${aptId}/send`)).data.data,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['live-queue'] });
-      // Navigate to consultation room if appointmentId is returned
-      if (data.appointmentId) {
-        navigate(`/queue/${data.appointmentId}/consult`);
-      }
+      queryClient.invalidateQueries({ queryKey: ['reception-queue'] });
+    },
+  });
+  const cancelMutation = useMutation({
+    mutationFn: async (aptId: string) => (await apiClient.post(`/queue/${aptId}/cancel`)).data.data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['live-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['reception-queue'] });
     },
   });
 
   const summary = queueData?.summary;
   const currentPatient = queueData?.currentPatient;
   const waitingList = queueData?.waitingList || [];
+  const actionableList = role === 'RECEPTIONIST'
+    ? (queueData?.allQueue || []).filter((a: any) => ['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'].includes(a.status))
+    : waitingList;
   const completedList = queueData?.completedList || [];
   const skippedList = queueData?.skippedList || [];
 
@@ -229,7 +239,7 @@ export const QueuePage: React.FC = () => {
                   </div>
                 </div>
 
-                {(role === "DOCTOR" || role === "RECEPTIONIST") && (
+                {role === "DOCTOR" && (
                   <Button
                     variant="primary"
                     className="w-full"
@@ -246,8 +256,7 @@ export const QueuePage: React.FC = () => {
               <div className="text-center py-6">
                 <Stethoscope className="w-10 h-10 mx-auto text-brand-200 mb-2" />
                 <p className="text-sm text-slate-500">No active consultation</p>
-                {waitingList.length > 0 &&
-                  (role === "DOCTOR" || role === "RECEPTIONIST") && (
+                {waitingList.length > 0 && role === "DOCTOR" && (
                     <Button
                       size="sm"
                       className="mt-3"
@@ -283,7 +292,7 @@ export const QueuePage: React.FC = () => {
                   </div>
                 </div>
 
-                {(role === "DOCTOR" || role === "RECEPTIONIST") &&
+                {role === "DOCTOR" &&
                   currentPatient && (
                     <Button
                       size="sm"
@@ -305,11 +314,11 @@ export const QueuePage: React.FC = () => {
           <Card className="p-0 overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <div className="text-sm font-bold text-slate-900">
-                Waiting Queue ({waitingList.length})
+                {role === 'RECEPTIONIST' ? 'Reception Queue' : 'Waiting Queue'} ({actionableList.length})
               </div>
             </div>
 
-            {waitingList.length === 0 ? (
+            {actionableList.length === 0 ? (
               <div className="text-center py-12 text-slate-400">
                 <Clock className="w-10 h-10 mx-auto mb-2 text-slate-200" />
                 <p>Queue is empty</p>
@@ -321,13 +330,14 @@ export const QueuePage: React.FC = () => {
                     <tr>
                       <th className="p-3">Token</th>
                       <th className="p-3">Patient</th>
+                      {role === 'RECEPTIONIST' && <th className="p-3">Doctor</th>}
                       <th className="p-3">Type</th>
                       <th className="p-3">Time</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {waitingList.map((apt: any, idx: number) => (
+                    {actionableList.map((apt: any, idx: number) => (
                       <tr
                         key={apt.id}
                         className={`hover:bg-slate-50 transition-colors ${idx === 0 ? "bg-amber-50/60" : ""}`}
@@ -361,6 +371,7 @@ export const QueuePage: React.FC = () => {
                             <div className="text-[11px] text-slate-400 font-mono">No phone</div>
                           )}
                         </td>
+                        {role === 'RECEPTIONIST' && <td className="p-3 font-medium text-slate-700">{apt.doctorName}</td>}
                         <td className="p-3">
                           <Badge variant="default" size="sm">
                             {apt.appointmentType?.replace(/_/g, " ")}
@@ -370,18 +381,13 @@ export const QueuePage: React.FC = () => {
                           {apt.appointmentTime}
                         </td>
                         <td className="p-3 text-right space-x-1">
-                          {(role === "DOCTOR" || role === "RECEPTIONIST") && (
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              className="text-[11px]"
-                              isLoading={openConsultationMutation.isPending}
-                              onClick={() => openConsultationMutation.mutate({ patientId: apt.patientId, doctorId: apt.doctorId })}
-                            >
-                              Open Consultation
-                            </Button>
+                          {role === 'RECEPTIONIST' && ['BOOKED', 'CHECKED_IN', 'WAITING'].includes(apt.status) && (
+                            <Button size="sm" variant="primary" isLoading={sendMutation.isPending} onClick={() => sendMutation.mutate(apt.id)}>Send to Dr</Button>
                           )}
-                          <Button
+                          {role === 'RECEPTIONIST' && (
+                            <Button size="sm" variant="danger" isLoading={cancelMutation.isPending} onClick={() => cancelMutation.mutate(apt.id)}>Cancel</Button>
+                          )}
+                          {role === 'DOCTOR' && <Button
                             size="sm"
                             variant="primary"
                             className="text-[11px]"
@@ -389,8 +395,8 @@ export const QueuePage: React.FC = () => {
                             onClick={() => startMutation.mutate(apt.id)}
                           >
                             Start Consult
-                          </Button>
-                          <Button
+                          </Button>}
+                          {role === 'DOCTOR' && <Button
                             size="sm"
                             variant="ghost"
                             className="text-[11px] text-purple-600 hover:bg-purple-50"
@@ -398,8 +404,8 @@ export const QueuePage: React.FC = () => {
                             onClick={() => skipMutation.mutate(apt.id)}
                           >
                             Skip
-                          </Button>
-                          <Button
+                          </Button>}
+                          {role === 'DOCTOR' && <Button
                             size="sm"
                             variant="ghost"
                             className="text-[11px] text-rose-600 hover:bg-rose-50"
@@ -407,7 +413,7 @@ export const QueuePage: React.FC = () => {
                             onClick={() => noShowMutation.mutate(apt.id)}
                           >
                             No Show
-                          </Button>
+                          </Button>}
                         </td>
                       </tr>
                     ))}
@@ -436,7 +442,7 @@ export const QueuePage: React.FC = () => {
                   #{apt.tokenNumber}
                 </span>
                 <span className="text-emerald-800">{apt.patientName}</span>
-                {(role === "DOCTOR" || role === "RECEPTIONIST") && (
+                {role === "DOCTOR" && (
                   <Button
                     size="sm"
                     variant="ghost"

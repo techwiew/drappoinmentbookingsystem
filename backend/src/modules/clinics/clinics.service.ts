@@ -38,8 +38,8 @@ export class ClinicService {
             startDate: clinic.subscription.startDate,
             endDate: clinic.subscription.endDate,
             billingCycle: clinic.subscription.billingCycle,
-            maxDoctors: clinic.subscription.plan.maxDoctors,
-            maxReceptionists: clinic.subscription.plan.maxReceptionists,
+            maxDoctors: clinic.maxDoctors,
+            maxReceptionists: clinic.maxReceptionists,
             features: JSON.parse(clinic.subscription.plan.features || '[]'),
           }
         : null,

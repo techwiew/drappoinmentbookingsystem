@@ -5,13 +5,19 @@ import { sendSuccess } from '../../utils/response.js';
 export class QueueController {
   static async getQueue(req: Request, res: Response, next: NextFunction) {
     try {
-      const doctorId = (req.query.doctorId as string) || req.tenant?.doctorId;
+      const doctorId = req.user!.role === 'DOCTOR'
+        ? req.tenant!.doctorId
+        : req.query.doctorId as string;
+      if (req.user!.role === 'DOCTOR' && !doctorId) {
+        throw { statusCode: 403, code: 'DOCTOR_REQUIRED', message: 'Doctor profile required' };
+      }
       const date = req.query.date as string;
 
       const queue = await QueueService.getDoctorQueue(
         req.tenant!.clinicId,
         doctorId,
-        date
+        date,
+        req.user!.role === 'DOCTOR'
       );
       return sendSuccess(res, queue);
     } catch (error) {
@@ -39,7 +45,8 @@ export class QueueController {
       const updated = await QueueService.startConsultation(
         req.tenant!.clinicId,
         id,
-        req.user!.userId
+        req.user!.userId,
+        req.tenant!.doctorId!
       );
       return sendSuccess(res, updated, 'Consultation started');
     } catch (error) {
@@ -53,12 +60,27 @@ export class QueueController {
       const updated = await QueueService.completeConsultation(
         req.tenant!.clinicId,
         id,
-        req.user!.userId
+        req.user!.userId,
+        req.tenant!.doctorId!
       );
       return sendSuccess(res, updated, 'Consultation marked completed');
     } catch (error) {
       next(error);
     }
+  }
+
+  static async sendToDoctor(req: Request, res: Response, next: NextFunction) {
+    try {
+      const updated = await QueueService.sendToDoctor(req.tenant!.clinicId, req.params.id, req.user!.userId);
+      return sendSuccess(res, updated, 'Patient sent to doctor');
+    } catch (error) { next(error); }
+  }
+
+  static async cancel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const updated = await QueueService.cancel(req.tenant!.clinicId, req.params.id, req.user!.userId);
+      return sendSuccess(res, updated, 'Appointment cancelled');
+    } catch (error) { next(error); }
   }
 
   static async skipToken(req: Request, res: Response, next: NextFunction) {
@@ -67,7 +89,8 @@ export class QueueController {
       const updated = await QueueService.skipToken(
         req.tenant!.clinicId,
         id,
-        req.user!.userId
+        req.user!.userId,
+        req.tenant!.doctorId!
       );
       return sendSuccess(res, updated, 'Token skipped');
     } catch (error) {
@@ -81,7 +104,8 @@ export class QueueController {
       const updated = await QueueService.markNoShow(
         req.tenant!.clinicId,
         id,
-        req.user!.userId
+        req.user!.userId,
+        req.tenant!.doctorId!
       );
       return sendSuccess(res, updated, 'Patient marked as No-Show');
     } catch (error) {

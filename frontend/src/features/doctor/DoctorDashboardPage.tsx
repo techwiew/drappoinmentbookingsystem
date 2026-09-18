@@ -10,7 +10,6 @@ import {
   Calendar,
   Clock,
   CheckCircle2,
-  SkipForward,
   TrendingUp,
   Activity,
   ArrowRight,
@@ -27,8 +26,6 @@ export const DoctorDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const todayStr = new Date().toISOString().split('T')[0];
-
   const { data: kpis, isLoading: kpisLoading } = useQuery({
     queryKey: ['doctor-kpis', doctorId],
     queryFn: async () => {
@@ -36,7 +33,7 @@ export const DoctorDashboardPage: React.FC = () => {
       return res.data.data.kpis;
     },
     enabled: !!doctorId,
-    refetchInterval: 15000,
+    refetchInterval: 3000,
   });
 
   const { data: queueData, isLoading: queueLoading } = useQuery({
@@ -46,7 +43,7 @@ export const DoctorDashboardPage: React.FC = () => {
       return res.data.data;
     },
     enabled: !!doctorId,
-    refetchInterval: 10000,
+    refetchInterval: 3000,
   });
 
   const callNextMutation = useMutation({
@@ -56,14 +53,14 @@ export const DoctorDashboardPage: React.FC = () => {
       const res = await apiClient.post(`/queue/${nextId}/start`);
       return res.data.data;
     },
-    onSuccess: () => {
+    onSuccess: (appointment) => {
       queryClient.invalidateQueries({ queryKey: ['live-queue', doctorId] });
       queryClient.invalidateQueries({ queryKey: ['doctor-kpis', doctorId] });
+      navigate(`/queue/${appointment.id}/consult`);
     },
   });
 
   const currentPatient = queueData?.currentPatient;
-  const nextPatient = queueData?.waitingList?.[0];
   const waitingList = queueData?.waitingList || [];
 
   return (
@@ -187,6 +184,7 @@ export const DoctorDashboardPage: React.FC = () => {
                   <div className="text-xs text-slate-600">
                     Type: <span className="font-semibold">{currentPatient.appointmentType?.replace(/_/g, ' ')}</span>
                   </div>
+                  {currentPatient.reasonForVisit && <div className="text-xs text-slate-600 mt-1">Reason: {currentPatient.reasonForVisit}</div>}
                 </div>
 
                 <Button
@@ -209,29 +207,12 @@ export const DoctorDashboardPage: React.FC = () => {
                     isLoading={callNextMutation.isPending}
                     onClick={() => callNextMutation.mutate()}
                   >
-                    Call First Patient (Token #{waitingList[0]?.tokenNumber})
+                    Start Consultation: {waitingList[0]?.patientName} (#{waitingList[0]?.tokenNumber})
                   </Button>
                 )}
               </div>
             )}
 
-            {/* Call Next Action Bar */}
-            {currentPatient && nextPatient && (
-              <div className="mt-4 pt-4 border-t border-brand-100 flex items-center justify-between">
-                <div className="text-xs text-slate-500">
-                  Next: <span className="font-bold text-slate-800">#{nextPatient.tokenNumber} — {nextPatient.patientName}</span>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  rightIcon={<SkipForward className="w-3.5 h-3.5" />}
-                  isLoading={callNextMutation.isPending}
-                  onClick={() => callNextMutation.mutate()}
-                >
-                  Call Next Patient
-                </Button>
-              </div>
-            )}
           </Card>
 
           {/* Waiting Queue List */}
@@ -260,6 +241,7 @@ export const DoctorDashboardPage: React.FC = () => {
                       </div>
                       <div>
                         <div className="text-xs font-semibold text-slate-900">{pt.patientName}</div>
+                        {pt.reasonForVisit && <div className="text-[10px] text-slate-500">{pt.reasonForVisit}</div>}
                         <div className="text-[10px] text-slate-400">
                           {pt.patientGender} • {pt.appointmentTime}
                         </div>

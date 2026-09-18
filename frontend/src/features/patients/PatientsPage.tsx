@@ -88,7 +88,7 @@ export const PatientsPage: React.FC = () => {
     if (!form.mobile && !form.fullName) return false;
     try {
       const res = await apiClient.get('/patients/check-duplicate', {
-        params: { mobile: form.mobile, name: form.fullName },
+        params: { mobile: form.mobile, fullName: form.fullName },
       });
       const matches = res.data.data.matches || [];
       if (matches.length > 0) {
@@ -127,8 +127,8 @@ export const PatientsPage: React.FC = () => {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
+        <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Patient Directory</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             {patients?.length ?? 0} patients registered in this clinic
@@ -136,6 +136,7 @@ export const PatientsPage: React.FC = () => {
         </div>
         <Button
           variant="primary"
+          className="self-start sm:self-auto shrink-0"
           onClick={() => setIsRegModalOpen(true)}
           leftIcon={<Plus className="w-4 h-4" />}
         >
@@ -146,7 +147,7 @@ export const PatientsPage: React.FC = () => {
       {/* Search & Filters */}
       <Card className="p-4">
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
+          <div className="flex-1 min-w-0 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
@@ -190,61 +191,59 @@ export const PatientsPage: React.FC = () => {
             <Card
               key={patient.id}
               hoverEffect
-              className="cursor-pointer"
+              className="cursor-pointer min-w-0 overflow-hidden"
               onClick={() => navigate(`/patients/${patient.id}`)}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-600 font-bold text-sm">
+              <div className="flex items-start justify-between gap-2 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 shrink-0 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-600 font-bold text-sm">
                     {patient.fullName.charAt(0)}
                   </div>
-                  <div>
-                    <div className="font-bold text-slate-900 text-sm">{patient.fullName}</div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-slate-900 text-sm truncate" title={patient.fullName}>{patient.fullName}</div>
                     <div className="text-[11px] font-mono text-slate-400">{patient.patientNumber}</div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-300" />
+                <ChevronRight className="w-4 h-4 shrink-0 text-slate-300" />
               </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="default" size="sm">{patient.gender}</Badge>
-                    {patient.age && <span className="text-slate-400">{patient.age} yrs</span>}
-                  </div>
-                  {patient.mobile && (
-                    <a
-                      href={`tel:${patient.mobile}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition-colors"
-                      title={`Call ${patient.fullName} (${patient.mobile})`}
-                    >
-                      <Phone className="w-3 h-3 text-emerald-600" />
-                      <span>{patient.mobile}</span>
-                    </a>
+              <div className="mt-4 space-y-2 text-xs min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="default" size="sm">{patient.gender}</Badge>
+                  {patient.age != null && <span className="text-slate-500">{patient.age} yrs</span>}
+                  {patient.bloodGroup && (
+                    <span className="inline-flex items-center gap-1 font-semibold text-rose-600">
+                      <Droplets className="w-3 h-3" />{patient.bloodGroup}
+                    </span>
                   )}
-
-                {patient.bloodGroup && (
-                  <div className="flex items-center gap-1.5">
-                    <Droplets className="w-3 h-3 text-rose-400" />
-                    <span className="font-semibold text-rose-600">{patient.bloodGroup}</span>
-                  </div>
+                </div>
+                {patient.mobile && (
+                  <a
+                    href={`tel:${patient.mobile}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition-colors"
+                    title={`Call ${patient.fullName} (${patient.mobile})`}
+                  >
+                    <Phone className="w-3 h-3 shrink-0 text-emerald-600" />
+                    <span className="truncate">{patient.mobile}</span>
+                  </a>
                 )}
 
-                {patient.allergies && patient.allergies !== 'None' && (
-                  <div className="flex items-start gap-1.5 text-amber-700">
+                {patient.allergies && !/^none(?: reported)?$/i.test(patient.allergies.trim()) && (
+                  <div className="flex items-start gap-1.5 min-w-0 text-amber-700" title={patient.allergies}>
                     <AlertCircle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
-                    <span className="truncate">⚠️ {patient.allergies}</span>
+                    <span className="min-w-0 break-words">{patient.allergies}</span>
                   </div>
                 )}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                <span>
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-start justify-between gap-2 text-[11px] text-slate-500 min-w-0">
+                <span className="min-w-0 break-words">
                   {patient.assignedDoctors?.length > 0
-                    ? `🩺 ${patient.assignedDoctors.map((d: any) => d.name).join(', ')}`
+                    ? patient.assignedDoctors.map((d: any) => d.name).join(', ')
                     : 'No doctor assigned'}
                 </span>
-                <span>{patient.totalVisits ?? 0} visits</span>
+                <span className="shrink-0">{patient.totalVisits ?? 0} visits</span>
               </div>
             </Card>
           ))}

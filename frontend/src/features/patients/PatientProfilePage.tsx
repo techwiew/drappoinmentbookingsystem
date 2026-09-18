@@ -181,7 +181,7 @@ export const PatientProfilePage: React.FC = () => {
                 Admit to IPD
               </Button>
             )}
-            {(role === "DOCTOR" || role === "RECEPTIONIST") && (
+            {role === "DOCTOR" && (
               <Button
                 size="sm"
                 className="bg-brand-500 text-white hover:bg-brand-400 border border-brand-400"
@@ -412,11 +412,6 @@ export const PatientProfilePage: React.FC = () => {
                       ₹{pay.paidAmount?.toFixed(2)}
                     </span>
                   </div>
-                  {pay.pendingAmount > 0 && (
-                    <div className="text-rose-600 font-semibold">
-                      Due: ₹{pay.pendingAmount?.toFixed(2)}
-                    </div>
-                  )}
                 </div>
               </Card>
             ))

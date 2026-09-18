@@ -80,7 +80,8 @@ export class ConsultationController {
         req.tenant!.clinicId,
         req.params.id,
         req.body,
-        req.user!.userId
+        req.user!.userId,
+        req.tenant!.doctorId!
       );
       return sendSuccess(res, consultation, 'Consultation updated successfully');
     } catch (error) {

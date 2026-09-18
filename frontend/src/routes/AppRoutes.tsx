@@ -82,7 +82,6 @@ export const AppRoutes: React.FC = () => {
           <Route path="/doctor-dashboard" element={<DoctorDashboardPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<ClinicSettingsPage />} />
-          <Route path="/staff" element={<StaffPage />} />
         </Route>
       </Route>
 
@@ -103,6 +102,12 @@ export const AppRoutes: React.FC = () => {
           <Route path="/prescriptions" element={<PrescriptionsPage />} />
           <Route path="/billing" element={<BillingPage />} />
           <Route path="/admissions" element={<AdmissionsPage />} />
+          <Route path="/staff" element={<StaffPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<RoleGuard allowedRoles={['DOCTOR']} />}>
+        <Route element={<AppLayout />}>
           <Route path="/queue/:appointmentId/consult" element={<ConsultationRoomPage />} />
         </Route>
       </Route>

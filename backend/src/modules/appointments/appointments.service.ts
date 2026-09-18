@@ -91,6 +91,7 @@ export class AppointmentService {
       status: appointment.status,
       consultationFee: Number(appointment.consultationFee),
       notes: appointment.notes,
+      reasonForVisit: appointment.reasonForVisit,
       consultationId: appointment.consultation?.id || null,
       consultationStatus: appointment.consultation?.status || null,
       paymentStatus,
@@ -201,6 +202,7 @@ export class AppointmentService {
         status: a.status,
         consultationFee: Number(a.consultationFee),
         notes: a.notes,
+        reasonForVisit: a.reasonForVisit,
         consultationId: a.consultation?.id || null,
         consultationStatus: a.consultation?.status || null,
         paymentStatus,
@@ -256,9 +258,18 @@ export class AppointmentService {
       ? normalizeAppointmentTime(data.appointmentTime)
       : data.appointmentType === 'FOLLOW_UP'
         ? null
-        : normalizeAppointmentTime(getCurrentAppointmentTime());
+        : normalizeAppointmentTime(getCurrentAppointmentTime(2));
+    if (appointmentTime) {
+      const [, hourText, minuteText, meridiem] = appointmentTime.match(/^(\d{1,2}):(\d{2}) (AM|PM)$/)!;
+      const hour = Number(hourText) % 12 + (meridiem === 'PM' ? 12 : 0);
+      const [year, month, day] = data.appointmentDate.split('-').map(Number);
+      const scheduled = new Date(year, month - 1, day, hour, Number(minuteText));
+      if (scheduled.getTime() < Date.now() + 2 * 60 * 1000) {
+        throw { statusCode: 400, code: 'APPOINTMENT_TOO_SOON', message: 'Appointment time must be at least two minutes from now' };
+      }
+    }
     const initialStatus = data.directCheckIn
-      ? 'WAITING'
+      ? 'CHECKED_IN'
       : data.appointmentType === 'FOLLOW_UP' && !appointmentTime
         ? 'PENDING_CONFIRMATION'
         : 'BOOKED';
@@ -275,6 +286,7 @@ export class AppointmentService {
         status: initialStatus,
         consultationFee,
         notes: data.notes || null,
+        reasonForVisit: data.reasonForVisit || data.notes || null,
         createdBy: creatorUserId,
       },
       include: {
@@ -329,6 +341,10 @@ export class AppointmentService {
       throw { statusCode: 404, code: 'APPOINTMENT_NOT_FOUND', message: 'Appointment not found' };
     }
 
+    if (data.status && ['COMPLETED', 'IN_CONSULTATION', 'CANCELLED'].includes(appointment.status)) {
+      throw { statusCode: 409, code: 'APPOINTMENT_CLOSED', message: 'This appointment status cannot be changed' };
+    }
+
     const updateData: any = {};
     if (data.appointmentDate) {
       updateData.appointmentDate = data.appointmentDate;
@@ -342,7 +358,12 @@ export class AppointmentService {
     if (data.status) updateData.status = data.status;
     if (data.consultationFee !== undefined) updateData.consultationFee = data.consultationFee;
     if (data.notes !== undefined) updateData.notes = data.notes;
-    if (data.doctorId) updateData.doctorId = data.doctorId;
+    if (data.reasonForVisit !== undefined) updateData.reasonForVisit = data.reasonForVisit;
+    if (data.doctorId) {
+      const doctor = await prisma.doctor.findFirst({ where: { id: data.doctorId, clinicId, status: 'ACTIVE' } });
+      if (!doctor) throw { statusCode: 404, code: 'DOCTOR_NOT_FOUND', message: 'Doctor not found in this clinic' };
+      updateData.doctorId = data.doctorId;
+    }
 
     const updated = await prisma.appointment.update({
       where: { id: appointmentId },
@@ -367,7 +388,7 @@ export class AppointmentService {
     cancellerUserId: string
   ) {
     const updated = await prisma.appointment.updateMany({
-      where: { id: appointmentId, clinicId },
+      where: { id: appointmentId, clinicId, status: { in: ['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'] } },
       data: { status: 'CANCELLED' },
     });
 
