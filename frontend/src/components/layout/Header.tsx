@@ -42,9 +42,7 @@ export const Header: React.FC = () => {
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-              MN
-            </div>
+            <img src="/Medinovel_logo.png" alt="MediNovel" className="brand-logo h-8 w-8 rounded-lg object-contain" />
             <div className="text-sm font-bold text-slate-800">
               MediNovel Platform Owner Console
             </div>

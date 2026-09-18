@@ -9,6 +9,7 @@ import { StatusBadge, Badge } from '../../components/ui/Badge.js';
 import { Input } from '../../components/ui/Input.js';
 import { Select } from '../../components/ui/Select.js';
 import { Modal } from '../../components/ui/Modal.js';
+import { getApiErrorMessage } from '../../api/errors.js';
 import {
   Users,
   Stethoscope,
@@ -25,6 +26,9 @@ export const StaffPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'doctors' | 'receptionists'>('doctors');
   const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
   const [isAddRecModalOpen, setIsAddRecModalOpen] = useState(false);
+  const [docErrors, setDocErrors] = useState<Record<string, string>>({});
+  const [recErrors, setRecErrors] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
 
   const [docForm, setDocForm] = useState({
     name: '',
@@ -72,8 +76,12 @@ export const StaffPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['doctors-list'] });
       queryClient.invalidateQueries({ queryKey: ['doctors-quick'] });
       queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
+      setDocForm({ name: '', email: '', password: 'Doctor@123', mobile: '', specialization: '', qualification: 'MBBS', registrationNumber: '', consultationFee: 500, workingDays: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] });
+      setDocErrors({});
       setIsAddDocModalOpen(false);
+      setFeedback({ type: 'success', text: 'Doctor created successfully.' });
     },
+    onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to create doctor. Please try again.') }),
   });
 
   const addReceptionistMutation = useMutation({
@@ -85,7 +93,10 @@ export const StaffPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['receptionists'] });
       queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
       setIsAddRecModalOpen(false);
+      setRecErrors({});
+      setFeedback({ type: 'success', text: 'Receptionist created successfully.' });
     },
+    onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to create receptionist. Please try again.') }),
   });
 
   const deleteDoctorMutation = useMutation({
@@ -99,7 +110,9 @@ export const StaffPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['doctors-list'] });
       queryClient.invalidateQueries({ queryKey: ['doctors-quick'] });
       queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
+      setFeedback({ type: 'success', text: 'Doctor deleted successfully.' });
     },
+    onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to delete doctor. Please try again.') }),
   });
 
   const deleteReceptionistMutation = useMutation({
@@ -110,7 +123,9 @@ export const StaffPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['receptionists'] });
       queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
+      setFeedback({ type: 'success', text: 'Receptionist deleted successfully.' });
     },
+    onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to delete receptionist. Please try again.') }),
   });
 
   const weekdays = [
@@ -130,8 +145,46 @@ export const StaffPage: React.FC = () => {
     setDocForm({ ...docForm, workingDays: updated });
   };
 
+  const validateStaffForm = (form: typeof docForm | typeof recForm, isDoctor: boolean) => {
+    const errors: Record<string, string> = {};
+    const name = form.name.trim();
+    if (!name) errors.name = 'Enter the full name.';
+    else if (!/^[A-Za-z][A-Za-z .'-]*$/.test(name) || name.length < 2) errors.name = 'Use at least 2 letters; numbers and symbols are not allowed.';
+    if (!/^[6-9]\d{9}$/.test(form.mobile)) errors.mobile = 'Enter a valid 10-digit Indian mobile number.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
+    if (form.password.length < 8) errors.password = 'Password must be at least 8 characters.';
+    if (isDoctor) {
+      const doctor = form as typeof docForm;
+      if (doctor.specialization.trim().length < 2) errors.specialization = 'Enter the doctor\'s specialization.';
+      if (doctor.qualification.trim().length < 2) errors.qualification = 'Enter the qualification.';
+      if (doctor.registrationNumber.trim().length < 2) errors.registrationNumber = 'Enter the medical registration number.';
+      if (!Number.isFinite(doctor.consultationFee) || doctor.consultationFee < 0) errors.consultationFee = 'Enter a consultation fee of zero or more.';
+      if (!doctor.workingDays.length) errors.workingDays = 'Select at least one working day.';
+    }
+    return errors;
+  };
+
+  const submitDoctor = () => {
+    if (addDoctorMutation.isPending) return;
+    const errors = validateStaffForm(docForm, true);
+    setDocErrors(errors);
+    if (Object.keys(errors).length) { setFeedback({ type: 'warning', text: 'Please correct the highlighted fields.' }); return; }
+    setFeedback(null);
+    addDoctorMutation.mutate({ ...docForm, name: docForm.name.trim(), email: docForm.email.trim().toLowerCase(), specialization: docForm.specialization.trim(), qualification: docForm.qualification.trim(), registrationNumber: docForm.registrationNumber.trim() });
+  };
+
+  const submitReceptionist = () => {
+    if (addReceptionistMutation.isPending) return;
+    const errors = validateStaffForm(recForm, false);
+    setRecErrors(errors);
+    if (Object.keys(errors).length) { setFeedback({ type: 'warning', text: 'Please correct the highlighted fields.' }); return; }
+    setFeedback(null);
+    addReceptionistMutation.mutate({ ...recForm, name: recForm.name.trim(), email: recForm.email.trim().toLowerCase() });
+  };
+
   return (
     <div className="space-y-5">
+      {feedback && <div role="alert" className={`rounded-xl border px-4 py-3 text-sm font-medium ${feedback.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : feedback.type === 'warning' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>{feedback.text}</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -342,25 +395,27 @@ export const StaffPage: React.FC = () => {
         maxWidth="2xl"
       >
         <form
-          onSubmit={(e) => { e.preventDefault(); addDoctorMutation.mutate(docForm); }}
+          noValidate onSubmit={(e) => { e.preventDefault(); submitDoctor(); }}
           className="space-y-4"
         >
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Full Name" required value={docForm.name} onChange={(e) => setDocForm({ ...docForm, name: e.target.value })} />
-            <Input label="Mobile" required value={docForm.mobile} onChange={(e) => setDocForm({ ...docForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
+            <Input label="Full Name" required error={docErrors.name} value={docForm.name} onChange={(e) => setDocForm({ ...docForm, name: e.target.value })} />
+            <Input label="Mobile" required inputMode="numeric" maxLength={10} error={docErrors.mobile} helperText="10-digit Indian mobile number" value={docForm.mobile} onChange={(e) => setDocForm({ ...docForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Login Email" type="email" required value={docForm.email} onChange={(e) => setDocForm({ ...docForm, email: e.target.value })} />
-            <Input label="Initial Password" value={docForm.password} onChange={(e) => setDocForm({ ...docForm, password: e.target.value })} />
+            <Input label="Login Email" type="email" required error={docErrors.email} value={docForm.email} onChange={(e) => setDocForm({ ...docForm, email: e.target.value })} />
+            <Input label="Initial Password" type="password" required minLength={8} error={docErrors.password} value={docForm.password} onChange={(e) => setDocForm({ ...docForm, password: e.target.value })} />
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <Input label="Specialization" required value={docForm.specialization} onChange={(e) => setDocForm({ ...docForm, specialization: e.target.value })} />
-            <Input label="Qualification" value={docForm.qualification} onChange={(e) => setDocForm({ ...docForm, qualification: e.target.value })} />
-            <Input label="Reg. Number" value={docForm.registrationNumber} onChange={(e) => setDocForm({ ...docForm, registrationNumber: e.target.value })} />
+            <Input label="Specialization" required error={docErrors.specialization} value={docForm.specialization} onChange={(e) => setDocForm({ ...docForm, specialization: e.target.value })} />
+            <Input label="Qualification" required error={docErrors.qualification} value={docForm.qualification} onChange={(e) => setDocForm({ ...docForm, qualification: e.target.value })} />
+            <Input label="Reg. Number" required error={docErrors.registrationNumber} value={docForm.registrationNumber} onChange={(e) => setDocForm({ ...docForm, registrationNumber: e.target.value })} />
           </div>
           <Input
             label="Consultation Fee (₹)"
             type="number"
+            min="0"
+            error={docErrors.consultationFee}
             value={docForm.consultationFee}
             onChange={(e) => setDocForm({ ...docForm, consultationFee: parseInt(e.target.value) || 0 })}
           />
@@ -382,12 +437,13 @@ export const StaffPage: React.FC = () => {
                 </button>
               ))}
             </div>
+            {docErrors.workingDays && <p className="mt-1.5 text-xs font-medium text-rose-600">{docErrors.workingDays}</p>}
           </div>
 
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
             <Button type="button" variant="secondary" onClick={() => setIsAddDocModalOpen(false)}>Cancel</Button>
             <Button type="submit" variant="primary" isLoading={addDoctorMutation.isPending}>
-              Create Doctor Account
+              {addDoctorMutation.isPending ? 'Creating doctor...' : 'Create Doctor Account'}
             </Button>
           </div>
         </form>
@@ -401,21 +457,21 @@ export const StaffPage: React.FC = () => {
         maxWidth="lg"
       >
         <form
-          onSubmit={(e) => { e.preventDefault(); addReceptionistMutation.mutate(recForm); }}
+          noValidate onSubmit={(e) => { e.preventDefault(); submitReceptionist(); }}
           className="space-y-4"
         >
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Full Name" required value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} />
-            <Input label="Mobile" required value={recForm.mobile} onChange={(e) => setRecForm({ ...recForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
+            <Input label="Full Name" required error={recErrors.name} value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} />
+            <Input label="Mobile" required inputMode="numeric" maxLength={10} error={recErrors.mobile} helperText="10-digit Indian mobile number" value={recForm.mobile} onChange={(e) => setRecForm({ ...recForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Login Email" type="email" required value={recForm.email} onChange={(e) => setRecForm({ ...recForm, email: e.target.value })} />
-            <Input label="Initial Password" value={recForm.password} onChange={(e) => setRecForm({ ...recForm, password: e.target.value })} />
+            <Input label="Login Email" type="email" required error={recErrors.email} value={recForm.email} onChange={(e) => setRecForm({ ...recForm, email: e.target.value })} />
+            <Input label="Initial Password" type="password" required minLength={8} error={recErrors.password} value={recForm.password} onChange={(e) => setRecForm({ ...recForm, password: e.target.value })} />
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
             <Button type="button" variant="secondary" onClick={() => setIsAddRecModalOpen(false)}>Cancel</Button>
             <Button type="submit" variant="primary" isLoading={addReceptionistMutation.isPending}>
-              Create Receptionist Account
+              {addReceptionistMutation.isPending ? 'Creating receptionist...' : 'Create Receptionist Account'}
             </Button>
           </div>
         </form>

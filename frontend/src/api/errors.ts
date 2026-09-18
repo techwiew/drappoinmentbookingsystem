@@ -1,0 +1,12 @@
+import axios from 'axios';
+
+/** Turn API and network failures into text that is safe to show to a user. */
+export const getApiErrorMessage = (error: unknown, fallback = 'Unable to complete this action. Please try again.') => {
+  if (axios.isAxiosError(error)) {
+    if (!error.response) return 'Network error. Check your connection and try again.';
+    const body = error.response.data as { error?: { message?: string; details?: { message?: string }[] } } | undefined;
+    const details = body?.error?.details;
+    return details?.[0]?.message || body?.error?.message || fallback;
+  }
+  return error instanceof Error && error.message ? error.message : fallback;
+};

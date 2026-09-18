@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button.js';
 import { Input } from '../../components/ui/Input.js';
 import { Textarea } from '../../components/ui/Textarea.js';
 import { Badge } from '../../components/ui/Badge.js';
+import { getApiErrorMessage } from '../../api/errors.js';
 import {
   Settings,
   Building2,
@@ -23,7 +24,7 @@ export const ClinicSettingsPage: React.FC = () => {
   const { data: clinic, isLoading } = useQuery({
     queryKey: ['my-clinic'],
     queryFn: async () => {
-      const res = await apiClient.get('/clinics/my-clinic');
+      const res = await apiClient.get('/clinics/profile');
       return res.data.data;
     },
   });
@@ -47,6 +48,8 @@ export const ClinicSettingsPage: React.FC = () => {
     tokenPrefix: '',
   });
   const [isSaved, setIsSaved] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (clinic) {
@@ -65,7 +68,7 @@ export const ClinicSettingsPage: React.FC = () => {
 
   const updateMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const res = await apiClient.put('/clinics/my-clinic', payload);
+      const res = await apiClient.patch('/clinics/profile', payload);
       return res.data.data;
     },
     onSuccess: () => {
@@ -73,11 +76,24 @@ export const ClinicSettingsPage: React.FC = () => {
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     },
+    onError: (error) => setMessage(getApiErrorMessage(error, 'Unable to save clinic settings. Please try again.')),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate(form);
+    const nextErrors: Record<string, string> = {};
+    if (form.name.trim().length < 2) nextErrors.name = 'Enter the clinic name (at least 2 characters).';
+    if (!/^[6-9]\d{9}$/.test(form.phone)) nextErrors.phone = 'Enter a valid 10-digit Indian mobile number.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = 'Enter a valid email address.';
+    if (form.address.trim().length < 5) nextErrors.address = 'Enter a complete clinic address.';
+    if (form.city.trim().length < 2) nextErrors.city = 'Enter a valid city name.';
+    if (form.state.trim().length < 2) nextErrors.state = 'Enter a valid state name.';
+    if (!/^\d{6}$/.test(form.pincode)) nextErrors.pincode = 'Pincode must contain exactly 6 digits.';
+    if (!/^[A-Z0-9]{1,5}$/.test(form.tokenPrefix)) nextErrors.tokenPrefix = 'Use 1-5 uppercase letters or digits.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) { setMessage('Please correct the highlighted fields.'); return; }
+    setMessage(null);
+    updateMutation.mutate({ ...form, name: form.name.trim(), email: form.email.trim().toLowerCase(), address: form.address.trim(), city: form.city.trim(), state: form.state.trim() });
   };
 
   return (
@@ -111,13 +127,15 @@ export const ClinicSettingsPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {message && <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800">{message}</div>}
+            <form noValidate onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   label="Clinic Name"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
+                  error={errors.name}
                 />
                 <Input
                   label="Queue Token Prefix"
@@ -130,6 +148,7 @@ export const ClinicSettingsPage: React.FC = () => {
                   }
                   maxLength={5}
                   required
+                  error={errors.tokenPrefix}
                 />
               </div>
 
@@ -137,8 +156,11 @@ export const ClinicSettingsPage: React.FC = () => {
                 <Input
                   label="Contact Phone"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                   required
+                  inputMode="numeric"
+                  maxLength={10}
+                  error={errors.phone}
                 />
                 <Input
                   label="Official Email"
@@ -146,6 +168,7 @@ export const ClinicSettingsPage: React.FC = () => {
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   required
+                  error={errors.email}
                 />
               </div>
 
@@ -155,6 +178,7 @@ export const ClinicSettingsPage: React.FC = () => {
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                 required
+                error={errors.address}
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -163,20 +187,25 @@ export const ClinicSettingsPage: React.FC = () => {
                   value={form.city}
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
                   required
+                  error={errors.city}
                 />
                 <Input
                   label="State"
                   value={form.state}
                   onChange={(e) => setForm({ ...form, state: e.target.value })}
                   required
+                  error={errors.state}
                 />
                 <Input
                   label="Pincode"
                   value={form.pincode}
                   onChange={(e) =>
-                    setForm({ ...form, pincode: e.target.value })
+                    setForm({ ...form, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })
                   }
                   required
+                  inputMode="numeric"
+                  maxLength={6}
+                  error={errors.pincode}
                 />
               </div>
 

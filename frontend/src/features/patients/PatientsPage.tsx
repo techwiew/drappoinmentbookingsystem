@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.js';
+import { getApiErrorMessage } from '../../api/errors.js';
 
 export const PatientsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ export const PatientsPage: React.FC = () => {
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<any>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     fullName: '',
@@ -80,8 +83,10 @@ export const PatientsPage: React.FC = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });
       setIsRegModalOpen(false);
+      setFeedback('Patient registered successfully.');
       navigate(`/patients/${data.id}`);
     },
+    onError: (error) => setFeedback(getApiErrorMessage(error, 'Unable to register patient. Please try again.')),
   });
 
   const checkDuplicate = async () => {
@@ -101,6 +106,16 @@ export const PatientsPage: React.FC = () => {
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (createPatientMutation.isPending) return;
+    const errors: Record<string, string> = {};
+    if (!/^[A-Za-z][A-Za-z .'-]{1,}$/.test(form.fullName.trim())) errors.fullName = 'Enter a valid full name (letters and spaces only).';
+    if (!/^[6-9]\d{9}$/.test(form.mobile)) errors.mobile = 'Enter a valid 10-digit Indian mobile number.';
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
+    if (form.age && (!/^\d+$/.test(form.age) || Number(form.age) > 150)) errors.age = 'Age must be a whole number from 0 to 150.';
+    if (form.emergencyContactMobile && !/^[6-9]\d{9}$/.test(form.emergencyContactMobile)) errors.emergencyContactMobile = 'Enter a valid 10-digit mobile number.';
+    setFormErrors(errors);
+    if (Object.keys(errors).length) { setFeedback('Please correct the highlighted fields.'); return; }
+    setFeedback(null);
     const payload = {
       ...form,
       age: form.age ? parseInt(form.age) : undefined,
@@ -126,6 +141,7 @@ export const PatientsPage: React.FC = () => {
 
   return (
     <div className="space-y-5">
+      {feedback && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">{feedback}</div>}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0">
         <div className="min-w-0">
@@ -258,7 +274,7 @@ export const PatientsPage: React.FC = () => {
         description="Fill in the patient details. Duplicate check will run automatically."
         maxWidth="3xl"
       >
-        <form onSubmit={handleSubmitForm} className="space-y-4">
+        <form noValidate onSubmit={handleSubmitForm} className="space-y-4">
           <div className="text-xs font-bold uppercase tracking-wider text-brand-700 pb-1 border-b border-brand-100">
             Personal Information
           </div>
@@ -269,6 +285,7 @@ export const PatientsPage: React.FC = () => {
               required
               placeholder="e.g. Rahul Kumar Sharma"
               value={form.fullName}
+              error={formErrors.fullName}
               onChange={(e) => setForm({ ...form, fullName: e.target.value })}
             />
             <Input
@@ -276,6 +293,9 @@ export const PatientsPage: React.FC = () => {
               required
               placeholder="10-digit mobile"
               value={form.mobile}
+              error={formErrors.mobile}
+              inputMode="numeric"
+              maxLength={10}
               onChange={(e) => setForm({ ...form, mobile: normalizeMobileInput(e.target.value) })}
             />
           </div>
@@ -297,6 +317,9 @@ export const PatientsPage: React.FC = () => {
               type="number"
               placeholder="e.g. 34"
               value={form.age}
+              error={formErrors.age}
+              min="0"
+              max="150"
               onChange={(e) => setForm({ ...form, age: e.target.value })}
             />
             <Select
@@ -316,6 +339,7 @@ export const PatientsPage: React.FC = () => {
               type="email"
               placeholder="patient@email.com"
               value={form.email}
+              error={formErrors.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
             <Input
@@ -394,7 +418,7 @@ export const PatientsPage: React.FC = () => {
               variant="primary"
               isLoading={createPatientMutation.isPending}
             >
-              Check & Register Patient
+              {createPatientMutation.isPending ? 'Registering patient...' : 'Check & Register Patient'}
             </Button>
           </div>
         </form>

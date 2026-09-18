@@ -1,20 +1,22 @@
 import { z } from 'zod';
 
-const mobileSchema = z.string().regex(/^\d{10}$/, 'Mobile number must be exactly 10 digits');
+const mobileSchema = z.string().regex(/^[6-9]\d{9}$/, 'Mobile number must be a valid 10-digit Indian mobile number');
+const patientNameSchema = z.string().trim().min(2, 'Full name must contain at least 2 letters').max(100).regex(/^[\p{L}][\p{L} .'-]*$/u, 'Full name can contain letters, spaces, apostrophes, hyphens, and periods only');
+const pincodeSchema = z.string().regex(/^\d{6}$/, 'Pincode must contain exactly 6 digits');
 
 export const createPatientSchema = z.object({
   body: z.object({
-    fullName: z.string().min(2, 'Full name is required'),
+    fullName: patientNameSchema,
     mobile: mobileSchema,
     email: z.string().email().optional().or(z.literal('')),
-    dateOfBirth: z.string().optional().or(z.literal('')),
+    dateOfBirth: z.string().date('Date of birth must use YYYY-MM-DD').optional().or(z.literal('')),
     age: z.number().min(0).max(150).optional(),
     gender: z.enum(['MALE', 'FEMALE', 'OTHER']).default('MALE'),
     bloodGroup: z.string().optional().or(z.literal('')),
     address: z.string().optional().or(z.literal('')),
     city: z.string().optional().or(z.literal('')),
     state: z.string().optional().or(z.literal('')),
-    pincode: z.string().optional().or(z.literal('')),
+    pincode: pincodeSchema.optional().or(z.literal('')),
     allergies: z.string().optional().or(z.literal('')),
     existingIllness: z.string().optional().or(z.literal('')),
     medicalConditions: z.string().optional().or(z.literal('')),
@@ -31,7 +33,7 @@ export const updatePatientSchema = z.object({
     id: z.string().min(1),
   }),
   body: z.object({
-    fullName: z.string().min(2).optional(),
+    fullName: patientNameSchema.optional(),
     mobile: mobileSchema.optional(),
     email: z.string().email().optional().or(z.literal('')),
     dateOfBirth: z.string().optional().or(z.literal('')),
@@ -41,7 +43,7 @@ export const updatePatientSchema = z.object({
     address: z.string().optional().or(z.literal('')),
     city: z.string().optional().or(z.literal('')),
     state: z.string().optional().or(z.literal('')),
-    pincode: z.string().optional().or(z.literal('')),
+    pincode: pincodeSchema.optional().or(z.literal('')),
     allergies: z.string().optional().or(z.literal('')),
     existingIllness: z.string().optional().or(z.literal('')),
     medicalConditions: z.string().optional().or(z.literal('')),

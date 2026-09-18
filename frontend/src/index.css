@@ -16,6 +16,32 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
+@keyframes brand-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.brand-logo {
+  animation: brand-float 3.5s ease-in-out infinite;
+}
+
+#root > * {
+  animation: page-enter 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .landing-grid {
   background-image: linear-gradient(rgba(0, 104, 95, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 104, 95, 0.04) 1px, transparent 1px);
   background-size: 32px 32px;

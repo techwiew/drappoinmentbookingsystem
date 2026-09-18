@@ -23,10 +23,11 @@ export const errorHandler = (
   }
 
   if (err.code === 'P2002') {
+    const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : String(err.meta?.target || 'record');
     return sendError(
       res,
       'DUPLICATE_RECORD',
-      'A record with matching unique constraints already exists',
+      `A record with this ${target} already exists`,
       409
     );
   }

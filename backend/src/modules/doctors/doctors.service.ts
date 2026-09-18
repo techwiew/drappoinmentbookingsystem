@@ -52,6 +52,14 @@ export class DoctorService {
     if (existingUser) {
       throw { statusCode: 409, code: 'EMAIL_EXISTS', message: 'An account with this email address already exists' };
     }
+    const existingMobile = await prisma.doctor.findFirst({ where: { clinicId, mobile: data.mobile }, select: { id: true } });
+    if (existingMobile) {
+      throw { statusCode: 409, code: 'MOBILE_EXISTS', message: 'A doctor with this mobile number is already registered in this clinic' };
+    }
+    const existingRegistration = await prisma.doctor.findFirst({ where: { clinicId, registrationNumber: data.registrationNumber }, select: { id: true } });
+    if (existingRegistration) {
+      throw { statusCode: 409, code: 'REGISTRATION_EXISTS', message: 'This medical registration number is already registered in this clinic' };
+    }
 
     const hashedPassword = await hashPassword(data.password);
 

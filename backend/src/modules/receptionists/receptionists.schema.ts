@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
-const mobileSchema = z.string().regex(/^\d{10}$/, 'Mobile number must be exactly 10 digits');
+const mobileSchema = z.string().regex(/^[6-9]\d{9}$/, 'Mobile number must be a valid 10-digit Indian mobile number');
 
 export const createReceptionistSchema = z.object({
   body: z.object({
-    name: z.string().min(2, 'Name is required'),
-    email: z.string().email('Invalid email'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    name: z.string().trim().min(2, 'Name is required').max(100).regex(/^[\p{L}][\p{L} .'-]*$/u, 'Name contains invalid characters'),
+    email: z.string().trim().email('Enter a valid email address'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
     mobile: mobileSchema,
   }),
 });

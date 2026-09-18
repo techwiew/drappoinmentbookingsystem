@@ -70,12 +70,8 @@ export const AppLayout: React.FC = () => {
       {/* Mobile Top Bar */}
       <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-            <Stethoscope className="w-4 h-4" />
-          </div>
-          <span className="font-extrabold text-slate-900 tracking-tight text-base">
-            Medi<span className="text-brand-600">Nodes</span>
-          </span>
+          <img src="/Medinovel_logo.png" alt="MediNovel" className="brand-logo h-9 w-9 rounded-lg object-contain" />
+          <span className="font-extrabold text-slate-900 tracking-tight text-base">MediNovel</span>
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -94,12 +90,10 @@ export const AppLayout: React.FC = () => {
         <aside className="hidden lg:flex flex-col w-64 bg-slate-900 text-slate-300 border-r border-slate-800 shrink-0 sticky top-0 h-screen z-40 select-none">
           {/* Brand Logo */}
           <div className="h-16 px-6 flex items-center gap-2.5 border-b border-slate-800/80">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 text-white flex items-center justify-center font-bold shadow-md shadow-brand-500/20">
-              <Stethoscope className="w-4 h-4" />
-            </div>
+            <img src="/Medinovel_logo.png" alt="MediNovel" className="brand-logo h-9 w-9 rounded-xl object-contain" />
             <div>
               <span className="font-extrabold text-white text-lg tracking-tight">
-                Medi<span className="text-brand-400">Nodes</span>
+                Medi<span className="text-brand-400">Novel</span>
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest text-brand-400 block -mt-1">
                 Clinical SaaS
@@ -157,9 +151,7 @@ export const AppLayout: React.FC = () => {
             <div className="relative w-64 bg-slate-900 text-slate-300 flex flex-col h-full z-10 p-4 shadow-2xl">
               <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-xs">
-                    MN
-                  </div>
+                  <img src="/Medinovel_logo.png" alt="MediNovel" className="brand-logo h-8 w-8 rounded-lg object-contain" />
                   <span className="font-bold text-white">MediNovel</span>
                 </div>
                 <button

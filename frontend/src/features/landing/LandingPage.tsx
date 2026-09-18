@@ -108,9 +108,7 @@ export const LandingPage: React.FC = () => {
             className="flex items-center gap-3"
             onClick={() => setIsMenuOpen(false)}
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00685f] text-white shadow-sm shadow-[#00685f]/20">
-              <HeartPulse className="h-6 w-6" />
-            </span>
+            <img src="/Medinovel_logo.png" alt="MediNovel" className="brand-logo h-11 w-11 rounded-xl object-contain" />
             <span className="flex shrink-0 flex-col">
               <span className="flex items-center gap-2 whitespace-nowrap text-base font-extrabold tracking-tight text-[#00685f] sm:text-lg">
                 {LANDING_COPY.brand.name}

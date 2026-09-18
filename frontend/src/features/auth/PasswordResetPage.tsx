@@ -38,7 +38,7 @@ export const PasswordResetPage: React.FC = () => {
       <div className="mx-auto w-full max-w-md">
         <div className="mb-6 flex items-center justify-between">
           <Link to="/login" className="inline-flex items-center gap-2 text-sm font-semibold text-teal-700 hover:text-teal-800">
-            <HeartPulse className="h-5 w-5" /> MediNovel
+            <img src="/Medinovel_logo.png" alt="" className="brand-logo h-6 w-6 rounded object-contain" /> MediNovel
           </Link>
           <Link to="/login" className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800">
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Sign In
