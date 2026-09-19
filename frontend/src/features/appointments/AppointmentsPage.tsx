@@ -461,18 +461,17 @@ export const AppointmentsPage: React.FC = () => {
                           Confirm Visit
                         </Button>
                       )}
-                      {role === 'DOCTOR' && ['READY_FOR_DOCTOR', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'].includes(apt.status) && (
+                      {role === 'DOCTOR' && ['BOOKED', 'CHECKED_IN', 'READY_FOR_DOCTOR', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'].includes(apt.status) && (
                         <Button
                           size="sm"
                           variant="primary"
                           className="text-[11px]"
                           isLoading={startConsultationMutation.isPending}
-                          onClick={() => ['READY_FOR_DOCTOR', 'WAITING'].includes(apt.status) ? startConsultationMutation.mutate(apt.id) : navigate(`/queue/${apt.id}/consult`)}
+                          onClick={() => ['BOOKED', 'CHECKED_IN', 'READY_FOR_DOCTOR', 'WAITING'].includes(apt.status) ? startConsultationMutation.mutate(apt.id) : navigate(`/queue/${apt.id}/consult`)}
                         >
                           {apt.status === 'COMPLETED' ? 'View Consultation' : 'Open Consultation'}
                         </Button>
                       )}
-                      {role === 'DOCTOR' && ['BOOKED', 'CHECKED_IN'].includes(apt.status) && <span title="Reception must send this patient to the doctor first"><Button size="sm" variant="outline" disabled>Open Consultation</Button><span className="ml-1 text-[11px] text-amber-700">Awaiting reception</span></span>}
                       {(apt.status === "READY_FOR_DOCTOR" ||
                         apt.status === "CHECKED_IN" ||
                         apt.status === "WAITING" ||

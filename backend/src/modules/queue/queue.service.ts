@@ -168,10 +168,15 @@ export class QueueService {
     if (!appointment) throw { statusCode: 404, code: 'NOT_FOUND', message: 'Appointment not found' };
 
     const changed = await prisma.appointment.updateMany({
-      where: { id: appointmentId, clinicId, doctorId, status: { in: ['READY_FOR_DOCTOR', 'WAITING'] } },
+      where: {
+        id: appointmentId,
+        clinicId,
+        doctorId,
+        status: { in: ['BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'] },
+      },
       data: { status: 'IN_CONSULTATION' },
     });
-    if (!changed.count) throw { statusCode: 409, code: 'NOT_READY', message: 'Reception must send this patient to the doctor first' };
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_READY', message: 'This patient is not currently eligible to start consultation' };
     const updated = await prisma.appointment.findUnique({ where: { id: appointmentId } });
 
     await logAudit({

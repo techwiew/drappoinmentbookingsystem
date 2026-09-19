@@ -254,6 +254,51 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
       expect(res.body.data.summary.total).toBeGreaterThanOrEqual(1);
     });
 
+    it("allows the assigned doctor to open consultation directly for a booked patient", async () => {
+      const newPatientRes = await request(app)
+        .post("/api/patients")
+        .set("Authorization", `Bearer ${receptionistTokenClinicA}`)
+        .send({
+          fullName: "Booked Patient Direct Start",
+          mobile: "9876543212",
+          email: `booked.direct.${Date.now()}@example.com`,
+          gender: "FEMALE",
+          age: 30,
+          address: "12 Demo Street, Mumbai",
+          notes: "Direct consultation test",
+        });
+
+      expect(newPatientRes.status).toBe(201);
+      const patientId = newPatientRes.body.data.id;
+
+      const slot = new Date(Date.now() + 20 * 60 * 1000);
+      const dateStr = `${slot.getFullYear()}-${String(slot.getMonth() + 1).padStart(2, '0')}-${String(slot.getDate()).padStart(2, '0')}`;
+      const timeStr = `${String(slot.getHours()).padStart(2, '0')}:${String(slot.getMinutes()).padStart(2, '0')}`;
+
+      const appointmentRes = await request(app)
+        .post("/api/appointments")
+        .set("Authorization", `Bearer ${receptionistTokenClinicA}`)
+        .send({
+          patientId,
+          doctorId: doctorAId,
+          appointmentDate: dateStr,
+          appointmentTime: timeStr,
+          appointmentType: "NEW_PATIENT",
+          directCheckIn: false,
+          reasonForVisit: "Direct start test",
+        });
+
+      expect(appointmentRes.status).toBe(201);
+      expect(appointmentRes.body.data.status).toBe("BOOKED");
+
+      const res = await request(app)
+        .post(`/api/queue/${appointmentRes.body.data.id}/start`)
+        .set("Authorization", `Bearer ${doctorTokenClinicA}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.status).toBe("IN_CONSULTATION");
+    });
+
     it("transitions appointment to IN_CONSULTATION when doctor starts consultation", async () => {
       const blocked = await request(app)
         .post(`/api/queue/${appointmentAId}/start`)
