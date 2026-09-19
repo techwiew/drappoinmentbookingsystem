@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendError } from '../utils/response.js';
-import { config } from '../config/index.js';
 import { logEvent } from '../utils/logger.js';
+
+const databaseUnavailableCodes = new Set(['P1001', 'P1002', 'P1003', 'P1008', 'P1017', 'P2024']);
 
 export const errorHandler = (
   err: any,
@@ -9,7 +10,8 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  const statusCode = err?.statusCode || (err?.code === 'P2002' ? 409 : err?.code === 'P2025' ? 404 : 500);
+  const databaseUnavailable = databaseUnavailableCodes.has(err?.code);
+  const statusCode = databaseUnavailable ? 503 : err?.statusCode || (err?.code === 'P2002' ? 409 : err?.code === 'P2025' ? 404 : 500);
   logEvent(statusCode >= 500 ? 'error' : 'warn', 'http.request.failed', {
     requestId: req.requestId,
     method: req.method,
@@ -22,8 +24,12 @@ export const errorHandler = (
     role: req.user?.role,
   });
 
-  if (err.name === 'UnauthorizedError') {
+  if (err?.name === 'UnauthorizedError') {
     return sendError(res, 'UNAUTHORIZED', 'Invalid or expired token', 401);
+  }
+
+  if (databaseUnavailable) {
+    return sendError(res, 'SERVICE_UNAVAILABLE', 'The service is temporarily unavailable. Please try again shortly.', 503);
   }
 
   if (err.code === 'P2002') {
@@ -40,14 +46,13 @@ export const errorHandler = (
     return sendError(res, 'NOT_FOUND', 'Requested record was not found', 404);
   }
 
-  const message =
-    config.env === 'production' && statusCode === 500
-      ? 'An unexpected internal server error occurred'
-      : err.message || 'Internal server error';
+  const message = statusCode >= 500
+    ? 'Something went wrong. Please try again later.'
+    : err?.message || 'Unable to complete this request.';
 
   return sendError(
     res,
-    err.code || 'INTERNAL_SERVER_ERROR',
+    statusCode >= 500 ? 'INTERNAL_SERVER_ERROR' : err?.code || 'REQUEST_FAILED',
     message,
     statusCode
   );

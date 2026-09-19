@@ -3,6 +3,7 @@ import { verifyAccessToken } from '../utils/jwt.js';
 import { sendError } from '../utils/response.js';
 import { prisma } from '../lib/prisma.js';
 import { RoleType } from '../constants/index.js';
+import { JsonWebTokenError } from 'jsonwebtoken';
 
 export const authenticate = async (
   req: Request,
@@ -70,7 +71,10 @@ export const authenticate = async (
     }
 
     next();
-  } catch (error: any) {
-    return sendError(res, 'INVALID_TOKEN', 'Session expired or token invalid', 401);
+  } catch (error) {
+    if (error instanceof JsonWebTokenError) {
+      return sendError(res, 'INVALID_TOKEN', 'Session expired or token invalid', 401);
+    }
+    next(error);
   }
 };

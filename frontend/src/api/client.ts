@@ -43,6 +43,17 @@ const processQueue = (error: any, token: string | null = null) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    if (error.response && error.response.status >= 500) {
+      const unavailable = error.response.status === 503;
+      error.response.data = {
+        error: {
+          code: unavailable ? 'SERVICE_UNAVAILABLE' : 'INTERNAL_SERVER_ERROR',
+          message: unavailable
+            ? 'The service is temporarily unavailable. Please try again shortly.'
+            : 'Something went wrong. Please try again later.',
+        },
+      };
+    }
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };

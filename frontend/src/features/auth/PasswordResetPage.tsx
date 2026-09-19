@@ -2,6 +2,7 @@ import React, { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CheckCircle2, HeartPulse, KeyRound, Mail } from 'lucide-react';
 import { apiClient } from '../../api/client.js';
+import { getApiErrorMessage } from '../../api/errors.js';
 
 export const PasswordResetPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -28,8 +29,8 @@ export const PasswordResetPage: React.FC = () => {
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || err.message || 'Unable to continue. Please try again.');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to continue. Please try again.'));
     } finally { setIsLoading(false); }
   };
 

@@ -75,16 +75,16 @@ export const LandingPage: React.FC = () => {
 
       if (!response.ok) {
         // Try to get error details from response
-        let errorMessage = 'Failed to submit inquiry';
-        try {
-          const errorData = await response.json();
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData.error?.message) {
-            errorMessage = errorData.error.message;
+        let errorMessage = response.status === 503
+          ? 'The service is temporarily unavailable. Please try again shortly.'
+          : 'Unable to submit your inquiry. Please try again.';
+        if (response.status < 500) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error?.message || errorData.message || errorMessage;
+          } catch {
+            // Keep the fallback when the response is not JSON.
           }
-        } catch (e) {
-          // If we can't parse the error response, use the default message
         }
         throw new Error(errorMessage);
       }
@@ -93,7 +93,7 @@ export const LandingPage: React.FC = () => {
       form.reset();
       setIsSubmitted(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Unable to submit your inquiry. Please try again.');
     } finally {
       setIsLoading(false);
     }

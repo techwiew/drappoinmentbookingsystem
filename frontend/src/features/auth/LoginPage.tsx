@@ -2,6 +2,7 @@ import React, { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.js";
 import { apiClient } from "../../api/client.js";
+import { getApiErrorMessage } from "../../api/errors.js";
 import {
   ArrowRight,
   Eye,
@@ -48,11 +49,8 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
       else if (user.role === "DOCTOR") navigate("/doctor-dashboard");
       else if (user.role === "RECEPTIONIST") navigate("/reception-desk");
       else navigate("/patients");
-    } catch (err: any) {
-      setError(
-        err.response?.data?.error?.message ||
-          "Login failed. Please check your credentials.",
-      );
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Unable to sign in. Please try again."));
     } finally {
       setIsLoading(false);
     }
