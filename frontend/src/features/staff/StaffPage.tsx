@@ -15,6 +15,7 @@ import {
   Stethoscope,
   Plus,
   UserCheck,
+  UserX,
   Phone,
   Mail,
   IndianRupee,
@@ -113,6 +114,21 @@ export const StaffPage: React.FC = () => {
       setFeedback({ type: 'success', text: 'Doctor deleted successfully.' });
     },
     onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to delete doctor. Please try again.') }),
+  });
+
+  const toggleDoctorStatusMutation = useMutation({
+    mutationFn: async ({ doctorId, status }: { doctorId: string; status: 'ACTIVE' | 'INACTIVE' }) => {
+      const res = await apiClient.patch(`/doctors/${doctorId}`, { status });
+      return res.data.data;
+    },
+    onSuccess: (_doctor, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['clinic-doctors'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors-list'] });
+      queryClient.invalidateQueries({ queryKey: ['doctors-quick'] });
+      setFeedback({ type: 'success', text: `Doctor ${variables.status === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.` });
+    },
+    onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to update doctor status. Please try again.') }),
   });
 
   const deleteReceptionistMutation = useMutation({
@@ -302,19 +318,35 @@ export const StaffPage: React.FC = () => {
                 </div>
 
                 {role === 'DOCTOR' && doc.id !== doctorId && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    className="w-full mt-3"
-                    isLoading={deleteDoctorMutation.isPending}
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete Dr. ${doc.name}? This action cannot be undone.`)) {
-                        deleteDoctorMutation.mutate(doc.id);
-                      }
-                    }}
-                  >
-                    Delete Doctor
-                  </Button>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button
+                      variant={doc.status === 'ACTIVE' ? 'secondary' : 'primary'}
+                      size="sm"
+                      leftIcon={doc.status === 'ACTIVE' ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
+                      isLoading={toggleDoctorStatusMutation.isPending}
+                      onClick={() => {
+                        const nextStatus = doc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                        const action = nextStatus === 'ACTIVE' ? 'activate' : 'deactivate';
+                        if (window.confirm(`Are you sure you want to ${action} Dr. ${doc.name}?`)) {
+                          toggleDoctorStatusMutation.mutate({ doctorId: doc.id, status: nextStatus });
+                        }
+                      }}
+                    >
+                      {doc.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      isLoading={deleteDoctorMutation.isPending}
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete Dr. ${doc.name}? Doctors with clinical records must be deactivated instead.`)) {
+                          deleteDoctorMutation.mutate(doc.id);
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 )}
               </Card>
             ))

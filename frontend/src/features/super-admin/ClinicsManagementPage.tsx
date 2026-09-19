@@ -330,6 +330,13 @@ export const ClinicsManagementPage: React.FC = () => {
               onChange={handleNameChange}
               required
             />
+            <Input
+              label="Address"
+              placeholder="Street address and locality"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              required
+            />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="Maximum Doctors" type="number" min="1" value={formData.maxDoctors} onChange={(e) => setFormData({ ...formData, maxDoctors: parseInt(e.target.value, 10) || 1 })} required />

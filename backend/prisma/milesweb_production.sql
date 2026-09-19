@@ -260,6 +260,21 @@ CREATE TABLE `payments` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE IF NOT EXISTS `payment_receipts` (
+    `id` VARCHAR(191) NOT NULL,
+    `clinicId` VARCHAR(191) NOT NULL,
+    `paymentId` VARCHAR(191) NOT NULL,
+    `doctorId` VARCHAR(191) NULL,
+    `amount` DECIMAL(10, 2) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `payment_receipts_clinicId_createdAt_idx`(`clinicId`, `createdAt`),
+    INDEX `payment_receipts_doctorId_createdAt_idx`(`doctorId`, `createdAt`),
+    INDEX `payment_receipts_paymentId_idx`(`paymentId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `subscription_plans` (
     `id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
@@ -343,10 +358,17 @@ CREATE TABLE `inquiries` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- AddForeignKey
 ALTER TABLE `clinic_users` ADD CONSTRAINT `clinic_users_clinicId_fkey` FOREIGN KEY (`clinicId`) REFERENCES `clinics`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `payment_receipts` ADD CONSTRAINT `payment_receipts_clinicId_fkey` FOREIGN KEY (`clinicId`) REFERENCES `clinics`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `payment_receipts` ADD CONSTRAINT `payment_receipts_paymentId_fkey` FOREIGN KEY (`paymentId`) REFERENCES `payments`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `payment_receipts` ADD CONSTRAINT `payment_receipts_doctorId_fkey` FOREIGN KEY (`doctorId`) REFERENCES `doctors`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
 ALTER TABLE `clinic_users` ADD CONSTRAINT `clinic_users_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey

@@ -100,6 +100,8 @@ export const StatusBadge: React.FC<{ status: string; size?: 'sm' | 'md'; classNa
       return <Badge variant="purple" size={size} className={className}>Partial</Badge>;
     case 'ACTIVE':
       return <Badge variant="success" size={size} dot className={className}>Active</Badge>;
+    case 'INACTIVE':
+      return <Badge variant="slate" size={size} className={className}>Inactive</Badge>;
     case 'SUSPENDED':
       return <Badge variant="danger" size={size} className={className}>Suspended</Badge>;
     case 'TRIAL':

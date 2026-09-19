@@ -395,6 +395,26 @@ DEFAULT CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
 -- =========================================================
+-- PAYMENT RECEIPTS
+-- =========================================================
+
+CREATE TABLE `payment_receipts` (
+    `id` VARCHAR(191) NOT NULL,
+    `clinicId` VARCHAR(191) NOT NULL,
+    `paymentId` VARCHAR(191) NOT NULL,
+    `doctorId` VARCHAR(191) NULL,
+    `amount` DECIMAL(10,2) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `payment_receipts_clinicId_createdAt_idx` (`clinicId`,`createdAt`),
+    INDEX `payment_receipts_doctorId_createdAt_idx` (`doctorId`,`createdAt`),
+    INDEX `payment_receipts_paymentId_idx` (`paymentId`),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+DEFAULT CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+-- =========================================================
 -- ADMISSIONS
 -- =========================================================
 

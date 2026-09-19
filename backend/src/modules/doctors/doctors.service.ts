@@ -143,9 +143,20 @@ export class DoctorService {
     if (data.workingDays !== undefined) updateData.workingDays = JSON.stringify(data.workingDays);
     if (data.workingHours !== undefined) updateData.workingHours = JSON.stringify(data.workingHours);
 
-    const updated = await prisma.doctor.update({
-      where: { id: doctorId },
-      data: updateData,
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedDoctor = await tx.doctor.update({
+        where: { id: doctorId },
+        data: updateData,
+      });
+
+      if (data.status !== undefined) {
+        await tx.user.update({
+          where: { id: doctor.userId },
+          data: { status: data.status },
+        });
+      }
+
+      return updatedDoctor;
     });
 
     await logAudit({
