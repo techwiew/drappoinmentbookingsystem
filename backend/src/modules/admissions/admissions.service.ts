@@ -75,22 +75,29 @@ export class AdmissionService {
 
     const count = await prisma.admission.count({ where: { clinicId } });
     const initialPayment = data.totalAmount || 0;
-    const admission = await prisma.admission.create({
-      data: {
-        clinicId,
-        patientId: data.patientId,
-        attendingDoctorId: data.attendingDoctorId || null,
-        admissionNumber: `ADM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(count + 1).padStart(4, '0')}`,
-        roomNumber: data.roomNumber || null,
-        bedNumber: data.bedNumber || null,
-        reason: data.reason,
-        diagnosis: data.diagnosis || null,
-        notes: data.notes || null,
-        totalAmount: initialPayment, // Sum of payments made
-        paidAmount: initialPayment,  // Sum of payments made
-        pendingAmount: 0,            // No pending amount since we only track payments made
-      },
-      include: admissionInclude,
+    const admission = await prisma.$transaction(async (tx) => {
+      const created = await tx.admission.create({
+        data: {
+          clinicId,
+          patientId: data.patientId,
+          attendingDoctorId: data.attendingDoctorId || null,
+          admissionNumber: `ADM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(count + 1).padStart(4, '0')}`,
+          roomNumber: data.roomNumber || null,
+          bedNumber: data.bedNumber || null,
+          reason: data.reason,
+          diagnosis: data.diagnosis || null,
+          notes: data.notes || null,
+          totalAmount: initialPayment,
+          paidAmount: initialPayment,
+          pendingAmount: 0,
+        },
+      });
+      if (initialPayment > 0) {
+        await tx.admissionPayment.create({
+          data: { admissionId: created.id, amount: initialPayment, paymentMethod: 'CASH', notes: 'Initial admission payment' },
+        });
+      }
+      return tx.admission.findUniqueOrThrow({ where: { id: created.id }, include: admissionInclude });
     });
 
     await logAudit({ clinicId, userId: actorUserId, action: 'PATIENT_ADMITTED', entityType: 'Admission', entityId: admission.id });
@@ -165,7 +172,7 @@ export class AdmissionService {
         dischargedAt: new Date(),
         // Keep totalAmount and paidAmount as they are (sum of payments made)
         // pendingAmount is always 0 with our new logic
-        dischargeSummary: data.dischargeSummary,
+        dischargeSummary: data.dischargeSummary.trim(),
       },
       include: admissionInclude,
     });

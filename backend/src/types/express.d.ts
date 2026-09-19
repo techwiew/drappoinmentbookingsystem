@@ -3,6 +3,7 @@ import { RoleType } from '../constants/index.js';
 declare global {
   namespace Express {
     interface Request {
+      requestId?: string;
       user?: {
         userId: string;
         email: string;

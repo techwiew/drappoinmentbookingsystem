@@ -29,6 +29,7 @@ export const sendError = (
   statusCode = 400,
   details?: any
 ) => {
+  res.locals.errorCode = code;
   return res.status(statusCode).json({
     success: false,
     error: {

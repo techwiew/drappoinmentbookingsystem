@@ -62,6 +62,7 @@ export const DoctorDashboardPage: React.FC = () => {
 
   const currentPatient = queueData?.currentPatient;
   const waitingList = queueData?.waitingList || [];
+  const awaitingReception = (queueData?.allQueue || []).filter((appointment: any) => ['BOOKED', 'CHECKED_IN'].includes(appointment.status));
 
   return (
     <div className="space-y-6">
@@ -253,6 +254,15 @@ export const DoctorDashboardPage: React.FC = () => {
               </div>
             )}
           </Card>
+          {awaitingReception.length > 0 && <Card>
+            <div className="text-sm font-bold text-slate-900 mb-2">Booked, awaiting reception ({awaitingReception.length})</div>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {awaitingReception.map((patient: any) => <div key={patient.id} className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5 text-xs">
+                <span>#{patient.tokenNumber} {patient.patientName} · {patient.appointmentTime || 'Time to confirm'}</span>
+                <StatusBadge status={patient.status} size="sm" />
+              </div>)}
+            </div>
+          </Card>}
         </div>
 
         {/* Right: Follow-ups & Stats */}

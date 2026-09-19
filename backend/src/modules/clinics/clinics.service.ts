@@ -53,18 +53,18 @@ export class ClinicService {
   }
 
   static async updateProfile(clinicId: string, data: any, updaterUserId: string) {
-    const updated = await prisma.clinic.update({
+    await prisma.clinic.update({
       where: { id: clinicId },
       data: {
-        ...(data.name && { name: data.name }),
+        ...(data.name !== undefined && { name: data.name }),
         ...(data.logo !== undefined && { logo: data.logo }),
-        ...(data.address && { address: data.address }),
-        ...(data.phone && { phone: data.phone }),
-        ...(data.email && { email: data.email }),
-        ...(data.city && { city: data.city }),
-        ...(data.state && { state: data.state }),
-        ...(data.pincode && { pincode: data.pincode }),
-        ...(data.tokenPrefix && { tokenPrefix: data.tokenPrefix.toUpperCase() }),
+        ...(data.address !== undefined && { address: data.address }),
+        ...(data.phone !== undefined && { phone: data.phone }),
+        ...(data.email !== undefined && { email: data.email }),
+        ...(data.city !== undefined && { city: data.city }),
+        ...(data.state !== undefined && { state: data.state }),
+        ...(data.pincode !== undefined && { pincode: data.pincode }),
+        ...(data.tokenPrefix !== undefined && { tokenPrefix: data.tokenPrefix.toUpperCase() }),
       },
     });
 
@@ -76,6 +76,6 @@ export class ClinicService {
       entityId: clinicId,
     });
 
-    return updated;
+    return this.getProfile(clinicId);
   }
 }

@@ -19,6 +19,7 @@ import {
   Calculator,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { PAYMENT_METHOD_OPTIONS } from './paymentMethods.js';
 
 export const BillingPage: React.FC = () => {
   const { role } = useAuth();
@@ -271,6 +272,7 @@ export const BillingPage: React.FC = () => {
               />
             </div>
             <select
+              aria-label="Payment status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-36 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -442,12 +444,7 @@ export const BillingPage: React.FC = () => {
                 onChange={(e) =>
                   setPayForm({ ...payForm, paymentMethod: e.target.value })
                 }
-                options={[
-                  { value: "CASH", label: "💵 Cash" },
-                  { value: "UPI", label: "📱 UPI / QR Code" },
-                  { value: "CARD", label: "💳 Card / POS" },
-                  { value: "OTHER", label: "Other" },
-                ]}
+                options={[...PAYMENT_METHOD_OPTIONS]}
               />
               <Input
                 label="Amount to Pay (₹)"

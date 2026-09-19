@@ -1,10 +1,9 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
-import { config } from './config/index.js';
 import { errorHandler } from './middlewares/error.js';
+import { requestLogger } from './utils/logger.js';
 
 // Route imports
 import authRoutes from './modules/auth/auth.routes.js';
@@ -41,16 +40,14 @@ export const createApp = (): Express => {
         callback(null, true);
       },
       credentials: true,
+      exposedHeaders: ['X-Request-Id'],
     })
   );
 
+  app.use(requestLogger);
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());
-
-  if (config.env !== 'test') {
-    app.use(morgan('dev'));
-  }
 
   // API Routes
   app.use('/api/health', healthRoutes);
@@ -72,6 +69,7 @@ export const createApp = (): Express => {
 
   // 404 Handler
   app.use('*', (req, res) => {
+    res.locals.errorCode = 'NOT_FOUND';
     res.status(404).json({
       success: false,
       error: {

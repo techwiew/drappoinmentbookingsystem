@@ -66,6 +66,16 @@ export const StaffPage: React.FC = () => {
     },
   });
 
+  const { data: clinic } = useQuery({
+    queryKey: ['my-clinic'],
+    queryFn: async () => (await apiClient.get('/clinics/profile')).data.data,
+  });
+
+  const activeDoctorCount = (doctors || []).filter((doctor: any) => doctor.status === 'ACTIVE').length;
+  const activeReceptionistCount = (receptionists || []).filter((receptionist: any) => receptionist.status === 'ACTIVE').length;
+  const doctorQuotaReached = typeof clinic?.maxDoctors === 'number' && activeDoctorCount >= clinic.maxDoctors;
+  const receptionistQuotaReached = typeof clinic?.maxReceptionists === 'number' && activeReceptionistCount >= clinic.maxReceptionists;
+
   const addDoctorMutation = useMutation({
     mutationFn: async (payload: any) => {
       const res = await apiClient.post('/doctors', payload);
@@ -182,6 +192,7 @@ export const StaffPage: React.FC = () => {
 
   const submitDoctor = () => {
     if (addDoctorMutation.isPending) return;
+    if (doctorQuotaReached) { setFeedback({ type: 'warning', text: `Doctor limit reached (${activeDoctorCount} of ${clinic.maxDoctors} active doctors).` }); return; }
     const errors = validateStaffForm(docForm, true);
     setDocErrors(errors);
     if (Object.keys(errors).length) { setFeedback({ type: 'warning', text: 'Please correct the highlighted fields.' }); return; }
@@ -191,6 +202,7 @@ export const StaffPage: React.FC = () => {
 
   const submitReceptionist = () => {
     if (addReceptionistMutation.isPending) return;
+    if (receptionistQuotaReached) { setFeedback({ type: 'warning', text: `Receptionist limit reached (${activeReceptionistCount} of ${clinic.maxReceptionists} active receptionists).` }); return; }
     const errors = validateStaffForm(recForm, false);
     setRecErrors(errors);
     if (Object.keys(errors).length) { setFeedback({ type: 'warning', text: 'Please correct the highlighted fields.' }); return; }
@@ -214,7 +226,7 @@ export const StaffPage: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && activeTab === 'doctors' && (
+          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && activeTab === 'doctors' && !doctorQuotaReached && (
             <Button
               variant="primary"
               size="sm"
@@ -224,7 +236,7 @@ export const StaffPage: React.FC = () => {
               Add Doctor
             </Button>
           )}
-          {role === 'DOCTOR' && activeTab === 'receptionists' && (
+          {role === 'DOCTOR' && activeTab === 'receptionists' && !receptionistQuotaReached && (
             <Button
               variant="primary"
               size="sm"
@@ -261,6 +273,9 @@ export const StaffPage: React.FC = () => {
           <UserCheck className="w-3.5 h-3.5" />
           Receptionists ({receptionists?.length ?? 0})
         </button>
+      </div>
+      <div className="text-xs text-slate-500">
+        Active staff quota: {activeDoctorCount} of {clinic?.maxDoctors ?? '—'} doctors · {activeReceptionistCount} of {clinic?.maxReceptionists ?? '—'} receptionists
       </div>
 
       {/* Doctor Cards */}
@@ -352,7 +367,7 @@ export const StaffPage: React.FC = () => {
             ))
           )}
 
-          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && (
+          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && !doctorQuotaReached && (
             <button
               onClick={() => setIsAddDocModalOpen(true)}
               className="h-48 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 transition-all group"
@@ -408,13 +423,13 @@ export const StaffPage: React.FC = () => {
             ))
           )}
 
-          <button
+          {role === 'DOCTOR' && !receptionistQuotaReached && <button
             onClick={() => setIsAddRecModalOpen(true)}
             className="h-36 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all group"
           >
             <Plus className="w-8 h-8 group-hover:scale-110 transition-transform" />
             <span className="text-xs font-semibold">Add New Receptionist</span>
-          </button>
+          </button>}
         </div>
       )}
 
@@ -498,7 +513,7 @@ export const StaffPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Login Email" type="email" required error={recErrors.email} value={recForm.email} onChange={(e) => setRecForm({ ...recForm, email: e.target.value })} />
-            <Input label="Initial Password" type="password" required minLength={8} error={recErrors.password} value={recForm.password} onChange={(e) => setRecForm({ ...recForm, password: e.target.value })} />
+            <Input label="Initial Password" type="text" required minLength={8} error={recErrors.password} value={recForm.password} onChange={(e) => setRecForm({ ...recForm, password: e.target.value })} />
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
             <Button type="button" variant="secondary" onClick={() => setIsAddRecModalOpen(false)}>Cancel</Button>

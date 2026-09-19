@@ -14,7 +14,7 @@ export const createAppointmentSchema = z.object({
     appointmentType: z.enum(['NEW_PATIENT', 'FOLLOW_UP', 'WALK_IN', 'EMERGENCY']).default('NEW_PATIENT'),
     consultationFee: z.number().optional(),
     notes: z.string().optional(),
-    reasonForVisit: z.string().trim().min(1, 'Reason for visit is required').max(2000).optional(),
+    reasonForVisit: z.string().trim().max(2000).optional(),
     directCheckIn: z.boolean().optional().default(false),
   }),
 });
@@ -37,7 +37,7 @@ export const updateAppointmentSchema = z.object({
     ]).optional(),
     consultationFee: z.number().optional(),
     notes: z.string().optional(),
-    reasonForVisit: z.string().trim().min(1).max(2000).optional(),
+    reasonForVisit: z.string().trim().max(2000).optional(),
     doctorId: z.string().optional(),
   }),
 });

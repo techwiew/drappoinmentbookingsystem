@@ -47,6 +47,6 @@ export const dischargeAdmissionSchema = z.object({
   params: z.object({ id: z.string().min(1) }),
   body: z.object({
     totalAmount: z.number().min(0).optional(),
-    dischargeSummary: z.string().min(2, 'Discharge summary is required'),
+    dischargeSummary: z.string().trim().min(2, 'Discharge summary is required'),
   }),
 });

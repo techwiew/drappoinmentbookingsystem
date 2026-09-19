@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppointmentService } from './appointments.service.js';
 import { sendSuccess } from '../../utils/response.js';
+import { logRequestEvent } from '../../utils/logger.js';
 
 export class AppointmentController {
   static async getAppointmentById(req: Request, res: Response, next: NextFunction) {
@@ -34,6 +35,7 @@ export class AppointmentController {
         doctorId,
         status,
       });
+      logRequestEvent(req, 'appointments.listed', { date: date || null, doctorId: doctorId || null, status: status || null, count: result.appointments.length, total: result.meta.total });
 
       return sendSuccess(res, result.appointments, undefined, 200, result.meta);
     } catch (error) {
@@ -48,6 +50,7 @@ export class AppointmentController {
         req.body,
         req.user!.userId
       );
+      logRequestEvent(req, 'appointment.created', { appointmentId: appointment.id, doctorId: appointment.doctorId, appointmentDate: String(req.body.appointmentDate), appointmentTime: appointment.appointmentTime, status: appointment.status });
       return sendSuccess(res, appointment, 'Appointment booked successfully', 201);
     } catch (error) {
       next(error);

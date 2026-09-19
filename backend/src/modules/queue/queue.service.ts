@@ -1,10 +1,10 @@
 import { prisma } from '../../lib/prisma.js';
 import { logAudit } from '../../middlewares/audit.js';
-import { dateOnlyRange, localDateKey } from '../../utils/time.js';
+import { clinicDateKey, dateOnlyRange } from '../../utils/time.js';
 
 export class QueueService {
   static async getDoctorQueue(clinicId: string, doctorId?: string, dateStr?: string, doctorView = false) {
-    const dateKey = dateStr || localDateKey(new Date());
+    const dateKey = dateStr || clinicDateKey(new Date());
     const where: any = {
       clinicId,
       appointmentDate: dateOnlyRange(dateKey),

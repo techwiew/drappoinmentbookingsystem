@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export const ClinicSettingsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { refreshProfile } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: clinic, isLoading } = useQuery({
@@ -71,8 +71,12 @@ export const ClinicSettingsPage: React.FC = () => {
       const res = await apiClient.patch('/clinics/profile', payload);
       return res.data.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
+    onSuccess: async (updated) => {
+      queryClient.setQueryData(['my-clinic'], updated);
+      await refreshProfile();
+      await queryClient.invalidateQueries({ queryKey: ['my-clinic'] });
+      await queryClient.invalidateQueries({ queryKey: ['my-subscription'] });
+      setMessage(null);
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     },

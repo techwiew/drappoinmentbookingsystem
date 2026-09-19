@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { QueueService } from './queue.service.js';
 import { sendSuccess } from '../../utils/response.js';
+import { logRequestEvent } from '../../utils/logger.js';
 
 export class QueueController {
   static async getQueue(req: Request, res: Response, next: NextFunction) {
@@ -19,6 +20,7 @@ export class QueueController {
         date,
         req.user!.role === 'DOCTOR'
       );
+      logRequestEvent(req, 'queue.viewed', { date: queue.date, doctorId: doctorId || null, total: queue.summary.total, waiting: queue.summary.waiting, booked: queue.summary.booked });
       return sendSuccess(res, queue);
     } catch (error) {
       next(error);
@@ -48,6 +50,7 @@ export class QueueController {
         req.user!.userId,
         req.tenant!.doctorId!
       );
+      logRequestEvent(req, 'consultation.started', { appointmentId: updated?.id, doctorId: req.tenant!.doctorId });
       return sendSuccess(res, updated, 'Consultation started');
     } catch (error) {
       next(error);
@@ -72,6 +75,7 @@ export class QueueController {
   static async sendToDoctor(req: Request, res: Response, next: NextFunction) {
     try {
       const updated = await QueueService.sendToDoctor(req.tenant!.clinicId, req.params.id, req.user!.userId);
+      logRequestEvent(req, 'appointment.sent_to_doctor', { appointmentId: req.params.id });
       return sendSuccess(res, updated, 'Patient sent to doctor');
     } catch (error) { next(error); }
   }

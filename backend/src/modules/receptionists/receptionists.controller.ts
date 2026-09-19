@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ReceptionistService } from './receptionists.service.js';
 import { sendSuccess } from '../../utils/response.js';
+import { logRequestEvent } from '../../utils/logger.js';
 
 export class ReceptionistController {
   static async listReceptionists(req: Request, res: Response, next: NextFunction) {
@@ -19,6 +20,7 @@ export class ReceptionistController {
         req.body,
         req.user!.userId
       );
+      logRequestEvent(req, 'receptionist.created', { receptionistId: receptionist.id, status: receptionist.status });
       return sendSuccess(res, receptionist, 'Receptionist created successfully', 201);
     } catch (error) {
       next(error);

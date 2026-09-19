@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { sendError } from '../utils/response.js';
 import { config } from '../config/index.js';
+import { logEvent } from '../utils/logger.js';
 
 export const errorHandler = (
   err: any,
@@ -8,14 +9,17 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  // Structured logging for debugging
-  console.error('[API Error]', {
-    message: err?.message || err,
-    stack: config.env === 'development' ? err?.stack : undefined,
-    path: req.path,
+  const statusCode = err?.statusCode || (err?.code === 'P2002' ? 409 : err?.code === 'P2025' ? 404 : 500);
+  logEvent(statusCode >= 500 ? 'error' : 'warn', 'http.request.failed', {
+    requestId: req.requestId,
     method: req.method,
+    path: req.route?.path ? `${req.baseUrl}${req.route.path}` : req.path,
+    statusCode,
+    errorCode: err?.code || 'INTERNAL_SERVER_ERROR',
+    message: statusCode < 500 ? err?.message : undefined,
     clinicId: req.tenant?.clinicId,
     userId: req.user?.userId,
+    role: req.user?.role,
   });
 
   if (err.name === 'UnauthorizedError') {
@@ -36,7 +40,6 @@ export const errorHandler = (
     return sendError(res, 'NOT_FOUND', 'Requested record was not found', 404);
   }
 
-  const statusCode = err.statusCode || 500;
   const message =
     config.env === 'production' && statusCode === 500
       ? 'An unexpected internal server error occurred'

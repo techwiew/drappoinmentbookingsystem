@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma.js';
-import { dateOnlyRange, localDateKey } from '../../utils/time.js';
+import { clinicDateKey, dateOnlyRange, localDateKey } from '../../utils/time.js';
 
 export class ReportsService {
   static async getDoctorDashboard(clinicId: string, doctorId?: string) {
@@ -7,7 +7,7 @@ export class ReportsService {
     today.setHours(0, 0, 0, 0);
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + 1);
-    const appointmentDateRange = dateOnlyRange(localDateKey(today));
+    const appointmentDateRange = dateOnlyRange(clinicDateKey(new Date()));
 
     const whereAppt: any = {
       clinicId,
@@ -51,6 +51,14 @@ export class ReportsService {
       select: { amount: true },
     });
     const todayCollection = todayReceipts.reduce((sum, receipt) => sum + Number(receipt.amount), 0);
+    const todayIpdPayments = await prisma.admissionPayment.findMany({
+      where: {
+        createdAt: { gte: today, lt: nextDay },
+        admission: { clinicId },
+      },
+      select: { amount: true },
+    });
+    const todayIpdCollection = todayIpdPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
     const pendingPayments = todayPayments.reduce((sum, p) => sum + Number(p.pendingAmount), 0);
 
     // Follow-ups due today
@@ -85,6 +93,14 @@ export class ReportsService {
       },
     });
 
+    const pastIpdPayments = await prisma.admissionPayment.findMany({
+      where: {
+        createdAt: { gte: sevenDaysAgo },
+        admission: { clinicId },
+      },
+      select: { amount: true, createdAt: true },
+    });
+
     const dailyRevenueMap: { [key: string]: number } = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(sevenDaysAgo);
@@ -100,7 +116,22 @@ export class ReportsService {
       }
     });
 
+    const ipdRevenueMap: { [key: string]: number } = {};
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sevenDaysAgo);
+      d.setDate(d.getDate() + i);
+      ipdRevenueMap[localDateKey(d)] = 0;
+    }
+    pastIpdPayments.forEach((payment) => {
+      const dateStr = localDateKey(payment.createdAt);
+      if (ipdRevenueMap[dateStr] !== undefined) ipdRevenueMap[dateStr] += Number(payment.amount);
+    });
+
     const revenueTrends = Object.entries(dailyRevenueMap).map(([date, revenue]) => ({
+      date,
+      revenue: Math.round(revenue),
+    }));
+    const ipdRevenueTrends = Object.entries(ipdRevenueMap).map(([date, revenue]) => ({
       date,
       revenue: Math.round(revenue),
     }));
@@ -115,6 +146,7 @@ export class ReportsService {
         newPatientsCount,
         returningPatientsCount,
         todayCollection: Math.round(todayCollection),
+        todayIpdCollection: Math.round(todayIpdCollection),
         pendingPayments: Math.round(pendingPayments),
         followUpsCount: followUpsDue.length,
       },
@@ -142,6 +174,7 @@ export class ReportsService {
         diagnosis: f.diagnosis,
       })),
       revenueTrends,
+      ipdRevenueTrends,
     };
   }
 
@@ -150,7 +183,7 @@ export class ReportsService {
     today.setHours(0, 0, 0, 0);
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + 1);
-    const appointmentDateRange = dateOnlyRange(localDateKey(today));
+    const appointmentDateRange = dateOnlyRange(clinicDateKey(new Date()));
 
     const doctors = await prisma.doctor.findMany({
       where: { clinicId, status: 'ACTIVE' },

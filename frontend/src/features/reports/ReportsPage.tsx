@@ -75,7 +75,31 @@ export const ReportsPage: React.FC = () => {
           icon={<Calendar className="w-5 h-5" />}
           iconBgColor="bg-purple-50 text-purple-600"
         />
+        <StatCard
+          title="IPD Collections"
+          value={isLoading ? '...' : `₹${(kpis?.todayIpdCollection ?? 0).toLocaleString()}`}
+          subtitle="Collected today"
+          icon={<IndianRupee className="w-5 h-5" />}
+          iconBgColor="bg-violet-50 text-violet-600"
+        />
       </div>
+
+      <Card>
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+          <CreditCard className="w-4 h-4 text-violet-600" />
+          <h2 className="text-sm font-bold text-slate-900">IPD Collections</h2>
+        </div>
+        <p className="text-xs text-slate-500">IPD payments are reported separately from OPD consultation collections.</p>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(doctorData?.ipdRevenueTrends || []).map((entry: { date: string; revenue: number }) => (
+            <div key={entry.date} className="rounded-xl border border-violet-100 bg-violet-50 p-3">
+              <div className="text-[11px] font-medium text-violet-700">{entry.date}</div>
+              <div className="mt-1 text-base font-black text-violet-950">₹{entry.revenue.toLocaleString()}</div>
+            </div>
+          ))}
+          {!isLoading && !(doctorData?.ipdRevenueTrends || []).length && <p className="text-xs text-slate-500">No IPD collections in this period.</p>}
+        </div>
+      </Card>
 
       {/* Revenue & Patient Volume Insights */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AdmissionService } from './admissions.service.js';
 import { sendSuccess } from '../../utils/response.js';
+import { logRequestEvent } from '../../utils/logger.js';
 
 export class AdmissionController {
   static async list(req: Request, res: Response, next: NextFunction) {
@@ -16,6 +17,7 @@ export class AdmissionController {
   static async admit(req: Request, res: Response, next: NextFunction) {
     try {
       const admission = await AdmissionService.admitPatient(req.tenant!.clinicId, req.body, req.user!.userId);
+      logRequestEvent(req, 'admission.created', { admissionId: admission.id, doctorId: admission.attendingDoctorId, status: admission.status });
       return sendSuccess(res, admission, 'Patient admitted successfully', 201);
     } catch (error) { next(error); }
   }
@@ -30,6 +32,7 @@ export class AdmissionController {
   static async payment(req: Request, res: Response, next: NextFunction) {
     try {
       const admission = await AdmissionService.recordPayment(req.tenant!.clinicId, req.params.id, req.body, req.user!.userId);
+      logRequestEvent(req, 'admission.payment_recorded', { admissionId: admission.id, paymentCount: admission.payments.length });
       return sendSuccess(res, admission, 'Admission payment recorded');
     } catch (error) { next(error); }
   }
@@ -37,6 +40,7 @@ export class AdmissionController {
   static async discharge(req: Request, res: Response, next: NextFunction) {
     try {
       const admission = await AdmissionService.discharge(req.tenant!.clinicId, req.params.id, req.body, req.user!.userId);
+      logRequestEvent(req, 'admission.discharged', { admissionId: admission.id, status: admission.status });
       return sendSuccess(res, admission, 'Patient discharged successfully');
     } catch (error) { next(error); }
   }

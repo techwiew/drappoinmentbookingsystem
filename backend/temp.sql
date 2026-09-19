@@ -274,6 +274,7 @@ CREATE TABLE `appointments` (
     ) NOT NULL DEFAULT 'BOOKED',
     `consultationFee` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     `notes` TEXT NULL,
+    `reasonForVisit` TEXT NULL,
     `createdBy` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)

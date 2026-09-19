@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BillingService } from './billing.service.js';
 import { sendSuccess } from '../../utils/response.js';
+import { logRequestEvent } from '../../utils/logger.js';
 
 export class BillingController {
   static async listPayments(req: Request, res: Response, next: NextFunction) {
@@ -34,6 +35,7 @@ export class BillingController {
         req.body,
         req.user!.userId
       );
+      logRequestEvent(req, 'payment.recorded', { paymentId: payment.id, appointmentId: payment.appointmentId, paymentMethod: payment.paymentMethod, paymentStatus: payment.paymentStatus });
       return sendSuccess(res, payment, 'Payment recorded successfully', 201);
     } catch (error) {
       next(error);

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
+import { PAYMENT_METHOD_OPTIONS } from '../billing/paymentMethods.js';
 import { Card } from '../../components/ui/Card.js';
 import { Button } from '../../components/ui/Button.js';
 import { Input } from '../../components/ui/Input.js';
@@ -122,6 +123,15 @@ export const ConsultationRoomPage: React.FC = () => {
       },
       enabled: !!appointmentId,
     });
+  const isLocked = existingConsultation?.status === 'COMPLETED';
+  const { data: consultationPayments = [] } = useQuery<any[]>({
+    queryKey: ['consultation-payments', appointmentId],
+    queryFn: async () => (await apiClient.get('/payments', { params: { appointmentId } })).data.data,
+    enabled: Boolean(appointmentId && isLocked),
+  });
+  const paymentOutstanding = consultationPayments.length > 0
+    ? consultationPayments.some((payment) => Number(payment.pendingAmount) > 0)
+    : Number(appointment?.consultationFee || 0) > 0;
 
   // Initialize form from fetched data
   useEffect(() => {
@@ -205,6 +215,10 @@ export const ConsultationRoomPage: React.FC = () => {
         queryKey: ["consultation-for-apt", appointmentId],
       });
       queryClient.invalidateQueries({ queryKey: ["live-queue"] });
+      queryClient.invalidateQueries({ queryKey: ['appointment-detail', appointmentId] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['consultation-payments', appointmentId] });
       // Optionally, update the existingConsultation state if we have a way to do so.
       // Since we are invalidating the query, the component will refetch.
     },
@@ -219,6 +233,7 @@ export const ConsultationRoomPage: React.FC = () => {
     onSuccess: (data) => {
       // Refetch appointment to update payment status if needed elsewhere
       queryClient.invalidateQueries({ queryKey: ['appointment-detail', appointmentId] });
+      queryClient.invalidateQueries({ queryKey: ['consultation-payments', appointmentId] });
       setIsPaymentModalOpen(false);
       // Reset payment form? We'll leave it as is.
     },
@@ -289,8 +304,6 @@ export const ConsultationRoomPage: React.FC = () => {
     });
   };
 
-  const isLocked = existingConsultation?.status === "COMPLETED";
-
   const addMedicine = () => {
     setMedicines([
       ...medicines,
@@ -341,6 +354,10 @@ export const ConsultationRoomPage: React.FC = () => {
   return (
     <>
       <div className="space-y-5">
+      {isLocked && paymentOutstanding && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <span>Please collect the consultation fee; this patient's payment is still pending.</span>
+        <Button size="sm" variant="outline" onClick={() => navigate(`/billing?appointmentId=${appointmentId}`)}>Open Billing & POS</Button>
+      </div>}
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -809,12 +826,7 @@ export const ConsultationRoomPage: React.FC = () => {
               onChange={(e) =>
                 setPayForm({ ...payForm, paymentMethod: e.target.value })
               }
-              options={[
-                { value: "CASH", label: "💵 Cash" },
-                { value: "UPI", label: "📱 UPI / QR Code" },
-                { value: "CARD", label: "💳 Card / POS" },
-                { value: "OTHER", label: "Other" },
-              ]}
+              options={[...PAYMENT_METHOD_OPTIONS]}
             />
             <Input
               label="Amount to Pay (₹)"

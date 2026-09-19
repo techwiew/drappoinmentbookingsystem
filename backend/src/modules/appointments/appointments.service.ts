@@ -1,6 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import { logAudit } from '../../middlewares/audit.js';
-import { getCurrentAppointmentTime, normalizeAppointmentTime } from '../../utils/time.js';
+import { dateOnlyRange, getCurrentAppointmentTime, isAppointmentSlotInPast, normalizeAppointmentTime } from '../../utils/time.js';
 
 export class AppointmentService {
   private static normalizeDateString(dateString: any): string {
@@ -116,7 +116,7 @@ export class AppointmentService {
     const where: any = { clinicId };
 
     if (query.date) {
-      where.appointmentDate = AppointmentService.normalizeDateString(query.date);
+      where.appointmentDate = dateOnlyRange(query.date);
     }
 
     if (query.doctorId && query.doctorId !== 'ALL') {
@@ -258,15 +258,9 @@ export class AppointmentService {
       ? normalizeAppointmentTime(data.appointmentTime)
       : data.appointmentType === 'FOLLOW_UP'
         ? null
-        : normalizeAppointmentTime(getCurrentAppointmentTime(2));
-    if (appointmentTime) {
-      const [, hourText, minuteText, meridiem] = appointmentTime.match(/^(\d{1,2}):(\d{2}) (AM|PM)$/)!;
-      const hour = Number(hourText) % 12 + (meridiem === 'PM' ? 12 : 0);
-      const [year, month, day] = data.appointmentDate.split('-').map(Number);
-      const scheduled = new Date(year, month - 1, day, hour, Number(minuteText));
-      if (scheduled.getTime() < Date.now() + 2 * 60 * 1000) {
-        throw { statusCode: 400, code: 'APPOINTMENT_TOO_SOON', message: 'Appointment time must be at least two minutes from now' };
-      }
+        : normalizeAppointmentTime(getCurrentAppointmentTime());
+    if (appointmentTime && isAppointmentSlotInPast(data.appointmentDate, appointmentTime)) {
+      throw { statusCode: 400, code: 'APPOINTMENT_IN_PAST', message: 'Appointment time cannot be in the past' };
     }
     const initialStatus = data.directCheckIn
       ? 'CHECKED_IN'
@@ -286,7 +280,7 @@ export class AppointmentService {
         status: initialStatus,
         consultationFee,
         notes: data.notes || null,
-        reasonForVisit: data.reasonForVisit || data.notes || null,
+        reasonForVisit: data.reasonForVisit?.trim() || null,
         createdBy: creatorUserId,
       },
       include: {
@@ -358,7 +352,7 @@ export class AppointmentService {
     if (data.status) updateData.status = data.status;
     if (data.consultationFee !== undefined) updateData.consultationFee = data.consultationFee;
     if (data.notes !== undefined) updateData.notes = data.notes;
-    if (data.reasonForVisit !== undefined) updateData.reasonForVisit = data.reasonForVisit;
+    if (data.reasonForVisit !== undefined) updateData.reasonForVisit = data.reasonForVisit.trim() || null;
     if (data.doctorId) {
       const doctor = await prisma.doctor.findFirst({ where: { id: data.doctorId, clinicId, status: 'ACTIVE' } });
       if (!doctor) throw { statusCode: 404, code: 'DOCTOR_NOT_FOUND', message: 'Doctor not found in this clinic' };

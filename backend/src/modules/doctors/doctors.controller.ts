@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { DoctorService } from './doctors.service.js';
 import { sendSuccess } from '../../utils/response.js';
+import { logRequestEvent } from '../../utils/logger.js';
 
 export class DoctorController {
   static async listDoctors(req: Request, res: Response, next: NextFunction) {
@@ -19,6 +20,7 @@ export class DoctorController {
         req.body,
         req.user!.userId
       );
+      logRequestEvent(req, 'doctor.created', { doctorId: doctor.id, status: doctor.status });
       return sendSuccess(res, doctor, 'Doctor registered successfully', 201);
     } catch (error) {
       next(error);

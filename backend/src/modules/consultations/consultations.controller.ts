@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ConsultationService } from './consultations.service.js';
 import { sendSuccess } from '../../utils/response.js';
+import { logRequestEvent } from '../../utils/logger.js';
 
 export class ConsultationController {
   static async list(req: Request, res: Response, next: NextFunction) {
@@ -51,6 +52,7 @@ export class ConsultationController {
         req.tenant?.doctorId || '',
         req.user!.userId
       );
+      logRequestEvent(req, consultation.status === 'COMPLETED' ? 'consultation.completed' : 'consultation.saved', { consultationId: consultation.id, appointmentId: consultation.appointmentId, doctorId: consultation.doctorId, status: consultation.status });
       return sendSuccess(res, consultation, 'Consultation recorded successfully', 201);
     } catch (error) {
       next(error);
@@ -83,6 +85,7 @@ export class ConsultationController {
         req.user!.userId,
         req.tenant!.doctorId!
       );
+      logRequestEvent(req, consultation.status === 'COMPLETED' ? 'consultation.completed' : 'consultation.saved', { consultationId: consultation.id, appointmentId: consultation.appointmentId, doctorId: consultation.doctorId, status: consultation.status });
       return sendSuccess(res, consultation, 'Consultation updated successfully');
     } catch (error) {
       next(error);

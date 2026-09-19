@@ -24,16 +24,14 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { clinicDateAndTime } from '../../utils/clinicTime.js';
 
 export const QueuePage: React.FC = () => {
   const { role, doctorId } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId || '');
-  const [queueDate, setQueueDate] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  });
+  const [queueDate, setQueueDate] = useState(() => clinicDateAndTime().date);
 
   const { data: doctors } = useQuery({
     queryKey: ['doctors-quick'],
@@ -103,6 +101,7 @@ export const QueuePage: React.FC = () => {
   const summary = queueData?.summary;
   const currentPatient = queueData?.currentPatient;
   const waitingList = queueData?.waitingList || [];
+  const bookedForDoctor = role === 'DOCTOR' ? (queueData?.allQueue || []).filter((appointment: any) => ['BOOKED', 'CHECKED_IN'].includes(appointment.status)) : [];
   const actionableList = role === 'RECEPTIONIST'
     ? (queueData?.allQueue || []).filter((a: any) => ['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'].includes(a.status))
     : waitingList;
@@ -426,6 +425,10 @@ export const QueuePage: React.FC = () => {
       </div>
 
       {/* Completed List (Collapsible) */}
+      {bookedForDoctor.length > 0 && <Card>
+        <div className="text-sm font-bold text-slate-900 mb-3">Booked, awaiting reception ({bookedForDoctor.length})</div>
+        <div className="space-y-2">{bookedForDoctor.map((appointment: any) => <div key={appointment.id} className="flex items-center justify-between rounded-lg bg-slate-50 p-2 text-xs"><span>#{appointment.tokenNumber} {appointment.patientName} · {appointment.appointmentTime || 'Time to confirm'}</span><StatusBadge status={appointment.status} size="sm" /></div>)}</div>
+      </Card>}
       {completedList.length > 0 && (
         <Card>
           <div className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
