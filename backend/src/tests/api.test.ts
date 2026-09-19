@@ -388,4 +388,60 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
       expect(res.body.status).toBe("ok");
     });
   });
+
+  describe("7. Hospital suspension", () => {
+    it("blocks doctors and receptionists from logging in or using existing sessions until reactivated", async () => {
+      const doctorLogin = await request(app).post('/api/auth/login').send({
+        email: 'dr.raj@sharmaclinic.com',
+        password: 'Doctor@123',
+      });
+      expect(doctorLogin.status).toBe(200);
+
+      const suspend = await request(app)
+        .patch(`/api/super-admin/clinics/${clinicAId}/status`)
+        .set('Authorization', `Bearer ${superAdminToken}`)
+        .send({ status: 'SUSPENDED' });
+      expect(suspend.status).toBe(200);
+
+      try {
+        for (const credentials of [
+          { email: 'dr.raj@sharmaclinic.com', password: 'Doctor@123' },
+          { email: 'reception@sharmaclinic.com', password: 'Reception@123' },
+        ]) {
+          const login = await request(app).post('/api/auth/login').send(credentials);
+          expect(login.status).toBe(403);
+          expect(login.body.error.code).toBe('CLINIC_SUSPENDED');
+        }
+
+        for (const token of [doctorTokenClinicA, receptionistTokenClinicA]) {
+          const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
+          expect(me.status).toBe(403);
+          expect(me.body.error.code).toBe('CLINIC_SUSPENDED');
+        }
+
+        const refresh = await request(app).post('/api/auth/refresh').send({
+          refreshToken: doctorLogin.body.data.refreshToken,
+        });
+        expect(refresh.status).toBe(403);
+        expect(refresh.body.error.code).toBe('CLINIC_SUSPENDED');
+
+        const admin = await request(app)
+          .get('/api/super-admin/dashboard')
+          .set('Authorization', `Bearer ${superAdminToken}`);
+        expect(admin.status).toBe(200);
+      } finally {
+        const reactivate = await request(app)
+          .patch(`/api/super-admin/clinics/${clinicAId}/status`)
+          .set('Authorization', `Bearer ${superAdminToken}`)
+          .send({ status: 'ACTIVE' });
+        expect(reactivate.status).toBe(200);
+      }
+
+      const loginAgain = await request(app).post('/api/auth/login').send({
+        email: 'dr.raj@sharmaclinic.com',
+        password: 'Doctor@123',
+      });
+      expect(loginAgain.status).toBe(200);
+    });
+  });
 });

@@ -4,7 +4,6 @@ import { useAuth } from "../../context/AuthContext.js";
 import { apiClient } from "../../api/client.js";
 import {
   ArrowRight,
-  Building2,
   Eye,
   EyeOff,
   HeartPulse,
@@ -12,55 +11,16 @@ import {
   Mail,
   Menu,
   ShieldCheck,
-  Stethoscope,
-  Users,
   X,
-  Zap,
 } from "lucide-react";
 import { LANDING_COPY, LANDING_NAV_LINKS } from "../../constants/landing.js";
 
 const REMEMBERED_EMAIL_KEY = "MediNovel_remembered_email";
 
-const quickRoles = [
-  {
-    label: "Dr. Raj Sharma",
-    description: "Cardiologist",
-    email: "dr.raj@sharmaclinic.com",
-    password: "Doctor@123",
-    icon: Stethoscope,
-    classes:
-      "border-teal-200 hover:border-teal-400 hover:bg-teal-50/40 text-teal-900",
-    iconClasses: "bg-teal-50 text-teal-700 border-teal-200",
-  },
-  {
-    label: "Dr. Priya Patel",
-    description: "General Physician",
-    email: "dr.priya@sharmaclinic.com",
-    password: "Doctor@123",
-    icon: Users,
-    classes:
-      "border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/40 text-emerald-900",
-    iconClasses: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  },
-  {
-    label: "Reception Desk",
-    description: "Anjali Verma (Frontline)",
-    email: "reception@sharmaclinic.com",
-    password: "Reception@123",
-    icon: Building2,
-    classes:
-      "border-sky-200 hover:border-sky-400 hover:bg-sky-50/40 text-sky-900",
-    iconClasses: "bg-sky-50 text-sky-700 border-sky-200",
-  },
-];
-
-type QuickRole = (typeof quickRoles)[number];
-
 export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false }) => {
-  const [email, setEmail] = useState(adminOnly ? "" : "dr.raj@sharmaclinic.com");
-  const [password, setPassword] = useState(adminOnly ? "" : "Doctor@123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberSession, setRememberSession] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -68,31 +28,21 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
   const navigate = useNavigate();
 
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
-    if (rememberedEmail) setEmail(rememberedEmail);
+    localStorage.removeItem(REMEMBERED_EMAIL_KEY);
   }, []);
 
-  const handleLogin = async (
-    event?: FormEvent,
-    customEmail?: string,
-    customPass?: string,
-  ) => {
-    event?.preventDefault();
+  const handleLogin = async (event: FormEvent) => {
+    event.preventDefault();
     setError("");
     setIsLoading(true);
-    const loginEmail = customEmail || email;
-    const loginPass = customPass || password;
 
     try {
       const response = await apiClient.post("/auth/login", {
-        email: loginEmail,
-        password: loginPass,
+        email,
+        password,
       });
       const { accessToken, refreshToken, user } = response.data.data;
       login(accessToken, refreshToken, user);
-      if (rememberSession)
-        localStorage.setItem(REMEMBERED_EMAIL_KEY, loginEmail);
-      else localStorage.removeItem(REMEMBERED_EMAIL_KEY);
 
       if (user.role === "SUPER_ADMIN") navigate("/super-admin");
       else if (user.role === "DOCTOR") navigate("/doctor-dashboard");
@@ -106,13 +56,6 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const fillCredentials = (role: QuickRole, autoLogin = false) => {
-    setEmail(role.email);
-    setPassword(role.password);
-    setError("");
-    if (autoLogin) void handleLogin(undefined, role.email, role.password);
   };
 
   return (
@@ -209,8 +152,8 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
             </h2>
             <p className="mt-1.5 text-sm text-slate-500 sm:text-base">
               {adminOnly
-                ? "Enter your platform administrator credentials or choose a demo workspace."
-                : "Enter your clinic credentials or pick a demo role below."}
+                ? "Enter your platform administrator credentials."
+                : "Enter your hospital credentials."}
             </p>
           </header>
           {error && (
@@ -218,7 +161,7 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
               {error}
             </div>
           )}
-          <form onSubmit={handleLogin} className="mb-7 space-y-4">
+          <form onSubmit={handleLogin} autoComplete="off" className="mb-7 space-y-4">
             <label className="block text-xs font-semibold uppercase tracking-wide text-slate-700">
               Email Address <span className="text-rose-500">*</span>
               <div className="relative mt-1.5">
@@ -227,8 +170,9 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   type="email"
+                  autoComplete="off"
                   required
-                  placeholder="e.g. dr.raj@sharmaclinic.com"
+                  placeholder="Enter email address"
                   className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-11 pr-4 text-sm font-normal normal-case tracking-normal text-slate-800 shadow-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:py-3"
                 />
               </div>
@@ -249,6 +193,7 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   required
                   placeholder="Enter password"
                   className="block w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-11 pr-11 text-sm font-normal normal-case tracking-normal text-slate-800 shadow-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:py-3"
@@ -267,15 +212,6 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
                 </button>
               </div>
             </label>
-            <label className="flex cursor-pointer items-center gap-2.5 py-0.5 text-xs text-slate-600 sm:text-sm">
-              <input
-                type="checkbox"
-                checked={rememberSession}
-                onChange={(event) => setRememberSession(event.target.checked)}
-                className="h-4 w-4 cursor-pointer rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-              />{" "}
-              Remember my session on this clinical workstation
-            </label>
             <button
               type="submit"
               disabled={isLoading}
@@ -285,43 +221,6 @@ export const LoginPage: React.FC<{ adminOnly?: boolean }> = ({ adminOnly = false
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
-
-          {adminOnly && <section
-            aria-label="1-click role switcher"
-            className="border-t border-slate-100 pt-4"
-          >
-            <div className="mb-3 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-              <Zap className="h-3.5 w-3.5 text-amber-500" /> 1-Click Quick Demo
-              Switcher
-            </div>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              {quickRoles.map((role) => {
-                const Icon = role.icon;
-                return (
-                  <button
-                    key={role.label}
-                    type="button"
-                    onClick={() => fillCredentials(role)}
-                    className={`group flex items-center gap-3 rounded-lg border bg-white p-3 text-left text-xs transition ${role.classes}`}
-                  >
-                    <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-transform group-hover:scale-105 ${role.iconClasses}`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-bold leading-tight">
-                        {role.label}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[11px] font-medium opacity-80">
-                        {role.description}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>}
 
           <footer className="mt-8 border-t border-slate-100 pt-4 text-center text-[11px] font-medium text-slate-400">
             <span className="inline-flex flex-wrap items-center justify-center gap-1.5">

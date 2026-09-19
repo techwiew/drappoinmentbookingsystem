@@ -80,6 +80,9 @@ export class AuthService {
 
     const clinicUser = user.clinicUsers[0];
     const clinic = clinicUser?.clinic;
+    if (user.role !== 'SUPER_ADMIN' && (!clinic || clinic.status === 'SUSPENDED')) {
+      throw { statusCode: 403, code: 'CLINIC_SUSPENDED', message: 'This hospital is suspended. Please contact support.' };
+    }
 
     const tokenPayload = {
       userId: user.id,
@@ -172,6 +175,9 @@ export class AuthService {
       }
 
       const clinicUser = user.clinicUsers[0];
+      if (user.role !== 'SUPER_ADMIN' && (!clinicUser?.clinic || clinicUser.clinic.status === 'SUSPENDED')) {
+        throw { statusCode: 403, code: 'CLINIC_SUSPENDED', message: 'This hospital is suspended. Please contact support.' };
+      }
       const tokenPayload = {
         userId: user.id,
         email: user.email,
@@ -195,6 +201,7 @@ export class AuthService {
         refreshToken: newRefreshToken,
       };
     } catch (e: any) {
+      if (e?.code === 'CLINIC_SUSPENDED') throw e;
       throw { statusCode: 401, code: 'UNAUTHORIZED', message: 'Session expired, please login again' };
     }
   }

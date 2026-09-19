@@ -44,6 +44,9 @@ export const authenticate = async (
     }
 
     const clinicUser = user.clinicUsers[0];
+    if (user.role !== 'SUPER_ADMIN' && (!clinicUser?.clinic || clinicUser.clinic.status === 'SUSPENDED')) {
+      return sendError(res, 'CLINIC_SUSPENDED', 'This hospital is suspended. Please contact support.', 403);
+    }
     const clinicId = clinicUser?.clinicId;
 
     req.user = {
