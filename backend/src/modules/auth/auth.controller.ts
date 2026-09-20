@@ -26,7 +26,16 @@ export class AuthController {
   static async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await AuthService.requestPasswordReset(req.body.email);
-      return sendSuccess(res, result, 'If an account exists, a reset link has been created.');
+      return sendSuccess(res, result, 'A six-digit verification code has been sent to your registered email address.');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async verifyResetOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.verifyPasswordResetOtp(req.body.email, req.body.otp);
+      return sendSuccess(res, result, 'Code verified. Set your new password.');
     } catch (error) {
       next(error);
     }

@@ -6,33 +6,72 @@ import {
   verifyRefreshToken,
 } from '../../utils/jwt.js';
 import { logAudit } from '../../middlewares/audit.js';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomInt } from 'crypto';
+import { sendEmail } from '../../services/email.service.js';
+
+const RESET_OTP_LIFETIME_MS = 10 * 60 * 1000;
+const RESET_OTP_MAX_ATTEMPTS = 5;
+const hashResetSecret = (value: string) => createHash('sha256').update(value).digest('hex');
 
 export class AuthService {
   static async requestPasswordReset(email: string) {
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
-    if (!user || user.status !== 'ACTIVE') return { resetUrl: null };
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user || user.status !== 'ACTIVE') {
+      throw { statusCode: 404, code: 'USER_NOT_FOUND', message: 'No active user exists with this email address.' };
+    }
 
-    const token = randomBytes(32).toString('hex');
-    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const otp = randomInt(0, 1_000_000).toString().padStart(6, '0');
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        passwordResetTokenHash: tokenHash,
-        passwordResetExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
-      },
+        passwordResetTokenHash: hashResetSecret(otp),
+        passwordResetExpiresAt: new Date(Date.now() + RESET_OTP_LIFETIME_MS),
+        passwordResetAttempts: 0,
+      } as any,
     });
+    try {
+      await sendEmail({
+        to: normalizedEmail,
+        subject: 'Your MediNovel password reset code',
+        text: `Your MediNovel password reset code is ${otp}. It expires in 10 minutes. If you did not request this, you can ignore this email.`,
+        html: `<div style="font-family:Arial,sans-serif;color:#17201f;max-width:560px;margin:auto"><h1 style="color:#00685f">Reset your MediNovel password</h1><p>Use this verification code to reset your password:</p><p style="margin:24px 0;padding:16px;background:#e8f6f3;border-radius:8px;font-size:30px;font-weight:700;letter-spacing:8px;text-align:center;color:#005049">${otp}</p><p>This code expires in <b>10 minutes</b>. If you did not request a password reset, you can safely ignore this email.</p></div>`,
+      });
+    } catch (error) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetAttempts: 0 } as any,
+      });
+      console.error('[password-reset] OTP email delivery failed', error);
+      throw { statusCode: 503, code: 'EMAIL_UNAVAILABLE', message: 'We could not send the verification email. Please try again shortly.' };
+    }
+    return { email: normalizedEmail, expiresInMinutes: 10 };
+  }
 
-    const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173';
-    return {
-      resetUrl: process.env.NODE_ENV === 'production'
-        ? null
-        : `${frontendUrl.replace(/\/$/, '')}/reset-password?token=${token}`,
-    };
+  static async verifyPasswordResetOtp(email: string, otp: string) {
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user || !user.passwordResetTokenHash || !user.passwordResetExpiresAt || user.passwordResetExpiresAt <= new Date()) {
+      throw { statusCode: 400, code: 'OTP_EXPIRED', message: 'This verification code is invalid or has expired. Request a new code.' };
+    }
+    const passwordResetAttempts = (user as typeof user & { passwordResetAttempts: number }).passwordResetAttempts || 0;
+    if (passwordResetAttempts >= RESET_OTP_MAX_ATTEMPTS) {
+      throw { statusCode: 429, code: 'OTP_ATTEMPTS_EXCEEDED', message: 'Too many incorrect codes. Request a new code.' };
+    }
+    if (hashResetSecret(otp) !== user.passwordResetTokenHash) {
+      await prisma.user.update({ where: { id: user.id }, data: { passwordResetAttempts: { increment: 1 } } as any });
+      throw { statusCode: 400, code: 'INVALID_OTP', message: 'The verification code is incorrect.' };
+    }
+    const resetToken = randomBytes(32).toString('hex');
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetTokenHash: hashResetSecret(resetToken), passwordResetExpiresAt: new Date(Date.now() + RESET_OTP_LIFETIME_MS), passwordResetAttempts: 0 } as any,
+    });
+    return { resetToken, expiresInMinutes: 10 };
   }
 
   static async resetPassword(token: string, newPassword: string) {
-    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const tokenHash = hashResetSecret(token);
     const user = await prisma.user.findFirst({
       where: { passwordResetTokenHash: tokenHash, passwordResetExpiresAt: { gt: new Date() } },
     });
@@ -46,7 +85,8 @@ export class AuthService {
         refreshTokenHash: null,
         passwordResetTokenHash: null,
         passwordResetExpiresAt: null,
-      },
+        passwordResetAttempts: 0,
+      } as any,
     });
     await logAudit({ userId: user.id, action: 'PASSWORD_RESET', entityType: 'User', entityId: user.id });
   }

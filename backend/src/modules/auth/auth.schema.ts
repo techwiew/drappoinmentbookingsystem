@@ -18,6 +18,13 @@ export const resetPasswordSchema = z.object({
   }),
 });
 
+export const verifyResetOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+    otp: z.string().regex(/^\d{6}$/, 'Enter the six-digit code from your email'),
+  }),
+});
+
 export const refreshSchema = z.object({
   body: z.object({
     refreshToken: z.string().min(1, 'Refresh token is required'),

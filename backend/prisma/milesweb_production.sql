@@ -19,6 +19,7 @@ CREATE TABLE `users` (
     `refreshTokenHash` TEXT NULL,
     `passwordResetTokenHash` VARCHAR(191) NULL,
     `passwordResetExpiresAt` DATETIME(3) NULL,
+    `passwordResetAttempts` INTEGER NOT NULL DEFAULT 0,
     `lastLoginAt` DATETIME(3) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),

@@ -1,8 +1,10 @@
-import nodemailer from 'nodemailer';
 import { prisma } from '../../lib/prisma.js';
+import { sendEmail } from '../../services/email.service.js';
 
-const DEFAULT_NOTIFICATION_RECIPIENTS = ['info@nativenodes.com', 'techwiew@gmail.com'];
-const DEFAULT_EMAIL_FROM = 'info@medinovel.com';
+const DEFAULT_NOTIFICATION_RECIPIENTS = ['info@medinovel.com'];
+const escapeHtml = (value: string) => value.replace(/[&<>'"]/g, (character) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+}[character] || character));
 
 const getNotificationRecipients = () => {
   const configured = (process.env.CONTACT_NOTIFY_EMAILS || process.env.NOTIFY_EMAILS || '')
@@ -20,24 +22,6 @@ const sendInquiryNotification = async (payload: {
   city: string;
 }) => {
   const recipients = getNotificationRecipients();
-  const smtpUser = process.env.SMTP_USER || process.env.MAIL_USER;
-  const smtpPass = process.env.SMTP_PASS || process.env.MAIL_PASS;
-
-  if (!smtpUser || !smtpPass) {
-    console.warn('[contact-email] SMTP credentials are not configured. Skipping notification email.');
-    return;
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || process.env.MAIL_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT || process.env.MAIL_PORT || 587),
-    secure: (process.env.SMTP_SECURE || process.env.MAIL_SECURE || 'false') === 'true',
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-  });
-
   const mailBody = [
     'A new demo request was submitted.',
     '',
@@ -50,12 +34,11 @@ const sendInquiryNotification = async (payload: {
   ].join('\n');
 
   try {
-    await transporter.sendMail({
-      from: process.env.MAIL_FROM || DEFAULT_EMAIL_FROM,
+    await sendEmail({
       to: recipients.join(','),
       subject: 'New Demo Request - MediNovel',
       text: mailBody,
-      replyTo: payload.phone,
+      html: `<div style="font-family:Arial,sans-serif;color:#17201f"><h2 style="color:#00685f">New MediNovel demo request</h2><table cellpadding="8"><tr><td><b>Name</b></td><td>${escapeHtml(payload.name)}</td></tr><tr><td><b>Phone</b></td><td>${escapeHtml(payload.phone)}</td></tr><tr><td><b>Clinic type</b></td><td>${escapeHtml(payload.clinicType)}</td></tr><tr><td><b>City</b></td><td>${escapeHtml(payload.city)}</td></tr></table><p style="color:#52605d">Submitted at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</p></div>`,
     });
   } catch (error) {
     console.error('[contact-email] Failed to send demo request notification:', error);
