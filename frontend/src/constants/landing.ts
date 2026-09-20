@@ -29,45 +29,6 @@ export const LANDING_COPY = {
       "Move from crowded queues and scattered records to one steady workflow for appointments, consultations, patients, and payments.",
     demo: "Book a Live Demo",
   },
-  preview: {
-    workspace: "MediNovel workspace / Dr. Sharma Clinic",
-    live: "Live queue active",
-    queueTitle: "Live OPD Queue",
-    queueSummary: "14 patients waiting · avg 8 min",
-    walkIn: "+ Walk-in",
-    queueUpdates: "Queue updates:",
-    automatic: "automatic",
-    displaySync: "TV display sync",
-    consultationTitle: "Consultation workspace",
-    patientId: "Patient #SHC-1048",
-    vitals: ["BP", "Pulse", "SpO2", "Weight"],
-    medicinesTitle: "Prescribed medicines",
-    addMedicine: "+ Add medicine",
-    digitalPrescription: "Digital prescription ready to share",
-    insightsTitle: "Daily insights",
-    collections: "Today's collections",
-    collectionValue: "INR 18,500",
-    billed: "32 consultations billed",
-    doctorsOnDuty: "Doctors on duty",
-    roomOne: "Room 1",
-    roomTwo: "Room 2",
-    scheduled: "Scheduled",
-    explore: "Explore the full clinic workspace",
-    activePatient: "Kavita Verma",
-    activePatientMeta: "(38y, F)",
-    activePatientReason: "Follow-up · Hypothyroidism",
-    activePatientStatus: "IN CABIN",
-    vitalValues: [
-      ["BP", "126/82"],
-      ["Pulse", "76 bpm"],
-      ["SpO2", "99%"],
-      ["Weight", "63.5 kg"],
-    ],
-    upiLabel: "UPI / QR",
-    upiValue: "INR 14,200",
-    cashLabel: "Cash",
-    cashValue: "INR 4,300",
-  },
   features: {
     eyebrow: "Engineered for outpatient excellence",
     title: "Everything your clinic needs to run at peak efficiency",
@@ -256,21 +217,4 @@ export const LANDING_NAV_LINKS = [
   ["Solutions", "solutions"],
   ["About", "about"],
   ["Contact", "demo"],
-];
-
-export const LANDING_QUEUE_PATIENTS = [
-  ["#09", "Ramesh Iyer", "BP check and lab review", "11:42 AM"],
-  ["#10", "Aarav Mehta", "Fever, sore throat", "11:55 AM"],
-  ["#11", "Sunita Deshmukh", "Joint pain assessment", "12:05 PM"],
-];
-
-export const LANDING_MEDICINES = [
-  ["Thyronorm 50 mcg", "1 tab · morning · 60 days", "Refill"],
-  ["Shelcal 500 HD", "1 tab · after lunch · 30 days", "New"],
-];
-
-export const LANDING_DOCTORS_ON_DUTY = [
-  ["Dr. Raj M.", "Room 1"],
-  ["Dr. Priya P.", "Room 2"],
-  ["Dr. Amit K.", "Scheduled"],
 ];

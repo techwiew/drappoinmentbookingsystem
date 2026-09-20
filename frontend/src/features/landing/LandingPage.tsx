@@ -1,4 +1,4 @@
-import React, { FormEvent, useState } from "react";
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -26,11 +26,8 @@ import {
 } from "lucide-react";
 import {
   LANDING_COPY,
-  LANDING_DOCTORS_ON_DUTY,
   LANDING_FEATURES,
-  LANDING_MEDICINES,
   LANDING_NAV_LINKS,
-  LANDING_QUEUE_PATIENTS,
   LANDING_SOLUTIONS,
   LANDING_TESTIMONIALS,
 } from "../../constants/landing.js";
@@ -41,6 +38,49 @@ export const LandingPage: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const autoplayAttempted = useRef(false);
+  const soundActivated = useRef(false);
+  const [needsSoundClick, setNeedsSoundClick] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || autoplayAttempted.current) return;
+    autoplayAttempted.current = true;
+    video.volume = 0.5;
+    video.muted = true;
+    void video.play().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || soundActivated.current) return;
+      soundActivated.current = true;
+      video.volume = 0.5;
+      video.muted = false;
+      void video.play().then(
+        () => setNeedsSoundClick(false),
+        () => setNeedsSoundClick(true),
+      );
+      observer.disconnect();
+    }, { threshold: 0.55 });
+
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+
+  const enableVideoSound = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = 0.5;
+    video.muted = false;
+    soundActivated.current = true;
+    void video.play();
+    setNeedsSoundClick(false);
+  };
 
   const goToLogin = () => {
     setIsMenuOpen(false);
@@ -244,173 +284,31 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="mx-auto mt-14 max-w-6xl overflow-hidden rounded-2xl border border-[#bcc9c6] bg-white shadow-[0_24px_60px_rgba(0,72,65,0.14)]">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#bcc9c6] bg-[#eaefed] px-4 py-3 text-xs text-[#3d4947]">
-              <div className="flex items-center gap-2.5 font-semibold">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#ba1a1a]/70" />
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#00685f]" />
-                <span className="ml-2">
-                  {LANDING_COPY.preview.workspace}
-                </span>
-              </div>
-              <span className="flex items-center gap-1.5 rounded bg-[#89f5e7] px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#005049]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00685f]" /> {LANDING_COPY.preview.live}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 divide-y divide-[#bcc9c6] lg:grid-cols-12 lg:divide-x lg:divide-y-0">
-              <div className="p-5 lg:col-span-4">
-                <div className="mb-4 flex items-start justify-between">
-                  <div>
-                    <h2 className="text-lg font-bold">{LANDING_COPY.preview.queueTitle}</h2>
-                    <p className="text-xs text-[#3d4947]">
-                      {LANDING_COPY.preview.queueSummary}
-                    </p>
-                  </div>
-                  <span className="rounded bg-[#00685f] px-2.5 py-1 text-xs font-bold text-white">
-                    {LANDING_COPY.preview.walkIn}
-                  </span>
-                </div>
-                <div className="space-y-2.5">
-                  <div className="rounded-lg border-2 border-[#00685f] bg-[#89f5e7]/35 p-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#00685f] text-sm font-bold text-white">
-                        #08
-                      </span>
-                      <div>
-                        <div className="text-sm font-bold">
-                          {LANDING_COPY.preview.activePatient}{" "}
-                          <span className="font-normal text-[#3d4947]">
-                            {LANDING_COPY.preview.activePatientMeta}
-                          </span>
-                        </div>
-                        <div className="text-xs font-semibold text-[#00685f]">
-                          {LANDING_COPY.preview.activePatientReason}
-                        </div>
-                      </div>
-                      <span className="ml-auto rounded bg-[#00685f] px-1.5 py-0.5 text-[9px] font-extrabold text-white">
-                        {LANDING_COPY.preview.activePatientStatus}
-                      </span>
-                    </div>
-                  </div>
-                  {LANDING_QUEUE_PATIENTS.map(([token, name, detail, time]) => (
-                    <div
-                      key={token}
-                      className="flex items-center justify-between rounded-lg border border-[#bcc9c6] p-3"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#eaefed] text-sm font-bold text-[#3d4947]">
-                          {token}
-                        </span>
-                        <div>
-                          <div className="text-sm font-bold">{name}</div>
-                          <div className="text-xs text-[#3d4947]">{detail}</div>
-                        </div>
-                      </div>
-                      <span className="text-xs font-semibold text-[#3d4947]">
-                        {time}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-[#bcc9c6] pt-3 text-[11px] text-[#3d4947]">
-                  <span>
-                    {LANDING_COPY.preview.queueUpdates} <b className="text-[#00685f]">{LANDING_COPY.preview.automatic}</b>
-                  </span>
-                                  </div>
-              </div>
-              <div className="p-5 lg:col-span-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-[#00685f]" />
-                    <h2 className="text-lg font-bold">
-                      {LANDING_COPY.preview.consultationTitle}
-                    </h2>
-                  </div>
-                  <span className="rounded bg-[#eaefed] px-2 py-1 text-[10px] font-bold text-[#3d4947]">
-                    {LANDING_COPY.preview.patientId}
-                  </span>
-                </div>
-                <div className="mb-4 grid grid-cols-4 rounded-lg border border-[#bcc9c6] bg-[#f5faf8] p-2 text-center">
-                  {LANDING_COPY.preview.vitalValues.map(([label, value]) => (
-                    <div key={label}>
-                      <span className="block text-[10px] uppercase text-[#3d4947]">{label}</span>
-                      <b className={`text-sm ${label === "SpO2" ? "text-[#00685f]" : ""}`}>{value}</b>
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-3 flex items-center justify-between text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#3d4947]">
-                  <span>{LANDING_COPY.preview.medicinesTitle}</span>
-                  <span className="text-[#00685f]">{LANDING_COPY.preview.addMedicine}</span>
-                </div>
-                {LANDING_MEDICINES.map(([name, detail, badge]) => (
-                  <div
-                    key={name}
-                    className="mb-2 flex items-center justify-between rounded-lg border border-[#bcc9c6] bg-[#f5faf8] p-3"
-                  >
-                    <div>
-                      <div className="text-sm font-bold">{name}</div>
-                      <div className="text-xs text-[#3d4947]">{detail}</div>
-                    </div>
-                    <span className="rounded bg-[#89f5e7]/55 px-2 py-1 text-[10px] font-bold text-[#005049]">
-                      {badge}
-                    </span>
-                  </div>
-                ))}
-                <div className="mt-4 border-t border-[#bcc9c6] pt-3 text-xs font-bold text-[#00685f]">
-                  {LANDING_COPY.preview.digitalPrescription}
-                </div>
-              </div>
-              <div className="flex flex-col justify-between bg-[#f5faf8] p-5 lg:col-span-3">
-                <div>
-                  <h2 className="mb-3 text-lg font-bold">{LANDING_COPY.preview.insightsTitle}</h2>
-                  <div className="rounded-xl border border-[#bcc9c6] bg-white p-3.5">
-                    <div className="text-xs text-[#3d4947]">
-                      {LANDING_COPY.preview.collections}
-                    </div>
-                    <div className="mt-1 text-3xl font-extrabold">
-                      {LANDING_COPY.preview.collectionValue}
-                    </div>
-                    <div className="mt-1 text-xs font-semibold text-[#00685f]">
-                      {LANDING_COPY.preview.billed}
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-2 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-[#3d4947]">{LANDING_COPY.preview.upiLabel}</span>
-                      <b>{LANDING_COPY.preview.upiValue}</b>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#3d4947]">{LANDING_COPY.preview.cashLabel}</span>
-                      <b>{LANDING_COPY.preview.cashValue}</b>
-                    </div>
-                  </div>
-                  <div className="mt-4 rounded-lg border border-[#bcc9c6] bg-white p-3 text-xs">
-                    <div className="mb-2 font-extrabold uppercase tracking-[0.08em] text-[#3d4947]">
-                      {LANDING_COPY.preview.doctorsOnDuty}
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between">
-                        <span>{LANDING_DOCTORS_ON_DUTY[0][0]}</span>
-                        <b className="text-[#00685f]">{LANDING_DOCTORS_ON_DUTY[0][1]}</b>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>{LANDING_DOCTORS_ON_DUTY[1][0]}</span>
-                        <b className="text-[#00685f]">{LANDING_DOCTORS_ON_DUTY[1][1]}</b>
-                      </div>
-                      <div className="flex justify-between text-[#3d4947]">
-                        <span>{LANDING_DOCTORS_ON_DUTY[2][0]}</span>
-                        <span>{LANDING_DOCTORS_ON_DUTY[2][1]}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 border-t border-[#bcc9c6] pt-3 text-center text-xs font-bold text-[#00685f]">
-                  {LANDING_COPY.preview.explore}{" "}
-                  <ArrowRight className="inline h-3.5 w-3.5" />
-                </div>
-              </div>
-            </div>
+          <div className="relative mx-auto mt-14 max-w-6xl overflow-hidden rounded-2xl border border-[#bcc9c6] bg-[#081e1b] shadow-[0_24px_60px_rgba(0,72,65,0.14)]">
+            <video
+              ref={videoRef}
+              src="/medinovel-overview.mp4"
+              className="block w-full"
+              controls
+              loop
+              playsInline
+              preload="metadata"
+              onVolumeChange={(event) => {
+                if (!event.currentTarget.muted) setNeedsSoundClick(false);
+              }}
+              aria-label="MediNovel clinic workspace demonstration"
+            >
+              Your browser does not support video playback.
+            </video>
+            {needsSoundClick && (
+              <button
+                type="button"
+                onClick={enableVideoSound}
+                className="absolute right-4 top-4 rounded-lg bg-[#00685f] px-4 py-2 text-sm font-bold text-white shadow-lg hover:bg-[#008378]"
+              >
+                Enable sound (50%)
+              </button>
+            )}
           </div>
         </section>
 
