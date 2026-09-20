@@ -1,0 +1,12 @@
+---
+deployment:
+  tasks:
+    - export FRONTEND_PATH=/home/yrrxigfu//drappoinmentbookingsystem/
+    - export BACKEND_PATH=/home/yrrxigfu/backend/
+    - /usr/bin/npm install
+    - /usr/bin/npm run build
+    - /bin/rm -rf $FRONTEND_PATH/*
+    - /bin/cp -R frontend/dist/* $FRONTEND_PATH
+    - /bin/mkdir -p $BACKEND_PATH
+    - /bin/cp -R backend/* $BACKEND_PATH
+    - /usr/bin/npm install --omit=dev --prefix $BACKEND_PATH
