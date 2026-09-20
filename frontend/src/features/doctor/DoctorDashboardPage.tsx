@@ -116,11 +116,11 @@ export const DoctorDashboardPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
           title="Today's Total"
           value={kpisLoading ? '...' : kpis?.totalToday ?? 0}
-          subtitle="Total appointments"
+          subtitle={kpisLoading ? 'Total appointments' : `${kpis?.bookedCount ?? 0} scheduled · ${kpis?.otherCount ?? 0} cancelled/skipped`}
           icon={<Calendar className="w-5 h-5" />}
           iconBgColor="bg-brand-50 text-brand-600"
         />
@@ -130,6 +130,7 @@ export const DoctorDashboardPage: React.FC = () => {
           icon={<Clock className="w-5 h-5" />}
           iconBgColor="bg-amber-50 text-amber-600"
         />
+        <StatCard title="In Consultation" value={kpisLoading ? '...' : kpis?.inConsultationCount ?? 0} icon={<Stethoscope className="w-5 h-5" />} iconBgColor="bg-indigo-50 text-indigo-600" />
         <StatCard
           title="Completed"
           value={kpisLoading ? '...' : kpis?.completedCount ?? 0}
@@ -153,7 +154,6 @@ export const DoctorDashboardPage: React.FC = () => {
       </div>
 
       {queueError && <p role="alert" className="text-rose-700">Unable to load appointments. Please refresh and try again.</p>}
-      {queueLoading ? <p>Loading appointments...</p> : !queueError && <AppointmentList title="Today's Appointments" appointments={queueData?.allQueue || []} />}
       {/* Main Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Live Queue Hero Widget */}
@@ -332,6 +332,7 @@ export const DoctorDashboardPage: React.FC = () => {
           </Card>
         </div>
       </div>
+      {queueLoading ? <p>Loading appointments...</p> : !queueError && <AppointmentList title="Today's Appointments" appointments={queueData?.allQueue || []} order="newest-first" />}
     </div>
   );
 };

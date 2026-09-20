@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const mobileSchema = z.string().regex(/^[6-9]\d{9}$/, 'Mobile number must be a valid 10-digit Indian mobile number');
+const mobileSchema = z.string().regex(/^\d{1,12}$/, 'Mobile number must contain at most 12 digits');
 const nameSchema = z.string().trim().min(2, 'Doctor name must contain at least 2 letters').max(100).regex(/^[\p{L}][\p{L} .'-]*$/u, 'Doctor name can contain letters, spaces, apostrophes, hyphens, and periods only');
 const textSchema = (label: string) => z.string().trim().min(2, `${label} is required`).max(100, `${label} must be 100 characters or fewer`);
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Working hours must use HH:MM (24-hour) format');

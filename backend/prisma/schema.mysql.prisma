@@ -354,6 +354,7 @@ model PrescriptionItem {
   dosage         String
   frequency      String
   duration       String
+  foodTiming     String       @default("NO_PREFERENCE")
   instructions   String?
 
   prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)

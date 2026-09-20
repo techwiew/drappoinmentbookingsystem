@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const mobileSchema = z.string().regex(/^[6-9]\d{9}$/, 'Mobile number must be a valid 10-digit Indian mobile number');
+const mobileSchema = z.string().regex(/^\d{1,12}$/, 'Mobile number must contain at most 12 digits');
 
 export const createReceptionistSchema = z.object({
   body: z.object({

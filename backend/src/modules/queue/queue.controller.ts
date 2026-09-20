@@ -80,6 +80,13 @@ export class QueueController {
     } catch (error) { next(error); }
   }
 
+  static async completeAtReception(req: Request, res: Response, next: NextFunction) {
+    try {
+      const updated = await QueueService.completeAtReception(req.tenant!.clinicId, req.params.id, req.user!.userId);
+      return sendSuccess(res, updated, 'Appointment completed. Record payment now.');
+    } catch (error) { next(error); }
+  }
+
   static async cancel(req: Request, res: Response, next: NextFunction) {
     try {
       const updated = await QueueService.cancel(req.tenant!.clinicId, req.params.id, req.user!.userId);

@@ -34,6 +34,7 @@ interface MedicineItem {
   dosage: string;
   frequency: string;
   duration: string;
+  foodTiming: 'BEFORE_FOOD' | 'AFTER_FOOD' | 'WITH_FOOD' | 'NO_PREFERENCE';
   instructions: string;
 }
 
@@ -81,6 +82,7 @@ export const ConsultationRoomPage: React.FC = () => {
       dosage: "",
       frequency: "1-0-1",
       duration: "5 days",
+      foodTiming: "NO_PREFERENCE",
       instructions: "",
     },
   ]);
@@ -157,6 +159,7 @@ export const ConsultationRoomPage: React.FC = () => {
             dosage: item.dosage || "",
             frequency: item.frequency,
             duration: item.duration,
+            foodTiming: item.foodTiming || 'NO_PREFERENCE',
             instructions: item.instructions || "",
           })),
         );
@@ -218,6 +221,9 @@ export const ConsultationRoomPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['appointment-detail', appointmentId] });
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['doctor-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['reception-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['reception-today'] });
+      queryClient.invalidateQueries({ queryKey: ['prescriptions-list'] });
       queryClient.invalidateQueries({ queryKey: ['consultation-payments', appointmentId] });
       // Optionally, update the existingConsultation state if we have a way to do so.
       // Since we are invalidating the query, the component will refetch.
@@ -308,8 +314,9 @@ export const ConsultationRoomPage: React.FC = () => {
         medicineName: "",
         dosage: "",
         frequency: "1-0-1",
-        duration: "5 days",
-        instructions: "",
+      duration: "5 days",
+      foodTiming: "NO_PREFERENCE",
+      instructions: "",
       },
     ]);
   };
@@ -723,6 +730,14 @@ export const ConsultationRoomPage: React.FC = () => {
                     </div>
                   </div>
 
+                  <label className="block text-xs font-semibold text-slate-700">Food timing
+                    <select className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" value={med.foodTiming} onChange={(e) => updateMedicine(idx, 'foodTiming', e.target.value)} disabled={isLocked}>
+                      <option value="NO_PREFERENCE">No preference</option>
+                      <option value="BEFORE_FOOD">Before food</option>
+                      <option value="AFTER_FOOD">After food</option>
+                      <option value="WITH_FOOD">With food</option>
+                    </select>
+                  </label>
                   <Input
                     label="Special Instructions"
                     placeholder="e.g. Take with food..."

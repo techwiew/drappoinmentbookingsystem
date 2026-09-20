@@ -41,6 +41,7 @@ const mapConsultation = (consultation: any) => ({
           dosage: item.dosage,
           frequency: item.frequency,
           duration: item.duration,
+          foodTiming: item.foodTiming || 'NO_PREFERENCE',
           instructions: item.instructions,
         })),
       }
@@ -246,8 +247,9 @@ export class ConsultationService {
                 dosage: med.dosage || '',
                 frequency: med.frequency || '1-0-1',
                 duration: med.duration || '5 days',
+                foodTiming: med.foodTiming || 'NO_PREFERENCE',
                 instructions: med.instructions || null,
-              },
+              } as any,
             });
           }
         }
@@ -660,8 +662,9 @@ export class ConsultationService {
                 dosage: med.dosage || '',
                 frequency: med.frequency || '1-0-1',
                 duration: med.duration || '5 days',
+                foodTiming: med.foodTiming || 'NO_PREFERENCE',
                 instructions: med.instructions || null,
-              },
+              } as any,
             });
           }
         }

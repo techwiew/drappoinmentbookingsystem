@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
+import { useAuth } from '../../context/AuthContext.js';
 import { Card } from '../../components/ui/Card.js';
 import { Button } from '../../components/ui/Button.js';
-import { Input } from "../../components/ui/Input.js";
+import { Modal } from '../../components/ui/Modal.js';
+import { downloadPrescriptionPdf, foodTimingLabel, printPrescription, type PrescriptionDetail } from './prescriptionDocument.js';
 import {
   FileText,
   Search,
@@ -17,7 +19,29 @@ import { useNavigate } from 'react-router-dom';
 
 export const PrescriptionsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { role, doctorId } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draftItems, setDraftItems] = useState<PrescriptionDetail['items']>([]);
+  const [actionError, setActionError] = useState('');
+
+  const { data: selected, isLoading: detailLoading } = useQuery<PrescriptionDetail>({
+    queryKey: ['prescription-detail', selectedId],
+    queryFn: async () => (await apiClient.get(`/prescriptions/${selectedId}`)).data.data,
+    enabled: Boolean(selectedId),
+  });
+  useEffect(() => { if (selected) setDraftItems(selected.items.map((item) => ({ ...item }))); }, [selected]);
+  const updateMutation = useMutation({
+    mutationFn: async () => (await apiClient.patch(`/prescriptions/${selectedId}`, { items: draftItems })).data.data,
+    onSuccess: () => {
+      setEditing(false);
+      queryClient.invalidateQueries({ queryKey: ['prescriptions-list'] });
+      queryClient.invalidateQueries({ queryKey: ['prescription-detail', selectedId] });
+    },
+    onError: (error: any) => setActionError(error.response?.data?.error?.message || 'Unable to update prescription.'),
+  });
 
   const { data: consultations, isLoading } = useQuery({
     queryKey: ['prescriptions-list', search],
@@ -158,10 +182,29 @@ export const PrescriptionsPage: React.FC = () => {
                   Follow-up: {new Date(c.nextVisitDate).toLocaleDateString()}
                 </div>
               )}
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                <Button size="sm" variant="outline" onClick={() => { setSelectedId(c.prescription.id); setEditing(false); setActionError(''); }}>View / Print / Download</Button>
+                {role === 'DOCTOR' && c.doctorId === doctorId && <Button size="sm" variant="outline" onClick={() => { setSelectedId(c.prescription.id); setEditing(true); setActionError(''); }}>Edit</Button>}
+              </div>
             </Card>
           ))}
         </div>
       )}
+      <Modal isOpen={Boolean(selectedId)} onClose={() => { setSelectedId(null); setEditing(false); }} title={editing ? 'Edit prescription' : 'Prescription details'}>
+        {detailLoading || !selected ? <p>Loading prescription...</p> : <div className="space-y-4 text-sm">
+          <div><strong>{selected.clinic.name}</strong><p>{selected.clinic.address}</p><p>{selected.clinic.phone}</p></div>
+          <div className="rounded-lg bg-slate-50 p-3"><p><b>Patient:</b> {selected.patient.fullName} ({selected.patient.patientNumber})</p><p><b>Doctor:</b> Dr. {selected.doctor.name}</p><p><b>Date:</b> {new Date(selected.prescribedAt).toLocaleDateString()}</p><p><b>Diagnosis:</b> {selected.diagnosis || '—'}</p></div>
+          <div className="space-y-3">{(editing ? draftItems : selected.items).map((item, index) => <div key={index} className="rounded-lg border p-3 space-y-2">
+            {editing ? <>
+              {(['medicineName', 'dosage', 'frequency', 'duration', 'instructions'] as const).map((field) => <label key={field} className="block text-xs capitalize">{field}<input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={item[field] || ''} onChange={(event) => setDraftItems((current) => current.map((entry, i) => i === index ? { ...entry, [field]: event.target.value } : entry))} /></label>)}
+              <label className="block text-xs">Food timing<select className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={item.foodTiming || 'NO_PREFERENCE'} onChange={(event) => setDraftItems((current) => current.map((entry, i) => i === index ? { ...entry, foodTiming: event.target.value } : entry))}><option value="NO_PREFERENCE">No preference</option><option value="BEFORE_FOOD">Before food</option><option value="AFTER_FOOD">After food</option><option value="WITH_FOOD">With food</option></select></label>
+              <Button size="sm" variant="danger" onClick={() => setDraftItems((current) => current.filter((_, i) => i !== index))}>Remove medicine</Button>
+            </> : <><strong>{item.medicineName}</strong><p>{item.dosage} · {item.frequency} · {item.duration} · {foodTimingLabel(item.foodTiming)}</p>{item.instructions && <p>{item.instructions}</p>}</>}
+          </div>)}</div>
+          {actionError && <p role="alert" className="text-rose-700">{actionError}</p>}
+          <div className="flex flex-wrap gap-2">{editing ? <><Button size="sm" variant="outline" onClick={() => setDraftItems((items) => [...items, { medicineName: '', dosage: '', frequency: '1-0-1', duration: '5 days', foodTiming: 'NO_PREFERENCE', instructions: '' }])}>Add medicine</Button><Button size="sm" variant="primary" disabled={!draftItems.length || draftItems.some((item) => !item.medicineName.trim())} isLoading={updateMutation.isPending} onClick={() => updateMutation.mutate()}>Save changes</Button></> : <><Button size="sm" variant="outline" onClick={() => { try { printPrescription(selected); } catch (error) { setActionError((error as Error).message); } }}>Print</Button><Button size="sm" variant="primary" onClick={() => void downloadPrescriptionPdf(selected).catch(() => setActionError('Unable to download PDF.'))}>Download PDF</Button>{role === 'DOCTOR' && selected.doctor.id === doctorId && <Button size="sm" variant="outline" onClick={() => setEditing(true)}>Edit</Button>}</>}</div>
+        </div>}
+      </Modal>
     </div>
   );
 };

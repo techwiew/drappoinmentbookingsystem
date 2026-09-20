@@ -14,4 +14,10 @@ export class PrescriptionController {
       next(error);
     }
   }
+  static async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const rx = await PrescriptionService.updatePrescription(req.tenant!.clinicId, req.params.id, req.tenant!.doctorId!, req.user!.userId, req.body.items);
+      return sendSuccess(res, rx, 'Prescription updated');
+    } catch (error) { next(error); }
+  }
 }

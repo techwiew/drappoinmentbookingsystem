@@ -161,6 +161,18 @@ export class QueueService {
     return prisma.appointment.findUnique({ where: { id: appointmentId } });
   }
 
+  static async completeAtReception(clinicId: string, appointmentId: string, userId: string) {
+    const appointment = await prisma.appointment.findFirst({ where: { id: appointmentId, clinicId }, select: { id: true } });
+    if (!appointment) throw { statusCode: 404, code: 'NOT_FOUND', message: 'Appointment not found in this clinic' };
+    const changed = await prisma.appointment.updateMany({
+      where: { id: appointmentId, clinicId, status: 'READY_FOR_DOCTOR' },
+      data: { status: 'COMPLETED' },
+    });
+    if (!changed.count) throw { statusCode: 409, code: 'NOT_COMPLETABLE', message: 'Only a patient sent to the doctor and not in an active consultation can be completed here' };
+    await logAudit({ clinicId, userId, action: 'APPOINTMENT_COMPLETED_AT_RECEPTION', entityType: 'Appointment', entityId: appointmentId });
+    return prisma.appointment.findUnique({ where: { id: appointmentId } });
+  }
+
   static async cancel(clinicId: string, appointmentId: string, userId: string) {
     const changed = await prisma.appointment.updateMany({
       where: { id: appointmentId, clinicId, status: { in: ['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'] } },

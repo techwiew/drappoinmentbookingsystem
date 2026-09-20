@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const mobileSchema = z.string().regex(/^[6-9]\d{9}$/, 'Mobile number must be a valid 10-digit Indian mobile number');
+const mobileSchema = z.string().regex(/^\d{1,12}$/, 'Mobile number must contain at most 12 digits');
 const patientNameSchema = z.string().trim().min(2, 'Full name must contain at least 2 letters').max(100).regex(/^[\p{L}][\p{L} .'-]*$/u, 'Full name can contain letters, spaces, apostrophes, hyphens, and periods only');
 const pincodeSchema = z.string().regex(/^\d{6}$/, 'Pincode must contain exactly 6 digits');
 

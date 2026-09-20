@@ -23,6 +23,7 @@ export const ReceptionistDashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [completionError, setCompletionError] = React.useState('');
 
   const { data: queueData, isLoading } = useQuery({
     queryKey: ['reception-queue'],
@@ -47,6 +48,23 @@ export const ReceptionistDashboardPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reception-queue'] });
       queryClient.invalidateQueries({ queryKey: ['live-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['reception-today'] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-kpis'] });
+    },
+  });
+  const completeMutation = useMutation({
+    mutationFn: async (id: string) => (await apiClient.post(`/queue/${id}/reception-complete`)).data.data,
+    onSuccess: (_result, id) => {
+      setCompletionError('');
+      for (const key of ['reception-queue', 'live-queue', 'reception-today', 'doctor-kpis', 'reports-doctor-dash', 'appointments', 'pending-payment-apts']) queryClient.invalidateQueries({ queryKey: [key] });
+      navigate(`/billing?appointmentId=${id}`);
+    },
+    onError: (error: any) => {
+      const apiError = error.response?.data?.error;
+      setCompletionError(error.response?.status === 404 && String(apiError?.message || '').startsWith('Route ')
+        ? 'The backend has not loaded the reception completion route. Restart the backend and try again.'
+        : apiError?.message || 'Unable to complete this appointment. Refresh the queue and try again.');
+      queryClient.invalidateQueries({ queryKey: ['reception-queue'] });
     },
   });
   const cancelMutation = useMutation({
@@ -54,6 +72,8 @@ export const ReceptionistDashboardPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reception-queue'] });
       queryClient.invalidateQueries({ queryKey: ['live-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['reception-today'] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-kpis'] });
     },
   });
 
@@ -64,6 +84,7 @@ export const ReceptionistDashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {completionError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{completionError}</p>}
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-sky-600 via-sky-700 to-blue-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
@@ -232,6 +253,7 @@ export const ReceptionistDashboardPage: React.FC = () => {
                           Send to Dr
                         </Button>
                       )}
+                      {apt.status === 'READY_FOR_DOCTOR' && <Button size="sm" variant="success" className="ml-1" isLoading={completeMutation.isPending} onClick={() => completeMutation.mutate(apt.id)}>Complete & Record Payment</Button>}
                       {['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'].includes(apt.status) && (
                         <Button size="sm" variant="danger" className="ml-1" isLoading={cancelMutation.isPending} onClick={() => cancelMutation.mutate(apt.id)}>
                           Cancel

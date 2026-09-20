@@ -87,7 +87,7 @@ export const ClinicSettingsPage: React.FC = () => {
     e.preventDefault();
     const nextErrors: Record<string, string> = {};
     if (form.name.trim().length < 2) nextErrors.name = 'Enter the clinic name (at least 2 characters).';
-    if (!/^[6-9]\d{9}$/.test(form.phone)) nextErrors.phone = 'Enter a valid 10-digit Indian mobile number.';
+    if (!/^\d{1,12}$/.test(form.phone)) nextErrors.phone = 'Enter up to 12 digits.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) nextErrors.email = 'Enter a valid email address.';
     if (form.address.trim().length < 5) nextErrors.address = 'Enter a complete clinic address.';
     if (form.city.trim().length < 2) nextErrors.city = 'Enter a valid city name.';
@@ -160,10 +160,10 @@ export const ClinicSettingsPage: React.FC = () => {
                 <Input
                   label="Contact Phone"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 12) })}
                   required
                   inputMode="numeric"
-                  maxLength={10}
+                  maxLength={12}
                   error={errors.phone}
                 />
                 <Input

@@ -338,6 +338,7 @@ CREATE TABLE IF NOT EXISTS `prescription_items` (
     `frequency` VARCHAR(191) NOT NULL,
     `duration` VARCHAR(191) NOT NULL,
     `instructions` VARCHAR(191) NULL,
+    `foodTiming` VARCHAR(191) NOT NULL DEFAULT 'NO_PREFERENCE',
 
     INDEX `prescription_items_prescriptionId_idx`
         (`prescriptionId`),
@@ -758,6 +759,16 @@ SET @schema_sql = IF(EXISTS (SELECT 1 FROM information_schema.COLUMNS
       AND COLUMN_NAME = 'passwordResetAttempts'),
     'SELECT 1',
     'ALTER TABLE `users` ADD COLUMN `passwordResetAttempts` INTEGER NOT NULL DEFAULT 0');
+PREPARE schema_stmt FROM @schema_sql;
+EXECUTE schema_stmt;
+DEALLOCATE PREPARE schema_stmt;
+
+-- Add food timing to prescriptions created before this schema version.
+SET @schema_sql = IF(EXISTS (SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'prescription_items'
+      AND COLUMN_NAME = 'foodTiming'),
+    'SELECT 1',
+    'ALTER TABLE `prescription_items` ADD COLUMN `foodTiming` VARCHAR(191) NOT NULL DEFAULT ''NO_PREFERENCE''');
 PREPARE schema_stmt FROM @schema_sql;
 EXECUTE schema_stmt;
 DEALLOCATE PREPARE schema_stmt;

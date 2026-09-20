@@ -1,5 +1,6 @@
 import { AppointmentCalendar } from './AppointmentCalendar.js';
 import { calendarDates, shiftDate } from './calendar.js';
+import { sortAppointmentsForDisplay } from './appointmentDisplayOrder.js';
 import { fetchAppointmentsForDate } from '../../api/appointments.js';
 import { OpenConsultationButton } from '../../components/shared/OpenConsultationButton.js';
 import React, { useState } from 'react';
@@ -51,7 +52,7 @@ export const AppointmentsPage: React.FC = () => {
     !!searchParams.get("patientId"),
   );
   const [dateFilter, setDateFilter] = useState(getTodayDate);
-  const [view, setView] = useState<'day' | 'week' | 'list'>('week');
+  const [view, setView] = useState<'day' | 'week' | 'list'>('day');
   const [scheduleDoctor, setScheduleDoctor] = useState('');
   const dates = calendarDates(dateFilter, view === 'week');
   const [statusFilter, setStatusFilter] = useState("");
@@ -127,6 +128,7 @@ export const AppointmentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["doctor-kpis", appointment.doctorId] });
       queryClient.invalidateQueries({ queryKey: ["reports-doctor-dash", appointment.doctorId] });
       queryClient.invalidateQueries({ queryKey: ["reception-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["reception-today"] });
       setIsBookModalOpen(false);
     },
   });
@@ -152,6 +154,8 @@ export const AppointmentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["live-queue"] });
       queryClient.invalidateQueries({ queryKey: ["reception-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["reception-today"] });
+      queryClient.invalidateQueries({ queryKey: ["doctor-kpis"] });
     },
   });
 
@@ -165,6 +169,8 @@ export const AppointmentsPage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["doctor-kpis"] });
+      queryClient.invalidateQueries({ queryKey: ["reception-today"] });
       setFollowUpToConfirm(null);
       setConfirmationTime("");
     },
@@ -279,6 +285,7 @@ export const AppointmentsPage: React.FC = () => {
         a.patientName?.toLowerCase().includes(search.toLowerCase()) ||
         a.patientNumber?.toLowerCase().includes(search.toLowerCase()),
     ) || [];
+  const visibleApts = view === 'list' ? sortAppointmentsForDisplay(filteredApts) : filteredApts;
 
   return (
     <div className="space-y-5">
@@ -341,8 +348,9 @@ export const AppointmentsPage: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2"><Button variant="outline" onClick={() => setDateFilter(shiftDate(dateFilter, view === 'week' ? -7 : -1))}>Previous</Button><Button variant="outline" onClick={() => setDateFilter(getTodayDate())}>Today</Button><Button variant="outline" onClick={() => setDateFilter(shiftDate(dateFilter, view === 'week' ? 7 : 1))}>Next</Button></div>
         {role !== 'DOCTOR' && <select aria-label="Filter calendar by doctor" className="rounded-lg border p-2 text-sm" value={scheduleDoctor} onChange={(event) => setScheduleDoctor(event.target.value)}><option value="">All doctors</option>{doctors?.map((doctor: any) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select>}
-        <div className="flex gap-1">{(['day', 'week', 'list'] as const).map((mode) => <Button key={mode} variant={view === mode ? 'primary' : 'outline'} aria-pressed={view === mode} onClick={() => setView(mode)}>{mode[0].toUpperCase() + mode.slice(1)}</Button>)}</div>
+        <div className="flex gap-1" aria-label="Appointment view">{(['day', 'week', 'list'] as const).map((mode) => <Button key={mode} variant={view === mode ? 'primary' : 'outline'} aria-pressed={view === mode} onClick={() => setView(mode)}>{mode === 'list' ? 'List' : `${mode[0].toUpperCase() + mode.slice(1)} calendar`}</Button>)}</div>
       </div>
+      {view === 'list' && <p className="text-xs text-slate-500">Appointments for {dateFilter}: active appointments newest first, then cancelled/no-show, with completed at the bottom.</p>}
       {scheduleError && <p role="alert" className="text-rose-700">Unable to load the schedule. Please retry.</p>}
       {view !== 'list' && !scheduleError && <AppointmentCalendar dates={dates} appointments={filteredApts} loading={isLoading} onReschedule={setDateFilter} />}
       {/* Appointments Table */}
@@ -385,7 +393,7 @@ export const AppointmentsPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredApts.map((apt: any) => (
+                visibleApts.map((apt: any) => (
                   <tr
                     key={apt.id}
                     className="hover:bg-slate-50 transition-colors"
@@ -559,12 +567,12 @@ export const AppointmentsPage: React.FC = () => {
                     label="Mobile"
                     required
                     pattern="[0-9]{10}"
-                    maxLength={10}
+                    maxLength={12}
                     value={newPatientForm.mobile}
                     onChange={(e) =>
                       setNewPatientForm({
                         ...newPatientForm,
-                        mobile: e.target.value.replace(/\D/g, "").slice(0, 10),
+                        mobile: e.target.value.replace(/\D/g, "").slice(0, 12),
                       })
                     }
                   />

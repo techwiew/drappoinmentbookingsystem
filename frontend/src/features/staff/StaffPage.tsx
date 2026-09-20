@@ -11,6 +11,7 @@ import { Input } from '../../components/ui/Input.js';
 import { Select } from '../../components/ui/Select.js';
 import { Modal } from '../../components/ui/Modal.js';
 import { getApiErrorMessage } from '../../api/errors.js';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   Stethoscope,
@@ -20,9 +21,11 @@ import {
   Phone,
   Mail,
   IndianRupee,
+  FileText,
 } from 'lucide-react';
 
 export const StaffPage: React.FC = () => {
+  const navigate = useNavigate();
   const { role, doctorId, user, refreshProfile } = useAuth();
   const isOwner = role === 'DOCTOR' && user?.isOwner === true;
   const queryClient = useQueryClient();
@@ -209,7 +212,7 @@ export const StaffPage: React.FC = () => {
     const name = form.name.trim();
     if (!name) errors.name = 'Enter the full name.';
     else if (!/^[A-Za-z][A-Za-z .'-]*$/.test(name) || name.length < 2) errors.name = 'Use at least 2 letters; numbers and symbols are not allowed.';
-    if (!/^[6-9]\d{9}$/.test(form.mobile)) errors.mobile = 'Enter a valid 10-digit Indian mobile number.';
+    if (!/^\d{1,12}$/.test(form.mobile)) errors.mobile = 'Enter up to 12 digits.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (form.password.length < 8) errors.password = 'Password must be at least 8 characters.';
     if (isDoctor) {
@@ -259,6 +262,7 @@ export const StaffPage: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" leftIcon={<FileText className="w-4 h-4" />} onClick={() => navigate('/prescriptions')}>Prescriptions Archive</Button>
           {isOwner && activeTab === 'doctors' && !doctorQuotaReached && (
             <Button
               variant="primary"
@@ -475,7 +479,7 @@ export const StaffPage: React.FC = () => {
         {editingStaff && <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); editStaffMutation.mutate(); }}>
           <Input label="Full name" required value={editingStaff.name} onChange={(event) => setEditingStaff({ ...editingStaff, name: event.target.value })} />
           <Input label="Email" type="email" required value={editingStaff.email} onChange={(event) => setEditingStaff({ ...editingStaff, email: event.target.value })} />
-          <Input label="Mobile" required value={editingStaff.mobile} onChange={(event) => setEditingStaff({ ...editingStaff, mobile: event.target.value })} />
+          <Input label="Mobile" required inputMode="numeric" maxLength={12} helperText="Up to 12 digits" value={editingStaff.mobile} onChange={(event) => setEditingStaff({ ...editingStaff, mobile: event.target.value.replace(/\D/g, '').slice(0, 12) })} />
           {editingStaff.kind === 'doctor' && <>
             <Input label="Specialization" required value={editingStaff.specialization} onChange={(event) => setEditingStaff({ ...editingStaff, specialization: event.target.value })} />
             <Input label="Qualification" required value={editingStaff.qualification} onChange={(event) => setEditingStaff({ ...editingStaff, qualification: event.target.value })} />
@@ -501,7 +505,7 @@ export const StaffPage: React.FC = () => {
         >
           <div className="grid grid-cols-2 gap-3">
             <Input label="Full Name" required error={docErrors.name} value={docForm.name} onChange={(e) => setDocForm({ ...docForm, name: e.target.value })} />
-            <Input label="Mobile" required inputMode="numeric" maxLength={10} error={docErrors.mobile} helperText="10-digit Indian mobile number" value={docForm.mobile} onChange={(e) => setDocForm({ ...docForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
+            <Input label="Mobile" required inputMode="numeric" maxLength={12} error={docErrors.mobile} helperText="Up to 12 digits" value={docForm.mobile} onChange={(e) => setDocForm({ ...docForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 12) })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Login Email" type="email" required error={docErrors.email} value={docForm.email} onChange={(e) => setDocForm({ ...docForm, email: e.target.value })} />
@@ -563,7 +567,7 @@ export const StaffPage: React.FC = () => {
         >
           <div className="grid grid-cols-2 gap-3">
             <Input label="Full Name" required error={recErrors.name} value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} />
-            <Input label="Mobile" required inputMode="numeric" maxLength={10} error={recErrors.mobile} helperText="10-digit Indian mobile number" value={recForm.mobile} onChange={(e) => setRecForm({ ...recForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })} />
+            <Input label="Mobile" required inputMode="numeric" maxLength={12} error={recErrors.mobile} helperText="Up to 12 digits" value={recForm.mobile} onChange={(e) => setRecForm({ ...recForm, mobile: e.target.value.replace(/\D/g, '').slice(0, 12) })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Login Email" type="email" required error={recErrors.email} value={recForm.email} onChange={(e) => setRecForm({ ...recForm, email: e.target.value })} />

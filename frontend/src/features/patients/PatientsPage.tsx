@@ -29,7 +29,7 @@ export const PatientsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { doctorId } = useAuth();
 
-  const normalizeMobileInput = (value: string) => value.replace(/\D/g, '').slice(0, 10);
+  const normalizeMobileInput = (value: string) => value.replace(/\D/g, '').slice(0, 12);
 
   const [search, setSearch] = useState('');
   const [genderFilter, setGenderFilter] = useState('');
@@ -110,10 +110,10 @@ export const PatientsPage: React.FC = () => {
     if (createPatientMutation.isPending) return;
     const errors: Record<string, string> = {};
     if (!/^[A-Za-z][A-Za-z .'-]{1,}$/.test(form.fullName.trim())) errors.fullName = 'Enter a valid full name (letters and spaces only).';
-    if (!/^[6-9]\d{9}$/.test(form.mobile)) errors.mobile = 'Enter a valid 10-digit Indian mobile number.';
+    if (!/^\d{1,12}$/.test(form.mobile)) errors.mobile = 'Enter up to 12 digits.';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address.';
     if (form.age && (!/^\d+$/.test(form.age) || Number(form.age) > 150)) errors.age = 'Age must be a whole number from 0 to 150.';
-    if (form.emergencyContactMobile && !/^[6-9]\d{9}$/.test(form.emergencyContactMobile)) errors.emergencyContactMobile = 'Enter a valid 10-digit mobile number.';
+    if (form.emergencyContactMobile && !/^\d{1,12}$/.test(form.emergencyContactMobile)) errors.emergencyContactMobile = 'Enter up to 12 digits.';
     setFormErrors(errors);
     if (Object.keys(errors).length) { setFeedback('Please correct the highlighted fields.'); return; }
     setFeedback(null);
@@ -292,11 +292,11 @@ export const PatientsPage: React.FC = () => {
             <Input
               label="Mobile Number"
               required
-              placeholder="10-digit mobile"
+              placeholder="Up to 12 digits"
               value={form.mobile}
               error={formErrors.mobile}
               inputMode="numeric"
-              maxLength={10}
+              maxLength={12}
               onChange={(e) => setForm({ ...form, mobile: normalizeMobileInput(e.target.value) })}
             />
           </div>

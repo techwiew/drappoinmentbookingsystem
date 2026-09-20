@@ -57,6 +57,7 @@ export const AppLayout: React.FC = () => {
       { label: 'Daily Queue Board', path: '/queue', icon: Layers },
       { label: 'Patient Directory', path: '/patients', icon: Users },
       { label: 'Appointments', path: '/appointments', icon: Calendar },
+      { label: 'Prescriptions', path: '/prescriptions', icon: FileText },
       { label: 'Fee Collection', path: '/billing', icon: CreditCard },
       { label: 'IPD Admissions', path: '/admissions', icon: Bed },
       { label: 'Doctors Roster', path: '/staff', icon: UserCheck },

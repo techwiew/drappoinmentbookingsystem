@@ -304,6 +304,7 @@ export class PatientService {
                 dosage: item.dosage,
                 frequency: item.frequency,
                 duration: item.duration,
+                foodTiming: (item as any).foodTiming || 'NO_PREFERENCE',
                 instructions: item.instructions,
               })),
             }

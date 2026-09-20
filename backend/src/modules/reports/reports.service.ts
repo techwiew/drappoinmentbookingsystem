@@ -31,6 +31,8 @@ export class ReportsService {
     const inConsultationCount = todayAppointments.filter((a) => a.status === 'IN_CONSULTATION').length;
     const completedCount = todayAppointments.filter((a) => a.status === 'COMPLETED').length;
     const noShowCount = todayAppointments.filter((a) => a.status === 'NO_SHOW').length;
+    const bookedCount = todayAppointments.filter((a) => ['BOOKED', 'PENDING_CONFIRMATION'].includes(a.status)).length;
+    const otherCount = todayAppointments.filter((a) => ['CANCELLED', 'SKIPPED'].includes(a.status)).length;
     const newPatientsCount = todayAppointments.filter((a) => a.appointmentType === 'NEW_PATIENT').length;
     const returningPatientsCount = todayAppointments.filter((a) => a.appointmentType === 'FOLLOW_UP').length;
 
@@ -139,6 +141,8 @@ export class ReportsService {
         inConsultationCount,
         completedCount,
         noShowCount,
+        bookedCount,
+        otherCount,
         newPatientsCount,
         returningPatientsCount,
         todayCollection: Math.round(todayCollection * 100) / 100,

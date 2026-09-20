@@ -219,6 +219,7 @@ CREATE TABLE `prescription_items` (
     `frequency` VARCHAR(191) NOT NULL,
     `duration` VARCHAR(191) NOT NULL,
     `instructions` VARCHAR(191) NULL,
+    `foodTiming` VARCHAR(191) NOT NULL DEFAULT 'NO_PREFERENCE',
 
     INDEX `prescription_items_prescriptionId_idx`(`prescriptionId`),
     PRIMARY KEY (`id`)

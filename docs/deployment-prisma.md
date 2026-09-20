@@ -14,7 +14,9 @@ PRISMA_CLIENT_ENGINE_TYPE=library
 PRISMA_TOKIO_WORKER_THREADS=2
 ```
 
-After applying the database migration, restart the LiteSpeed Node application once. Configure it as one persistent application process; do not configure a request-spawned process or a high child-process count. The app retains one Prisma Client per Node process and caps the Tokio worker setting before Prisma loads.
+On an existing database, back up the database and apply the forward SQL migrations `20260920_password_reset_otp` (if not already applied) and `20260920_prescription_food_timing`. The latter adds `prescription_items.foodTiming` with `NO_PREFERENCE` for existing prescriptions. Do not rerun demo seed scripts against live data. Run `npx prisma generate --schema prisma/schema.prisma` in the deployed backend after applying migrations.
+
+Restart the LiteSpeed Node application once. Configure it as one persistent application process; do not configure a request-spawned process or a high child-process count. The app retains one Prisma Client per Node process and caps the Tokio worker setting before Prisma loads.
 
 Check the deployed process after restart with `ps -o pid,ppid,nlwp,cmd -C lsnode`. There should be only the configured persistent application process(es). If old `lsnode` processes remain, the hosting team must recycle them before evaluating NPROC usage.
 

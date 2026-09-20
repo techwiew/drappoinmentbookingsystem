@@ -1,0 +1,2 @@
+ALTER TABLE `prescription_items`
+  ADD COLUMN `foodTiming` VARCHAR(191) NOT NULL DEFAULT 'NO_PREFERENCE';

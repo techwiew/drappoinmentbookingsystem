@@ -11,6 +11,7 @@ router.use(authenticate, requireTenant);
 router.get('/', QueueController.getQueue);
 router.post('/check-in', requireRole('RECEPTIONIST'), QueueController.checkIn);
 router.post('/:id/send', requireRole('RECEPTIONIST'), QueueController.sendToDoctor);
+router.post('/:id/reception-complete', requireRole('RECEPTIONIST'), QueueController.completeAtReception);
 router.post('/:id/cancel', requireRole('RECEPTIONIST'), QueueController.cancel);
 router.post('/:id/start', requireRole('DOCTOR'), QueueController.startConsultation);
 router.post('/:id/complete', requireRole('DOCTOR'), QueueController.completeConsultation);
