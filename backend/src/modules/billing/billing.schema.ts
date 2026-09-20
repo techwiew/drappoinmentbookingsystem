@@ -8,7 +8,7 @@ export const recordPaymentSchema = z.object({
     consultationFee: z.number().min(0).default(0),
     additionalFee: z.number().min(0).default(0),
     discount: z.number().min(0).default(0),
-    paidAmount: z.number().min(0),
+    paidAmount: z.number().finite().positive().max(999999999),
     paymentMethod: z.enum(['CASH', 'UPI', 'CARD', 'OTHER']).default('CASH'),
     transactionReference: z.string().optional().or(z.literal('')),
   }),

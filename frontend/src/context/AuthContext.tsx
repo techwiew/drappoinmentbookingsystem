@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Role } from '../types/index.js';
 import { apiClient } from '../api/client.js';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: User | null;
@@ -17,6 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Failed to load user session', error);
       localStorage.removeItem("MediNovel_token");
       localStorage.removeItem("MediNovel_refresh_token");
+      queryClient.clear();
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -45,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (token: string, refreshToken: string, userData: User) => {
+    queryClient.clear();
     localStorage.setItem("MediNovel_token", token);
     localStorage.setItem("MediNovel_refresh_token", refreshToken);
     setUser(userData);
@@ -58,6 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       localStorage.removeItem("MediNovel_token");
       localStorage.removeItem("MediNovel_refresh_token");
+      queryClient.clear();
       setUser(null);
       window.location.href = '/login';
     }

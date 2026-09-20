@@ -230,10 +230,13 @@ export const ConsultationRoomPage: React.FC = () => {
       const res = await apiClient.post('/payments', payload);
       return res.data.data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Refetch appointment to update payment status if needed elsewhere
       queryClient.invalidateQueries({ queryKey: ['appointment-detail', appointmentId] });
       queryClient.invalidateQueries({ queryKey: ['consultation-payments', appointmentId] });
+      for (const key of ['doctor-kpis', 'reports-doctor-dash', 'reception-today', 'payments', 'patient-payments']) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
       setIsPaymentModalOpen(false);
       // Reset payment form? We'll leave it as is.
     },
@@ -277,16 +280,10 @@ export const ConsultationRoomPage: React.FC = () => {
     e.preventDefault();
     if (!appointment?.id) return;
 
-    const { consultationFee, additionalFee, discount, paidAmount, paymentMethod, transactionReference, existingPaidAmount } = payForm;
-    const totalAmount = Math.max(0, consultationFee + additionalFee - discount);
-    const newTotalPaid = existingPaidAmount + paidAmount;
+    const { consultationFee, additionalFee, discount, paidAmount, paymentMethod, transactionReference } = payForm;
 
     if (paidAmount <= 0) {
       setPaymentError('Amount to pay must be greater than zero');
-      return;
-    }
-    if (newTotalPaid > totalAmount) {
-      setPaymentError(`Amount to pay exceeds remaining balance of ₹${(totalAmount - existingPaidAmount).toFixed(2)}`);
       return;
     }
 
@@ -861,11 +858,7 @@ export const ConsultationRoomPage: React.FC = () => {
             </span>
           </div>
 
-          {payForm.paidAmount > remaining && (
-            <div className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 border border-rose-200 rounded-lg">
-              ⚠️ Amount to pay exceeds remaining balance. Please adjust.
-            </div>
-          )}
+          {payForm.paidAmount > remaining && <p className="text-xs text-amber-700">Excess ₹{(payForm.paidAmount - remaining).toFixed(2)} will be recorded as unapplied payment.</p>}
 
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
             <Button

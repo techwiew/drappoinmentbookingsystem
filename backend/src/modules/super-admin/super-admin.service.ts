@@ -340,10 +340,14 @@ export class SuperAdminService {
     if (!clinic) {
       throw { statusCode: 404, code: 'CLINIC_NOT_FOUND', message: 'Clinic not found' };
     }
-    if (data.maxDoctors !== undefined && data.maxDoctors < clinic._count.doctors) {
+    const [activeDoctors, activeReceptionists] = await Promise.all([
+      prisma.doctor.count({ where: { clinicId, status: 'ACTIVE' } }),
+      prisma.receptionist.count({ where: { clinicId, status: 'ACTIVE' } }),
+    ]);
+    if (data.maxDoctors !== undefined && data.maxDoctors < activeDoctors) {
       throw { statusCode: 400, code: 'DOCTOR_QUOTA_TOO_LOW', message: 'Doctor quota cannot be lower than the current doctor count' };
     }
-    if (data.maxReceptionists !== undefined && data.maxReceptionists < clinic._count.receptionists) {
+    if (data.maxReceptionists !== undefined && data.maxReceptionists < activeReceptionists) {
       throw { statusCode: 400, code: 'RECEPTIONIST_QUOTA_TOO_LOW', message: 'Receptionist quota cannot be lower than the current receptionist count' };
     }
 

@@ -27,7 +27,7 @@ export const reportSheets = (data: any): ExportSheet[] => {
   }, {
     name: 'Financial Summary',
     columns: [{ header: 'Metric', width: 36 }, { header: 'Amount (INR)', format: currency }],
-    rows: [['OPD Collected Today', kpis.todayCollection ?? 0], ['IPD Collected Today (Clinic)', kpis.todayIpdCollection ?? 0], ['Total Collected Today', Number(kpis.todayCollection || 0) + Number(kpis.todayIpdCollection || 0)], ['Outstanding Pending Fee', kpis.pendingPayments ?? 0]],
+    rows: [['OPD Collected on Selected Date', kpis.todayCollection ?? 0], ['IPD Collected on Selected Date (Clinic)', kpis.todayIpdCollection ?? 0], ['Total Collected on Selected Date', Number(kpis.todayCollection || 0) + Number(kpis.todayIpdCollection || 0)]],
   }, {
     name: 'IPD Collections',
     columns: [{ header: 'Date', format: 'dd mmm yyyy', width: 26 }, { header: 'Revenue (INR)', format: currency, total: true, width: 26 }],

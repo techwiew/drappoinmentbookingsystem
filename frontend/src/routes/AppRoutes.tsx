@@ -1,35 +1,28 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import { RoleGuard } from '../components/layout/RoleGuard.js';
 import { AppLayout } from '../components/layout/AppLayout.js';
 import { LoginPage } from '../features/auth/LoginPage.js';
-import { PasswordResetPage } from '../features/auth/PasswordResetPage.js';
 import { LandingPage } from "../features/landing/LandingPage.js";
 
-// Super Admin Pages
-import { SuperAdminDashboardPage } from "../features/super-admin/SuperAdminDashboardPage.js";
-import { ClinicsManagementPage } from "../features/super-admin/ClinicsManagementPage.js";
-import { PlansPage } from "../features/super-admin/PlansPage.js";
-
-// Doctor Pages
-import { DoctorDashboardPage } from "../features/doctor/DoctorDashboardPage.js";
-
-// Receptionist Pages
-import { ReceptionistDashboardPage } from "../features/receptionist/ReceptionistDashboardPage.js";
-
-// Shared Feature Pages
-import { PatientsPage } from "../features/patients/PatientsPage.js";
-import { PatientProfilePage } from "../features/patients/PatientProfilePage.js";
-import { AppointmentsPage } from "../features/appointments/AppointmentsPage.js";
-import { QueuePage } from "../features/queue/QueuePage.js";
-import { ConsultationRoomPage } from "../features/consultation/ConsultationRoomPage.js";
-import { PrescriptionsPage } from "../features/prescriptions/PrescriptionsPage.js";
-import { BillingPage } from "../features/billing/BillingPage.js";
-import { StaffPage } from "../features/staff/StaffPage.js";
-import { ReportsPage } from "../features/reports/ReportsPage.js";
-import { ClinicSettingsPage } from "../features/settings/ClinicSettingsPage.js";
-import { AdmissionsPage } from "../features/admissions/AdmissionsPage.js";
+const PasswordResetPage = lazy(() => import('../features/auth/PasswordResetPage.js').then((module) => ({ default: module.PasswordResetPage })));
+const SuperAdminDashboardPage = lazy(() => import('../features/super-admin/SuperAdminDashboardPage.js').then((module) => ({ default: module.SuperAdminDashboardPage })));
+const ClinicsManagementPage = lazy(() => import('../features/super-admin/ClinicsManagementPage.js').then((module) => ({ default: module.ClinicsManagementPage })));
+const PlansPage = lazy(() => import('../features/super-admin/PlansPage.js').then((module) => ({ default: module.PlansPage })));
+const DoctorDashboardPage = lazy(() => import('../features/doctor/DoctorDashboardPage.js').then((module) => ({ default: module.DoctorDashboardPage })));
+const ReceptionistDashboardPage = lazy(() => import('../features/receptionist/ReceptionistDashboardPage.js').then((module) => ({ default: module.ReceptionistDashboardPage })));
+const PatientsPage = lazy(() => import('../features/patients/PatientsPage.js').then((module) => ({ default: module.PatientsPage })));
+const PatientProfilePage = lazy(() => import('../features/patients/PatientProfilePage.js').then((module) => ({ default: module.PatientProfilePage })));
+const AppointmentsPage = lazy(() => import('../features/appointments/AppointmentsPage.js').then((module) => ({ default: module.AppointmentsPage })));
+const QueuePage = lazy(() => import('../features/queue/QueuePage.js').then((module) => ({ default: module.QueuePage })));
+const ConsultationRoomPage = lazy(() => import('../features/consultation/ConsultationRoomPage.js').then((module) => ({ default: module.ConsultationRoomPage })));
+const PrescriptionsPage = lazy(() => import('../features/prescriptions/PrescriptionsPage.js').then((module) => ({ default: module.PrescriptionsPage })));
+const BillingPage = lazy(() => import('../features/billing/BillingPage.js').then((module) => ({ default: module.BillingPage })));
+const StaffPage = lazy(() => import('../features/staff/StaffPage.js').then((module) => ({ default: module.StaffPage })));
+const ReportsPage = lazy(() => import('../features/reports/ReportsPage.js').then((module) => ({ default: module.ReportsPage })));
+const ClinicSettingsPage = lazy(() => import('../features/settings/ClinicSettingsPage.js').then((module) => ({ default: module.ClinicSettingsPage })));
+const AdmissionsPage = lazy(() => import('../features/admissions/AdmissionsPage.js').then((module) => ({ default: module.AdmissionsPage })));
 import { Loader2 } from "lucide-react";
 
 const LoadingScreen = () => (
@@ -55,8 +48,14 @@ const HomeRedirect: React.FC = () => {
   return <Navigate to="/login" replace />;
 };
 
+const OwnerSettings: React.FC = () => {
+  const { user } = useAuth();
+  return user?.isOwner ? <ClinicSettingsPage /> : <Navigate to="/doctor-dashboard" replace />;
+};
+
 export const AppRoutes: React.FC = () => {
   return (
+    <Suspense fallback={<LoadingScreen />}>
     <Routes>
       {/* Public Route */}
       <Route path="/login" element={<LoginPage />} />
@@ -81,7 +80,7 @@ export const AppRoutes: React.FC = () => {
         <Route element={<AppLayout />}>
           <Route path="/doctor-dashboard" element={<DoctorDashboardPage />} />
           <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/settings" element={<ClinicSettingsPage />} />
+          <Route path="/settings" element={<OwnerSettings />} />
         </Route>
       </Route>
 
@@ -115,5 +114,6 @@ export const AppRoutes: React.FC = () => {
       {/* 404 Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 };

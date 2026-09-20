@@ -44,7 +44,10 @@ export const authenticate = async (
       return sendError(res, 'FORBIDDEN', 'User account is deactivated or suspended', 403);
     }
 
-    const clinicUser = user.clinicUsers[0];
+    const clinicUser = user.clinicUsers.find((membership) => membership.clinicId === payload.clinicId);
+    if (user.role !== 'SUPER_ADMIN' && !clinicUser) {
+      return sendError(res, 'FORBIDDEN', 'Hospital membership is no longer valid', 403);
+    }
     if (user.role !== 'SUPER_ADMIN' && (!clinicUser?.clinic || clinicUser.clinic.status === 'SUSPENDED')) {
       return sendError(res, 'CLINIC_SUSPENDED', 'This hospital is suspended. Please contact support.', 403);
     }

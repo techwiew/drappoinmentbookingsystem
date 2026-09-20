@@ -235,13 +235,12 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
           appointmentDate: todayStr,
           appointmentTime,
           appointmentType: "NEW_PATIENT",
-          directCheckIn: true,
           reasonForVisit: "Severe migraine",
         });
 
       expect(res.status).toBe(201);
       expect(res.body.data.tokenNumber).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.status).toBe("CHECKED_IN");
+      expect(res.body.data.status).toBe("BOOKED");
       appointmentAId = res.body.data.id;
     });
 
@@ -284,7 +283,6 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
           appointmentDate: dateStr,
           appointmentTime: timeStr,
           appointmentType: "NEW_PATIENT",
-          directCheckIn: false,
           reasonForVisit: "Direct start test",
         });
 

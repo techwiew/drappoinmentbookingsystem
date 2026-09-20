@@ -1,13 +1,10 @@
 import { prisma } from '../../lib/prisma.js';
-import { clinicDateKey, dateOnlyRange, localDateKey } from '../../utils/time.js';
+import { clinicDateKey, clinicReceiptRange, dateOnlyRange } from '../../utils/time.js';
 
 export class ReportsService {
-  static async getDoctorDashboard(clinicId: string, doctorId?: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const nextDay = new Date(today);
-    nextDay.setDate(today.getDate() + 1);
-    const appointmentDateRange = dateOnlyRange(clinicDateKey(new Date()));
+  static async getDoctorDashboard(clinicId: string, doctorId?: string, reportDate = clinicDateKey(new Date())) {
+    const { gte: today, lt: nextDay } = clinicReceiptRange(reportDate);
+    const appointmentDateRange = dateOnlyRange(reportDate);
 
     const whereAppt: any = {
       clinicId,
@@ -75,15 +72,13 @@ export class ReportsService {
     });
 
     // Last 7 days revenue trend
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 6);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000);
 
     const pastPayments = await prisma.paymentReceipt.findMany({
       where: {
         clinicId,
         createdAt: {
-          gte: sevenDaysAgo,
+          gte: sevenDaysAgo, lt: nextDay,
         },
         ...(doctorId && doctorId !== 'ALL' ? { doctorId } : {}),
       },
@@ -95,7 +90,7 @@ export class ReportsService {
 
     const pastIpdPayments = await prisma.admissionPayment.findMany({
       where: {
-        createdAt: { gte: sevenDaysAgo },
+        createdAt: { gte: sevenDaysAgo, lt: nextDay },
         admission: { clinicId },
       },
       select: { amount: true, createdAt: true },
@@ -104,13 +99,13 @@ export class ReportsService {
     const dailyRevenueMap: { [key: string]: number } = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(sevenDaysAgo);
-      d.setDate(d.getDate() + i);
-      const dateStr = localDateKey(d);
+      d.setUTCDate(d.getUTCDate() + i);
+      const dateStr = clinicDateKey(d);
       dailyRevenueMap[dateStr] = 0;
     }
 
     pastPayments.forEach((p) => {
-      const dateStr = localDateKey(p.createdAt);
+      const dateStr = clinicDateKey(p.createdAt);
       if (dailyRevenueMap[dateStr] !== undefined) {
         dailyRevenueMap[dateStr] += Number(p.amount);
       }
@@ -119,24 +114,25 @@ export class ReportsService {
     const ipdRevenueMap: { [key: string]: number } = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(sevenDaysAgo);
-      d.setDate(d.getDate() + i);
-      ipdRevenueMap[localDateKey(d)] = 0;
+      d.setUTCDate(d.getUTCDate() + i);
+      ipdRevenueMap[clinicDateKey(d)] = 0;
     }
     pastIpdPayments.forEach((payment) => {
-      const dateStr = localDateKey(payment.createdAt);
+      const dateStr = clinicDateKey(payment.createdAt);
       if (ipdRevenueMap[dateStr] !== undefined) ipdRevenueMap[dateStr] += Number(payment.amount);
     });
 
     const revenueTrends = Object.entries(dailyRevenueMap).map(([date, revenue]) => ({
       date,
-      revenue: Math.round(revenue),
+      revenue: Math.round(revenue * 100) / 100,
     }));
     const ipdRevenueTrends = Object.entries(ipdRevenueMap).map(([date, revenue]) => ({
       date,
-      revenue: Math.round(revenue),
+      revenue: Math.round(revenue * 100) / 100,
     }));
 
     return {
+      reportDate,
       kpis: {
         totalToday,
         waitingCount,
@@ -145,9 +141,9 @@ export class ReportsService {
         noShowCount,
         newPatientsCount,
         returningPatientsCount,
-        todayCollection: Math.round(todayCollection),
-        todayIpdCollection: Math.round(todayIpdCollection),
-        pendingPayments: Math.round(pendingPayments),
+        todayCollection: Math.round(todayCollection * 100) / 100,
+        todayIpdCollection: Math.round(todayIpdCollection * 100) / 100,
+        pendingPayments: Math.round(pendingPayments * 100) / 100,
         followUpsCount: followUpsDue.length,
       },
       todayAppointments: todayAppointments.map((a) => ({
@@ -179,10 +175,7 @@ export class ReportsService {
   }
 
   static async getReceptionistDashboard(clinicId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const nextDay = new Date(today);
-    nextDay.setDate(today.getDate() + 1);
+    const { gte: today, lt: nextDay } = clinicReceiptRange(clinicDateKey(new Date()));
     const appointmentDateRange = dateOnlyRange(clinicDateKey(new Date()));
 
     const doctors = await prisma.doctor.findMany({
@@ -225,7 +218,7 @@ export class ReportsService {
         totalAppointments,
         waitingTokens,
         completedTokens,
-        todayCollection: Math.round(todayCollection),
+        todayCollection: Math.round(todayCollection * 100) / 100,
         activeDoctorsCount: doctors.length,
       },
       doctorQueues: doctors.map((d) => ({

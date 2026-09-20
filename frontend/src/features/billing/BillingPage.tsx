@@ -91,6 +91,7 @@ export const BillingPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['pending-payment-apts'] });
       queryClient.invalidateQueries({ queryKey: ['doctor-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['reports-doctor-dash'] });
       queryClient.invalidateQueries({ queryKey: ['reception-today'] });
       closePaymentModal();
     },

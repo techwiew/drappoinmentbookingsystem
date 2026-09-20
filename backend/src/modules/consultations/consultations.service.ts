@@ -299,7 +299,33 @@ export class ConsultationService {
             },
           });
 
-          if (!existingFollowUp) {
+          let movedFollowUp = false;
+          const previousFollowUpDate = existing?.nextVisitDate?.toISOString().slice(0, 10);
+          if (!existingFollowUp && previousFollowUpDate && previousFollowUpDate !== data.nextVisitDate.slice(0, 10)) {
+            const previousRange = dateOnlyRange(previousFollowUpDate);
+            const candidates = await tx.appointment.findMany({
+              where: {
+                clinicId, patientId, doctorId: docId, appointmentType: 'FOLLOW_UP',
+                appointmentDate: previousRange,
+                status: { in: ['PENDING_CONFIRMATION', 'BOOKED'] },
+              },
+              take: 2,
+            });
+            if (candidates.length === 1) {
+              const appointmentTime = data.nextVisitTime ? normalizeAppointmentTime(data.nextVisitTime) : null;
+              const tokenNumber = (await tx.appointment.count({ where: { clinicId, doctorId: docId, appointmentDate: { gte: followUpDate, lt: nextDay } } })) + 1;
+              await tx.appointment.update({
+                where: { id: candidates[0].id },
+                data: {
+                  appointmentDate: followUpDate, appointmentTime, tokenNumber,
+                  status: appointmentTime ? 'BOOKED' : 'PENDING_CONFIRMATION',
+                  notes: toNullableString(data.followUpNotes) ?? null,
+                },
+              });
+              movedFollowUp = true;
+            }
+          }
+          if (!existingFollowUp && !movedFollowUp) {
             const appointmentTime = data.nextVisitTime
               ? normalizeAppointmentTime(data.nextVisitTime)
               : null;
@@ -686,7 +712,34 @@ export class ConsultationService {
             },
           });
 
-          if (!existingFollowUp) {
+          let movedFollowUp = false;
+          const previousFollowUpDate = consultation.nextVisitDate?.toISOString().slice(0, 10);
+          if (!existingFollowUp && previousFollowUpDate && previousFollowUpDate !== data.nextVisitDate.slice(0, 10)) {
+            const candidates = await tx.appointment.findMany({
+              where: {
+                clinicId, patientId: consultation.patientId, doctorId: consultation.doctor.id,
+                appointmentType: 'FOLLOW_UP', appointmentDate: dateOnlyRange(previousFollowUpDate),
+                status: { in: ['PENDING_CONFIRMATION', 'BOOKED'] },
+              },
+              take: 2,
+            });
+            if (candidates.length === 1) {
+              const appointmentTime = data.nextVisitTime ? normalizeAppointmentTime(data.nextVisitTime) : null;
+              const tokenNumber = (await tx.appointment.count({
+                where: { clinicId, doctorId: consultation.doctor.id, appointmentDate: { gte: followUpDate, lt: nextDay } },
+              })) + 1;
+              await tx.appointment.update({
+                where: { id: candidates[0].id },
+                data: {
+                  appointmentDate: followUpDate, appointmentTime, tokenNumber,
+                  status: appointmentTime ? 'BOOKED' : 'PENDING_CONFIRMATION',
+                  notes: toNullableString(data.followUpNotes) ?? null,
+                },
+              });
+              movedFollowUp = true;
+            }
+          }
+          if (!existingFollowUp && !movedFollowUp) {
             const appointmentTime = data.nextVisitTime
               ? normalizeAppointmentTime(data.nextVisitTime)
               : null;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clinicDateKey, dateOnlyRange, isAppointmentSlotInPast, localDateKey } from '../utils/time.js';
+import { clinicDateKey, clinicReceiptRange, dateOnlyRange, isAppointmentSlotInPast, localDateKey } from '../utils/time.js';
 
 describe('SQL date boundaries', () => {
   it('uses the local calendar day for dashboard dates', () => {
@@ -14,6 +14,14 @@ describe('SQL date boundaries', () => {
 
   it('rejects an invalid queue date with a client error', () => {
     expect(() => dateOnlyRange('18-09-2026')).toThrow();
+  });
+
+  it('counts receipts in the selected India calendar day', () => {
+    const range = clinicReceiptRange('2026-09-20');
+    expect(range.gte.toISOString()).toBe('2026-09-19T18:30:00.000Z');
+    expect(range.lt.toISOString()).toBe('2026-09-20T18:30:00.000Z');
+    expect(new Date('2026-09-19T18:29:59Z') >= range.gte).toBe(false);
+    expect(new Date('2026-09-20T18:29:59Z') < range.lt).toBe(true);
   });
 
   it('includes a same-day 2 PM appointment in the live queue date range', () => {

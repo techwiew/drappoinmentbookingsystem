@@ -24,7 +24,7 @@ describe('Excel exports', () => {
     expect(empty.getWorksheet('Financial')!.getCell('D6').value).toBe(0);
     const sheets = reportSheets({ kpis: { completedCount: 4, todayCollection: 100, todayIpdCollection: 50 }, ipdRevenueTrends: [{ date: '2026-09-20', revenue: 50 }] });
     expect(sheets[0].rows).toContainEqual(['Completed Consultations', 4]);
-    expect(sheets[1].rows).toContainEqual(['Total Collected Today', 150]);
+    expect(sheets[1].rows).toContainEqual(['Total Collected on Selected Date', 150]);
     expect(sheets[2].rows[0][1]).toBe(50);
   });
 });

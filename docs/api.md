@@ -109,10 +109,8 @@ All API endpoints follow standardized JSON responses:
 ---
 
 ## 8. Reports & Analytics (`/api/reports`)
-- `GET /api/reports/dashboard-doctor` - Doctor's clinical KPI metrics, today's queue count, revenue summary.
-- `GET /api/reports/dashboard-receptionist` - Front-desk queue stats, doctor availability, fee collection.
-- `GET /api/reports/financial` - Daily, weekly, monthly revenue breakdown.
-- `GET /api/reports/patient-trends` - New vs returning patient analytics.
+- `GET /api/reports/doctor-dashboard?date=YYYY-MM-DD` - Authenticated doctor's selected-day clinical KPIs and OPD receipts, plus hospital-wide IPD receipts. The date defaults to today's Asia/Kolkata date. Receipt timestamps are counted in the selected Asia/Kolkata calendar day; appointment and follow-up counts use their SQL DATE columns. Seven-day trends end on the selected date.
+- `GET /api/reports/receptionist-dashboard` - Hospital-scoped front-desk queue and collection summary.
 
 ---
 

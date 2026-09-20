@@ -579,3 +579,46 @@ INSERT INTO `payments` (`id`, `clinicId`, `patientId`, `appointmentId`, `doctorI
 ON DUPLICATE KEY UPDATE `paymentStatus`=VALUES(`paymentStatus`);
 
 SET FOREIGN_KEY_CHECKS = 1;
++-- IPD tables required by the selected-day financial report.
+CREATE TABLE IF NOT EXISTS `admissions` (
+  `id` VARCHAR(191) NOT NULL,
+  `clinicId` VARCHAR(191) NOT NULL,
+  `patientId` VARCHAR(191) NOT NULL,
+  `attendingDoctorId` VARCHAR(191) NULL,
+  `admissionNumber` VARCHAR(191) NOT NULL,
+  `admittedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `dischargedAt` DATETIME(3) NULL,
+  `status` VARCHAR(191) NOT NULL DEFAULT 'ADMITTED',
+  `roomNumber` VARCHAR(191) NULL,
+  `bedNumber` VARCHAR(191) NULL,
+  `reason` TEXT NOT NULL,
+  `diagnosis` TEXT NULL,
+  `notes` TEXT NULL,
+  `dischargeSummary` TEXT NULL,
+  `totalAmount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `paidAmount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `pendingAmount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `admissions_clinicId_admissionNumber_key` (`clinicId`, `admissionNumber`),
+  INDEX `admissions_clinicId_status_idx` (`clinicId`, `status`),
+  INDEX `admissions_patientId_idx` (`patientId`),
+  CONSTRAINT `admissions_clinicId_fkey` FOREIGN KEY (`clinicId`) REFERENCES `clinics`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `admissions_patientId_fkey` FOREIGN KEY (`patientId`) REFERENCES `patients`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `admissions_attendingDoctorId_fkey` FOREIGN KEY (`attendingDoctorId`) REFERENCES `doctors`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `admission_payments` (
+  `id` VARCHAR(191) NOT NULL,
+  `admissionId` VARCHAR(191) NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `paymentMethod` VARCHAR(191) NOT NULL DEFAULT 'CASH',
+  `transactionReference` VARCHAR(191) NULL,
+  `notes` TEXT NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  INDEX `admission_payments_admissionId_createdAt_idx` (`admissionId`, `createdAt`),
+  INDEX `admission_payments_createdAt_idx` (`createdAt`),
+  CONSTRAINT `admission_payments_admissionId_fkey` FOREIGN KEY (`admissionId`) REFERENCES `admissions`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

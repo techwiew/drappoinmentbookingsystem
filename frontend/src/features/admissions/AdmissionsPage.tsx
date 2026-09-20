@@ -39,7 +39,7 @@ export const AdmissionsPage: React.FC = () => {
     }
   }, [role, searchParams]);
 
-  const { data: admissions = [], isLoading } = useQuery({ queryKey: ['admissions'], queryFn: async () => (await apiClient.get('/admissions', { params: { status: 'ADMITTED' } })).data.data });
+  const { data: admissions = [], isLoading } = useQuery({ queryKey: ['admissions'], queryFn: async () => (await apiClient.get('/admissions', { params: { status: 'ADMITTED' } })).data.data, refetchInterval: 5000 });
   const { data: patients = [] } = useQuery({ queryKey: ['admission-patients'], queryFn: async () => (await apiClient.get('/patients', { params: { limit: 100 } })).data.data, enabled: isAdmitOpen });
   const { data: doctors = [] } = useQuery({ queryKey: ['admission-doctors'], queryFn: async () => (await apiClient.get('/doctors')).data.data, enabled: isAdmitOpen });
 

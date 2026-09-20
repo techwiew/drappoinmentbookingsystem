@@ -122,6 +122,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         role: user.role,
+        isOwner: clinicUser?.isOwner ?? false,
         status: user.status,
         name: user.doctor?.name || user.receptionist?.name || (user.role === 'SUPER_ADMIN' ? 'Super Admin' : user.email),
         clinic: clinic
@@ -174,7 +175,7 @@ export class AuthService {
         throw { statusCode: 401, code: 'UNAUTHORIZED', message: 'Invalid refresh token' };
       }
 
-      const clinicUser = user.clinicUsers[0];
+      const clinicUser = user.clinicUsers.find((membership) => membership.clinicId === payload.clinicId);
       if (user.role !== 'SUPER_ADMIN' && (!clinicUser?.clinic || clinicUser.clinic.status === 'SUSPENDED')) {
         throw { statusCode: 403, code: 'CLINIC_SUSPENDED', message: 'This hospital is suspended. Please contact support.' };
       }
@@ -214,7 +215,7 @@ export class AuthService {
     return true;
   }
 
-  static async getMe(userId: string) {
+  static async getMe(userId: string, clinicId?: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -240,13 +241,14 @@ export class AuthService {
       throw { statusCode: 404, code: 'USER_NOT_FOUND', message: 'User not found' };
     }
 
-    const clinicUser = user.clinicUsers[0];
+    const clinicUser = user.clinicUsers.find((membership) => membership.clinicId === clinicId);
     const clinic = clinicUser?.clinic;
 
     return {
       id: user.id,
       email: user.email,
       role: user.role,
+      isOwner: clinicUser?.isOwner ?? false,
       status: user.status,
       name: user.doctor?.name || user.receptionist?.name || (user.role === 'SUPER_ADMIN' ? 'Super Admin' : user.email),
       clinic: clinic

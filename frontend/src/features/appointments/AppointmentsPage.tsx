@@ -80,7 +80,6 @@ export const AppointmentsPage: React.FC = () => {
     appointmentDate: getSuggestedSlot().appointmentDate,
     appointmentTime: getCurrentTime(),
     appointmentType: "WALK_IN",
-    directCheckIn: false,
     notes: "",
     reasonForVisit: "",
   });
@@ -345,7 +344,7 @@ export const AppointmentsPage: React.FC = () => {
         <div className="flex gap-1">{(['day', 'week', 'list'] as const).map((mode) => <Button key={mode} variant={view === mode ? 'primary' : 'outline'} aria-pressed={view === mode} onClick={() => setView(mode)}>{mode[0].toUpperCase() + mode.slice(1)}</Button>)}</div>
       </div>
       {scheduleError && <p role="alert" className="text-rose-700">Unable to load the schedule. Please retry.</p>}
-      {view !== 'list' && !scheduleError && <AppointmentCalendar dates={dates} appointments={filteredApts} loading={isLoading} />}
+      {view !== 'list' && !scheduleError && <AppointmentCalendar dates={dates} appointments={filteredApts} loading={isLoading} onReschedule={setDateFilter} />}
       {/* Appointments Table */}
       {view === 'list' && <Card className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
@@ -695,24 +694,6 @@ export const AppointmentsPage: React.FC = () => {
               { value: "EMERGENCY", label: "Emergency" },
             ]}
           />
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="directCheckIn"
-              checked={bookForm.directCheckIn}
-              onChange={(e) =>
-                setBookForm({ ...bookForm, directCheckIn: e.target.checked })
-              }
-              className="w-4 h-4 accent-brand-600 rounded"
-            />
-            <label
-              htmlFor="directCheckIn"
-              className="text-xs font-medium text-slate-700"
-            >
-              Check in patient now (reception must still use Send to Dr)
-            </label>
-          </div>
 
           <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
             <Button

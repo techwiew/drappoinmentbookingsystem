@@ -452,7 +452,8 @@ model AdmissionPayment {
 
   admission Admission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
 
-  @@index([admissionId])
+  @@index([admissionId, createdAt])
+  @@index([createdAt])
   @@map("admission_payments")
 }
 

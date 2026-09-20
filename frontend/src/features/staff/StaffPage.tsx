@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
@@ -22,7 +23,8 @@ import {
 } from 'lucide-react';
 
 export const StaffPage: React.FC = () => {
-  const { role, doctorId } = useAuth();
+  const { role, doctorId, user, refreshProfile } = useAuth();
+  const isOwner = role === 'DOCTOR' && user?.isOwner === true;
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'doctors' | 'receptionists'>('doctors');
   const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
@@ -30,6 +32,7 @@ export const StaffPage: React.FC = () => {
   const [docErrors, setDocErrors] = useState<Record<string, string>>({});
   const [recErrors, setRecErrors] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
+  const [editingStaff, setEditingStaff] = useState<any>(null);
 
   const [docForm, setDocForm] = useState({
     name: '',
@@ -92,7 +95,19 @@ export const StaffPage: React.FC = () => {
       setIsAddDocModalOpen(false);
       setFeedback({ type: 'success', text: 'Doctor created successfully.' });
     },
-    onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to create doctor. Please try again.') }),
+    onError: (error) => {
+      const details = axios.isAxiosError(error) ? error.response?.data?.error?.details : undefined;
+      const fields: Record<string, string> = {};
+      if (Array.isArray(details)) details.forEach((item: { field?: string; message?: string }) => {
+        const key = item.field?.replace(/^body\./, '');
+        if (key && item.message) fields[key] = item.message;
+      });
+      const message = getApiErrorMessage(error, 'Unable to create doctor. Please try again.');
+      if (/email/i.test(message) && !fields.email) fields.email = message;
+      if (/registration/i.test(message) && !fields.registrationNumber) fields.registrationNumber = message;
+      setDocErrors(fields);
+      setFeedback({ type: 'error', text: message });
+    },
   });
 
   const addReceptionistMutation = useMutation({
@@ -128,7 +143,9 @@ export const StaffPage: React.FC = () => {
 
   const toggleDoctorStatusMutation = useMutation({
     mutationFn: async ({ doctorId, status }: { doctorId: string; status: 'ACTIVE' | 'INACTIVE' }) => {
-      const res = await apiClient.patch(`/doctors/${doctorId}`, { status });
+      const res = status === 'INACTIVE'
+        ? await apiClient.post(`/doctors/${doctorId}/transfer-and-deactivate`)
+        : await apiClient.patch(`/doctors/${doctorId}`, { status });
       return res.data.data;
     },
     onSuccess: (_doctor, variables) => {
@@ -136,7 +153,7 @@ export const StaffPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['clinic-doctors'] });
       queryClient.invalidateQueries({ queryKey: ['doctors-list'] });
       queryClient.invalidateQueries({ queryKey: ['doctors-quick'] });
-      setFeedback({ type: 'success', text: `Doctor ${variables.status === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.` });
+      setFeedback({ type: 'success', text: variables.status === 'ACTIVE' ? 'Doctor activated successfully.' : 'Doctor patients and future appointments transferred to the hospital administrator; account deactivated.' });
     },
     onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to update doctor status. Please try again.') }),
   });
@@ -152,6 +169,22 @@ export const StaffPage: React.FC = () => {
       setFeedback({ type: 'success', text: 'Receptionist deleted successfully.' });
     },
     onError: (error) => setFeedback({ type: 'error', text: getApiErrorMessage(error, 'Unable to delete receptionist. Please try again.') }),
+  });
+
+  const editStaffMutation = useMutation({
+    mutationFn: async () => {
+      const { kind, id, name, email, mobile, specialization, qualification, registrationNumber, consultationFee, workingDays, workingHours } = editingStaff;
+      const payload = kind === 'doctor'
+        ? { name, email, mobile, specialization, qualification, registrationNumber, consultationFee: Number(consultationFee), workingDays, workingHours }
+        : { name, email, mobile };
+      return (await apiClient.patch(`/${kind === 'doctor' ? 'doctors' : 'receptionists'}/${id}`, payload)).data.data;
+    },
+    onSuccess: async () => {
+      for (const key of ['doctors', 'receptionists', 'clinic-doctors', 'doctors-list', 'my-clinic']) queryClient.invalidateQueries({ queryKey: [key] });
+      await refreshProfile();
+      setEditingStaff(null);
+      setFeedback({ type: 'success', text: 'Staff details updated.' });
+    },
   });
 
   const weekdays = [
@@ -226,7 +259,7 @@ export const StaffPage: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && activeTab === 'doctors' && !doctorQuotaReached && (
+          {isOwner && activeTab === 'doctors' && !doctorQuotaReached && (
             <Button
               variant="primary"
               size="sm"
@@ -236,7 +269,7 @@ export const StaffPage: React.FC = () => {
               Add Doctor
             </Button>
           )}
-          {role === 'DOCTOR' && activeTab === 'receptionists' && !receptionistQuotaReached && (
+          {isOwner && activeTab === 'receptionists' && !receptionistQuotaReached && (
             <Button
               variant="primary"
               size="sm"
@@ -332,7 +365,9 @@ export const StaffPage: React.FC = () => {
                   <span>{doc.qualification}</span>
                 </div>
 
-                {role === 'DOCTOR' && doc.id !== doctorId && (
+                {(isOwner || doc.id === doctorId) && <Button className="mt-3" size="sm" variant="outline" onClick={() => setEditingStaff({ ...doc, kind: 'doctor' })}>Edit details</Button>}
+
+                {isOwner && doc.id !== doctorId && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button
                       variant={doc.status === 'ACTIVE' ? 'secondary' : 'primary'}
@@ -342,12 +377,12 @@ export const StaffPage: React.FC = () => {
                       onClick={() => {
                         const nextStatus = doc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
                         const action = nextStatus === 'ACTIVE' ? 'activate' : 'deactivate';
-                        if (window.confirm(`Are you sure you want to ${action} Dr. ${doc.name}?`)) {
+                        if (window.confirm(nextStatus === 'INACTIVE' ? `Transfer Dr. ${doc.name}'s active patients, future appointments, and admissions to the hospital administrator, then deactivate this account?` : `Are you sure you want to ${action} Dr. ${doc.name}?`)) {
                           toggleDoctorStatusMutation.mutate({ doctorId: doc.id, status: nextStatus });
                         }
                       }}
                     >
-                      {doc.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                      {doc.status === 'ACTIVE' ? 'Transfer & Deactivate' : 'Activate'}
                     </Button>
                     <Button
                       variant="danger"
@@ -367,7 +402,7 @@ export const StaffPage: React.FC = () => {
             ))
           )}
 
-          {(role === 'DOCTOR' || role === 'RECEPTIONIST') && !doctorQuotaReached && (
+          {isOwner && !doctorQuotaReached && (
             <button
               onClick={() => setIsAddDocModalOpen(true)}
               className="h-48 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 transition-all group"
@@ -404,7 +439,9 @@ export const StaffPage: React.FC = () => {
                   <div className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-slate-400" />{rec.email}</div>
                 </div>
 
-                {role === 'DOCTOR' && (
+                {isOwner && <Button className="mt-3" size="sm" variant="outline" onClick={() => setEditingStaff({ ...rec, kind: 'receptionist' })}>Edit details</Button>}
+
+                {isOwner && (
                   <Button
                     variant="danger"
                     size="sm"
@@ -423,7 +460,7 @@ export const StaffPage: React.FC = () => {
             ))
           )}
 
-          {role === 'DOCTOR' && !receptionistQuotaReached && <button
+          {isOwner && !receptionistQuotaReached && <button
             onClick={() => setIsAddRecModalOpen(true)}
             className="h-36 rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all group"
           >
@@ -434,6 +471,23 @@ export const StaffPage: React.FC = () => {
       )}
 
       {/* Add Doctor Modal */}
+      <Modal isOpen={!!editingStaff} onClose={() => setEditingStaff(null)} title={editingStaff?.kind === 'doctor' ? 'Edit Doctor' : 'Edit Receptionist'} maxWidth="lg">
+        {editingStaff && <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); editStaffMutation.mutate(); }}>
+          <Input label="Full name" required value={editingStaff.name} onChange={(event) => setEditingStaff({ ...editingStaff, name: event.target.value })} />
+          <Input label="Email" type="email" required value={editingStaff.email} onChange={(event) => setEditingStaff({ ...editingStaff, email: event.target.value })} />
+          <Input label="Mobile" required value={editingStaff.mobile} onChange={(event) => setEditingStaff({ ...editingStaff, mobile: event.target.value })} />
+          {editingStaff.kind === 'doctor' && <>
+            <Input label="Specialization" required value={editingStaff.specialization} onChange={(event) => setEditingStaff({ ...editingStaff, specialization: event.target.value })} />
+            <Input label="Qualification" required value={editingStaff.qualification} onChange={(event) => setEditingStaff({ ...editingStaff, qualification: event.target.value })} />
+            <Input label="Registration number" required value={editingStaff.registrationNumber} onChange={(event) => setEditingStaff({ ...editingStaff, registrationNumber: event.target.value })} />
+            <Input label="Consultation fee" type="number" min="0" required value={editingStaff.consultationFee} onChange={(event) => setEditingStaff({ ...editingStaff, consultationFee: event.target.value })} />
+            <div className="text-xs font-semibold">Working days</div><div className="flex flex-wrap gap-2">{weekdays.map((day) => <label key={day.code} className="flex items-center gap-1 text-xs"><input type="checkbox" checked={editingStaff.workingDays?.includes(day.code) || false} onChange={(event) => setEditingStaff({ ...editingStaff, workingDays: event.target.checked ? [...(editingStaff.workingDays || []), day.code] : (editingStaff.workingDays || []).filter((value: string) => value !== day.code) })} />{day.label}</label>)}</div>
+            <div className="grid grid-cols-2 gap-2"><Input label="Start time" type="time" value={editingStaff.workingHours?.start || '09:00'} onChange={(event) => setEditingStaff({ ...editingStaff, workingHours: { ...editingStaff.workingHours, start: event.target.value } })} /><Input label="End time" type="time" value={editingStaff.workingHours?.end || '17:00'} onChange={(event) => setEditingStaff({ ...editingStaff, workingHours: { ...editingStaff.workingHours, end: event.target.value } })} /></div>
+          </>}
+          {editStaffMutation.isError && <p role="alert" className="text-xs text-rose-700">{getApiErrorMessage(editStaffMutation.error)}</p>}
+          <Button type="submit" isLoading={editStaffMutation.isPending}>Save staff details</Button>
+        </form>}
+      </Modal>
       <Modal
         isOpen={isAddDocModalOpen}
         onClose={() => setIsAddDocModalOpen(false)}

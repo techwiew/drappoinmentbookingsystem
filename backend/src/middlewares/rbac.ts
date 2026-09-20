@@ -20,3 +20,20 @@ export const requireRole = (...allowedRoles: RoleType[]) => {
     next();
   };
 };
+
+export const requireClinicOwner = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role !== 'DOCTOR' || !req.tenant?.isOwner) {
+    return sendError(res, 'OWNER_REQUIRED', 'Only this hospital administrator can manage staff', 403);
+  }
+  next();
+};
+
+export const requireOwnerOrSelfDoctor = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user?.role !== 'DOCTOR' || (!req.tenant?.isOwner && req.tenant?.doctorId !== req.params.id)) {
+    return sendError(res, 'OWNER_REQUIRED', 'You can edit only your own doctor profile', 403);
+  }
+  if (!req.tenant?.isOwner && req.body?.status !== undefined) {
+    return sendError(res, 'OWNER_REQUIRED', 'Only this hospital administrator can change staff status', 403);
+  }
+  next();
+};

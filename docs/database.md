@@ -4,6 +4,7 @@
 - **Engine**: MySQL 8.0+ / MariaDB 10.5+
 - **ORM**: Prisma 5.x
 - **Data Types**: Strict `Decimal(10,2)` for all financial and monetary values. ISO-8601 UTC for timestamps.
+- **Selected-day reports**: OPD totals sum `payment_receipts.amount`; IPD totals sum `admission_payments.amount` through the same-clinic admission. Both use an Asia/Kolkata day boundary over UTC `createdAt` timestamps. Apply `backend/prisma/migrations/20260920_ipd_report_indexes/migration.sql` once to existing MySQL databases before deploying the date-filtered IPD report. Fresh databases use the corresponding indexes in `MediNovel_MilesWeb_Fresh_Database.sql`.
 
 ---
 

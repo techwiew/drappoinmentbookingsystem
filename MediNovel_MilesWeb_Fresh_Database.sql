@@ -477,8 +477,10 @@ CREATE TABLE `admission_payments` (
     `notes` TEXT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
-    INDEX `admission_payments_admissionId_idx`
-        (`admissionId`),
+    INDEX `admission_payments_admissionId_createdAt_idx`
+        (`admissionId`, `createdAt`),
+    INDEX `admission_payments_createdAt_idx`
+        (`createdAt`),
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB
 DEFAULT CHARACTER SET utf8mb4

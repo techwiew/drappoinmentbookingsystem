@@ -1,12 +1,12 @@
 import { ExportDataButton } from '../../components/shared/ExportDataButton.js';
 import { reportSheets } from './exportData.js';
 import { clinicDateAndTime } from '../../utils/clinicTime.js';
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { Card, StatCard } from '../../components/ui/Card.js';
-import { Badge } from '../../components/ui/Badge.js';
+import { Input } from '../../components/ui/Input.js';
 import {
   BarChart3,
   TrendingUp,
@@ -14,21 +14,24 @@ import {
   Users,
   Calendar,
   CreditCard,
-  Activity,
   CheckCircle2,
 } from 'lucide-react';
 
 export const ReportsPage: React.FC = () => {
   const { doctorId, user } = useAuth();
+  const [reportDate, setReportDate] = useState(() => clinicDateAndTime().date);
 
   const { data: doctorData, isLoading, isError } = useQuery({
-    queryKey: ['reports-doctor-dash', doctorId],
+    queryKey: ['reports-doctor-dash', doctorId, reportDate],
     queryFn: async () => {
       const res = await apiClient.get('/reports/doctor-dashboard', {
-        params: doctorId ? { doctorId } : {},
+        params: { date: reportDate },
       });
       return res.data.data;
     },
+    enabled: !!reportDate,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   const kpis = doctorData?.kpis;
@@ -45,22 +48,23 @@ export const ReportsPage: React.FC = () => {
         </p>
       </div>
 
-      <ExportDataButton title="Financial & Clinical Analytics" context={`${user?.clinic?.name || 'Clinic'} | ${user?.doctor?.name || 'Doctor'} | ${clinicDateAndTime().date} (IST); IPD trend: last 7 days, clinic-wide`} sheets={() => reportSheets(doctorData)} filename={`reports-${clinicDateAndTime().date}`} disabled={isLoading || isError || !doctorData} />
+      <div className="max-w-xs"><Input label="Report date" type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} /></div>
+      <ExportDataButton title="Financial & Clinical Analytics" context={`${user?.clinic?.name || 'Clinic'} | ${user?.doctor?.name || 'Doctor'} | ${reportDate} (IST); IPD trend: 7 days ending on selected date, clinic-wide`} sheets={() => reportSheets(doctorData)} filename={`reports-${reportDate}`} disabled={isLoading || isError || !doctorData} />
       {isError && <p role="alert" className="text-rose-700">Unable to load reports. Please retry.</p>}
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard
           title="Total Consultations"
           value={isLoading ? '...' : kpis?.completedCount ?? 0}
-          subtitle="Completed today"
+          subtitle={`Completed ${reportDate}`}
           icon={<CheckCircle2 className="w-5 h-5" />}
           iconBgColor="bg-emerald-50 text-emerald-600"
         />
 
         <StatCard
-          title="Daily Fee Revenue"
+          title="OPD Collections"
           value={isLoading ? '...' : `₹${(kpis?.todayCollection ?? 0).toLocaleString()}`}
-          subtitle="Collected"
+          subtitle={`Collected ${reportDate}`}
           icon={<IndianRupee className="w-5 h-5" />}
           iconBgColor="bg-brand-50 text-brand-600"
         />
@@ -83,7 +87,7 @@ export const ReportsPage: React.FC = () => {
         <StatCard
           title="IPD Collections"
           value={isLoading ? '...' : `₹${(kpis?.todayIpdCollection ?? 0).toLocaleString()}`}
-          subtitle="Collected today"
+          subtitle={`Collected ${reportDate}`}
           icon={<IndianRupee className="w-5 h-5" />}
           iconBgColor="bg-violet-50 text-violet-600"
         />
@@ -94,7 +98,7 @@ export const ReportsPage: React.FC = () => {
           <CreditCard className="w-4 h-4 text-violet-600" />
           <h2 className="text-sm font-bold text-slate-900">IPD Collections</h2>
         </div>
-        <p className="text-xs text-slate-500">IPD payments are reported separately from OPD consultation collections.</p>
+        <p className="text-xs text-slate-500">IPD payments are reported separately from OPD consultation collections. Seven days ending {reportDate}.</p>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {(doctorData?.ipdRevenueTrends || []).map((entry: { date: string; revenue: number }) => (
             <div key={entry.date} className="rounded-xl border border-violet-100 bg-violet-50 p-3">
@@ -107,7 +111,7 @@ export const ReportsPage: React.FC = () => {
       </Card>
 
       {/* Revenue & Patient Volume Insights */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
             <TrendingUp className="w-4 h-4 text-emerald-600" />
@@ -148,7 +152,7 @@ export const ReportsPage: React.FC = () => {
 
             <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-600">Total Bookings Today:</span>
+                <span className="text-slate-600">Total Bookings on {reportDate}:</span>
                 <span className="font-bold text-slate-900">{kpis?.totalToday ?? 0}</span>
               </div>
               <div className="flex justify-between">
@@ -163,34 +167,6 @@ export const ReportsPage: React.FC = () => {
           </div>
         </Card>
 
-        <Card>
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
-            <CreditCard className="w-4 h-4 text-brand-600" />
-            <h2 className="text-sm font-bold text-slate-900">Cash Flow & Outstanding</h2>
-          </div>
-
-          <div className="space-y-3">
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
-              <div>
-                <span className="text-xs text-emerald-800 font-semibold block">Total Revenue Collected</span>
-                <span className="text-2xl font-black text-emerald-900">
-                  ₹{(kpis?.todayCollection ?? 0).toLocaleString()}
-                </span>
-              </div>
-              <Badge variant="success">Settled</Badge>
-            </div>
-
-            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between">
-              <div>
-                <span className="text-xs text-rose-800 font-semibold block">Outstanding Pending Fee</span>
-                <span className="text-xl font-black text-rose-900">
-                  ₹{(kpis?.pendingPayments ?? 0).toLocaleString()}
-                </span>
-              </div>
-              <Badge variant="danger">Pending Collection</Badge>
-            </div>
-          </div>
-        </Card>
       </div>
     </div>
   );

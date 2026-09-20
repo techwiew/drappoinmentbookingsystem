@@ -23,7 +23,7 @@ import {
 import { clsx } from 'clsx';
 
 export const AppLayout: React.FC = () => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Define navigation items based on current role
@@ -47,7 +47,7 @@ export const AppLayout: React.FC = () => {
         { label: 'IPD Admissions', path: '/admissions', icon: Bed },
         { label: 'Clinic Staff', path: '/staff', icon: UserCheck },
         { label: 'Financial Reports', path: '/reports', icon: BarChart3 },
-        { label: 'Clinic Settings', path: '/settings', icon: Settings },
+        ...(user?.isOwner ? [{ label: 'Clinic Settings', path: '/settings', icon: Settings }] : []),
       ];
     }
 

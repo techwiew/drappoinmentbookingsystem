@@ -4,6 +4,12 @@ import { sendSuccess } from '../../utils/response.js';
 import { logRequestEvent } from '../../utils/logger.js';
 
 export class DoctorController {
+  static async transferAndDeactivate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await DoctorService.transferAndDeactivate(req.tenant!.clinicId, req.params.id, req.user!.userId);
+      return sendSuccess(res, result, 'Doctor work transferred to the hospital administrator and account deactivated');
+    } catch (error) { next(error); }
+  }
   static async listDoctors(req: Request, res: Response, next: NextFunction) {
     try {
       const doctors = await DoctorService.listDoctors(req.tenant!.clinicId);

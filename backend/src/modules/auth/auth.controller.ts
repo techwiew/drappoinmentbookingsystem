@@ -54,7 +54,7 @@ export class AuthController {
 
   static async me(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await AuthService.getMe(req.user!.userId);
+      const result = await AuthService.getMe(req.user!.userId, req.tenant?.clinicId);
       return sendSuccess(res, result);
     } catch (error) {
       next(error);

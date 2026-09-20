@@ -4,6 +4,7 @@ export interface User {
   id: string;
   email: string;
   role: Role;
+  isOwner?: boolean;
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   name?: string;
   clinic?: {

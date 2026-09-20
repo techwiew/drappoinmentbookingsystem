@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ReceptionistController } from './receptionists.controller.js';
 import { authenticate } from '../../middlewares/auth.js';
 import { requireTenant } from '../../middlewares/tenant.js';
-import { requireRole } from '../../middlewares/rbac.js';
+import { requireClinicOwner } from '../../middlewares/rbac.js';
 import { validateRequest } from '../../middlewares/validate.js';
 import {
   createReceptionistSchema,
@@ -17,21 +17,21 @@ router.get('/', ReceptionistController.listReceptionists);
 
 router.post(
   '/',
-  requireRole('DOCTOR'),
+  requireClinicOwner,
   validateRequest(createReceptionistSchema),
   ReceptionistController.createReceptionist
 );
 
 router.patch(
   '/:id',
-  requireRole('DOCTOR'),
+  requireClinicOwner,
   validateRequest(updateReceptionistSchema),
   ReceptionistController.updateReceptionist
 );
 
 router.delete(
   '/:id',
-  requireRole('DOCTOR'),
+  requireClinicOwner,
   ReceptionistController.deleteReceptionist
 );
 

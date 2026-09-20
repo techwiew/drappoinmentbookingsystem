@@ -8,7 +8,8 @@ export class AppointmentController {
     try {
       const appointment = await AppointmentService.getAppointmentById(
         req.tenant!.clinicId,
-        req.params.id
+        req.params.id,
+        req.user!.role === 'DOCTOR' ? req.tenant!.doctorId : undefined
       );
 
       return sendSuccess(res, appointment);
@@ -48,7 +49,8 @@ export class AppointmentController {
       const appointment = await AppointmentService.createAppointment(
         req.tenant!.clinicId,
         req.body,
-        req.user!.userId
+        req.user!.userId,
+        req.user!.role === 'DOCTOR' ? req.tenant!.doctorId : undefined
       );
       logRequestEvent(req, 'appointment.created', { appointmentId: appointment.id, doctorId: appointment.doctorId, appointmentDate: String(req.body.appointmentDate), appointmentTime: appointment.appointmentTime, status: appointment.status });
       return sendSuccess(res, appointment, 'Appointment booked successfully', 201);
@@ -63,7 +65,8 @@ export class AppointmentController {
         req.tenant!.clinicId,
         req.params.id,
         req.body,
-        req.user!.userId
+        req.user!.userId,
+        req.user!.role === 'DOCTOR' ? req.tenant!.doctorId : undefined
       );
       return sendSuccess(res, updated, 'Appointment updated successfully');
     } catch (error) {
@@ -76,7 +79,8 @@ export class AppointmentController {
       const result = await AppointmentService.cancelAppointment(
         req.tenant!.clinicId,
         req.params.id,
-        req.user!.userId
+        req.user!.userId,
+        req.user!.role === 'DOCTOR' ? req.tenant!.doctorId : undefined
       );
       return sendSuccess(res, result, 'Appointment cancelled');
     } catch (error) {

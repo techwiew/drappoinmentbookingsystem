@@ -16,9 +16,9 @@ export class AppointmentService {
     return `${dateString}T00:00:00.000Z`;
   }
 
-  static async getAppointmentById(clinicId: string, appointmentId: string) {
+  static async getAppointmentById(clinicId: string, appointmentId: string, actorDoctorId?: string) {
     const appointment = await prisma.appointment.findFirst({
-      where: { id: appointmentId, clinicId },
+      where: { id: appointmentId, clinicId, ...(actorDoctorId && { doctorId: actorDoctorId }) },
       include: {
         patient: {
           select: {
@@ -221,8 +221,12 @@ export class AppointmentService {
   static async createAppointment(
     clinicId: string,
     data: any,
-    creatorUserId: string
+    creatorUserId: string,
+    actorDoctorId?: string
   ) {
+    if (actorDoctorId && data.doctorId !== actorDoctorId) {
+      throw { statusCode: 403, code: 'DOCTOR_MISMATCH', message: 'Doctors may book appointments only for themselves' };
+    }
     const patient = await prisma.patient.findFirst({
       where: { id: data.patientId, clinicId },
     });
@@ -262,14 +266,13 @@ export class AppointmentService {
     if (appointmentTime && isAppointmentSlotInPast(data.appointmentDate, appointmentTime)) {
       throw { statusCode: 400, code: 'APPOINTMENT_IN_PAST', message: 'Appointment time cannot be in the past' };
     }
-    const initialStatus = data.directCheckIn
-      ? 'CHECKED_IN'
-      : data.appointmentType === 'FOLLOW_UP' && !appointmentTime
+    const initialStatus = data.appointmentType === 'FOLLOW_UP' && !appointmentTime
         ? 'PENDING_CONFIRMATION'
         : 'BOOKED';
 
-    const appointment = await prisma.appointment.create({
-      data: {
+    const appointment = await prisma.$transaction(async (tx) => {
+      const created = await tx.appointment.create({
+        data: {
         clinicId,
         patientId: data.patientId,
         doctorId: data.doctorId,
@@ -282,28 +285,25 @@ export class AppointmentService {
         notes: data.notes || null,
         reasonForVisit: data.reasonForVisit?.trim() || null,
         createdBy: creatorUserId,
-      },
-      include: {
-        patient: true,
-        doctor: true,
-      },
-    });
-
-    // Ensure doctor is in patient_doctors junction
-    await prisma.patientDoctor.upsert({
-      where: {
-        patientId_doctorId: {
+        },
+        include: { patient: true, doctor: true },
+      });
+      await tx.patientDoctor.upsert({
+        where: {
+          patientId_doctorId: {
+            patientId: data.patientId,
+            doctorId: data.doctorId,
+          },
+        },
+        create: {
+          clinicId,
           patientId: data.patientId,
           doctorId: data.doctorId,
+          assignedBy: creatorUserId,
         },
-      },
-      create: {
-        clinicId,
-        patientId: data.patientId,
-        doctorId: data.doctorId,
-        assignedBy: creatorUserId,
-      },
-      update: { status: 'ACTIVE' },
+        update: { status: 'ACTIVE' },
+      });
+      return created;
     });
 
     await logAudit({
@@ -326,22 +326,26 @@ export class AppointmentService {
     clinicId: string,
     appointmentId: string,
     data: any,
-    updaterUserId: string
+    updaterUserId: string,
+    actorDoctorId?: string
   ) {
     const appointment = await prisma.appointment.findFirst({
-      where: { id: appointmentId, clinicId },
+      where: { id: appointmentId, clinicId, ...(actorDoctorId && { doctorId: actorDoctorId }) },
     });
     if (!appointment) {
       throw { statusCode: 404, code: 'APPOINTMENT_NOT_FOUND', message: 'Appointment not found' };
     }
+    if (actorDoctorId && data.doctorId && data.doctorId !== actorDoctorId) {
+      throw { statusCode: 403, code: 'DOCTOR_MISMATCH', message: 'Doctors cannot reassign appointments to another doctor' };
+    }
 
-    if (data.status && ['COMPLETED', 'IN_CONSULTATION', 'CANCELLED'].includes(appointment.status)) {
+    if (['COMPLETED', 'IN_CONSULTATION', 'CANCELLED'].includes(appointment.status)) {
       throw { statusCode: 409, code: 'APPOINTMENT_CLOSED', message: 'This appointment status cannot be changed' };
     }
 
     const updateData: any = {};
     if (data.appointmentDate) {
-      updateData.appointmentDate = data.appointmentDate;
+      updateData.appointmentDate = AppointmentService.normalizeDateString(data.appointmentDate);
     }
     if (data.appointmentTime !== undefined) {
       updateData.appointmentTime = data.appointmentTime
@@ -359,9 +363,34 @@ export class AppointmentService {
       updateData.doctorId = data.doctorId;
     }
 
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: updateData,
+    const finalDate = data.appointmentDate || appointment.appointmentDate.toISOString().slice(0, 10);
+    const finalTime = data.appointmentTime === undefined ? appointment.appointmentTime : data.appointmentTime;
+    if (finalTime && isAppointmentSlotInPast(finalDate, finalTime)) {
+      throw { statusCode: 400, code: 'APPOINTMENT_IN_PAST', message: 'Appointment time cannot be in the past' };
+    }
+    const newDoctorId = data.doctorId || appointment.doctorId;
+    const moved = finalDate !== appointment.appointmentDate.toISOString().slice(0, 10) || newDoctorId !== appointment.doctorId;
+    if (moved) {
+      const last = await prisma.appointment.findFirst({
+        where: { clinicId, doctorId: newDoctorId, appointmentDate: updateData.appointmentDate || appointment.appointmentDate },
+        orderBy: { tokenNumber: 'desc' }, select: { tokenNumber: true },
+      });
+      updateData.tokenNumber = (last?.tokenNumber ?? 0) + 1;
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const saved = await tx.appointment.update({
+        where: { id: appointmentId },
+        data: updateData,
+      });
+      if (newDoctorId !== appointment.doctorId) {
+        await tx.patientDoctor.upsert({
+          where: { patientId_doctorId: { patientId: appointment.patientId, doctorId: newDoctorId } },
+          create: { clinicId, patientId: appointment.patientId, doctorId: newDoctorId, assignedBy: updaterUserId },
+          update: { status: 'ACTIVE' },
+        });
+      }
+      return saved;
     });
 
     await logAudit({
@@ -370,7 +399,7 @@ export class AppointmentService {
       action: 'APPOINTMENT_UPDATED',
       entityType: 'Appointment',
       entityId: appointmentId,
-      metadata: { newStatus: data.status },
+      metadata: { newStatus: data.status, previousDate: appointment.appointmentDate, newDate: finalDate, previousDoctorId: appointment.doctorId, newDoctorId },
     });
 
     return updated;
@@ -379,10 +408,11 @@ export class AppointmentService {
   static async cancelAppointment(
     clinicId: string,
     appointmentId: string,
-    cancellerUserId: string
+    cancellerUserId: string,
+    actorDoctorId?: string
   ) {
     const updated = await prisma.appointment.updateMany({
-      where: { id: appointmentId, clinicId, status: { in: ['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'] } },
+      where: { id: appointmentId, clinicId, ...(actorDoctorId && { doctorId: actorDoctorId }), status: { in: ['PENDING_CONFIRMATION', 'BOOKED', 'CHECKED_IN', 'WAITING', 'READY_FOR_DOCTOR'] } },
       data: { status: 'CANCELLED' },
     });
 

@@ -81,11 +81,22 @@ export class QueueService {
       consultationStatus: a.consultation?.status || null,
       paymentStatus: a.payments[0]?.paymentStatus || 'PENDING',
       createdAt: a.createdAt,
+      updatedAt: a.updatedAt,
     }));
+
+    // Reception handoff is a priority signal, not a gate to consultation.
+    const queueOrder = (a: typeof mapped[number], b: typeof mapped[number]) => {
+      const aSent = a.status === 'READY_FOR_DOCTOR' ? 1 : 0;
+      const bSent = b.status === 'READY_FOR_DOCTOR' ? 1 : 0;
+      if (aSent !== bSent) return bSent - aSent;
+      if (aSent) return b.updatedAt.getTime() - a.updatedAt.getTime();
+      return a.tokenNumber - b.tokenNumber;
+    };
+    mapped.sort(queueOrder);
 
     const currentPatient = mapped.find((a) => a.status === 'IN_CONSULTATION') || null;
     const waitingList = mapped.filter((a) => doctorView
-      ? a.status === 'READY_FOR_DOCTOR' || a.status === 'WAITING'
+      ? ['READY_FOR_DOCTOR', 'WAITING', 'BOOKED', 'CHECKED_IN'].includes(a.status)
       : ['READY_FOR_DOCTOR', 'WAITING', 'CHECKED_IN'].includes(a.status));
     const nextPatient = waitingList[0] || null;
     const completedList = mapped.filter((a) => a.status === 'COMPLETED');

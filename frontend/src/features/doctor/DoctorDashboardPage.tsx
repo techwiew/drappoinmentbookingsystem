@@ -144,8 +144,8 @@ export const DoctorDashboardPage: React.FC = () => {
         />
         <StatCard
           title="Today's Collection"
-          value={kpisLoading ? '...' : `₹${(kpis?.todayCollection ?? 0).toLocaleString()}`}
-          subtitle="Fee collected"
+          value={kpisLoading ? '...' : `₹${(Number(kpis?.todayCollection || 0) + Number(kpis?.todayIpdCollection || 0)).toLocaleString()}`}
+          subtitle="OPD + hospital IPD"
           icon={<IndianRupee className="w-5 h-5" />}
           iconBgColor="bg-emerald-50 text-emerald-600"
           trend={{ value: '', isPositive: true }}

@@ -10,7 +10,8 @@ export class ReportsController {
       if (!doctorId) throw { statusCode: 403, code: 'DOCTOR_REQUIRED', message: 'Doctor profile required' };
       const data = await ReportsService.getDoctorDashboard(
         req.tenant!.clinicId,
-        doctorId
+        doctorId,
+        typeof req.query.date === 'string' ? req.query.date : undefined
       );
       logRequestEvent(req, 'reports.doctor_dashboard.viewed', { doctorId, appointmentCount: data.kpis.totalToday, ipdTrendDays: data.ipdRevenueTrends.length });
       return sendSuccess(res, data);

@@ -29,6 +29,13 @@ export const dateOnlyRange = (dateKey: string) => {
   return { gte: start, lt: end };
 };
 
+/** UTC instants bounding one calendar day in the clinic's Asia/Kolkata timezone. */
+export const clinicReceiptRange = (dateKey: string) => {
+  dateOnlyRange(dateKey);
+  const start = new Date(`${dateKey}T00:00:00+05:30`);
+  return { gte: start, lt: new Date(start.getTime() + 24 * 60 * 60 * 1000) };
+};
+
 const formatTwelveHourTime = (hours: number, minutes: string) => {
   const meridiem = hours >= 12 ? 'PM' : 'AM';
   const normalizedHours = hours % 12 || 12;

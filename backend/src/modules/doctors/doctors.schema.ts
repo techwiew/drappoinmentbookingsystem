@@ -33,6 +33,7 @@ export const updateDoctorSchema = z.object({
   }),
   body: z.object({
     name: nameSchema.optional(),
+    email: z.string().trim().email('Enter a valid email address').max(254).optional(),
     mobile: mobileSchema.optional(),
     specialization: textSchema('Specialization').optional(),
     qualification: textSchema('Qualification').optional(),

@@ -11,14 +11,6 @@ export class ReceptionistService {
   }
 
   static async createReceptionist(clinicId: string, data: any, creatorUserId: string) {
-    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { maxReceptionists: true } });
-    if (!clinic) {
-      throw { statusCode: 404, code: 'CLINIC_NOT_FOUND', message: 'Clinic not found' };
-    }
-    const receptionistCount = await prisma.receptionist.count({ where: { clinicId, status: 'ACTIVE' } });
-    if (receptionistCount >= clinic.maxReceptionists) {
-      throw { statusCode: 409, code: 'RECEPTIONIST_QUOTA_EXCEEDED', message: `This clinic has reached its limit of ${clinic.maxReceptionists} active receptionists` };
-    }
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email.toLowerCase() },
     });
@@ -29,6 +21,12 @@ export class ReceptionistService {
     const hashedPassword = await hashPassword(data.password);
 
     const result = await prisma.$transaction(async (tx) => {
+      const clinic = await tx.clinic.findUnique({ where: { id: clinicId }, select: { maxReceptionists: true } });
+      if (!clinic) throw { statusCode: 404, code: 'CLINIC_NOT_FOUND', message: 'Clinic not found' };
+      const receptionistCount = await tx.receptionist.count({ where: { clinicId, status: 'ACTIVE' } });
+      if (receptionistCount >= clinic.maxReceptionists) {
+        throw { statusCode: 409, code: 'RECEPTIONIST_QUOTA_EXCEEDED', message: `This clinic has reached its limit of ${clinic.maxReceptionists} active receptionists` };
+      }
       const user = await tx.user.create({
         data: {
           email: data.email.toLowerCase(),
@@ -91,14 +89,25 @@ export class ReceptionistService {
       }
     }
 
-    const updated = await prisma.receptionist.update({
-      where: { id: receptionistId },
-      data: {
-        ...(data.name && { name: data.name }),
-        ...(data.mobile && { mobile: data.mobile }),
-        ...(data.status && { status: data.status }),
-      },
-    });
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.receptionist.update({
+        where: { id: receptionistId },
+        data: {
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.email !== undefined && { email: data.email.toLowerCase() }),
+          ...(data.mobile !== undefined && { mobile: data.mobile }),
+          ...(data.status !== undefined && { status: data.status }),
+        },
+      });
+      if (data.status !== undefined || data.email !== undefined) await tx.user.update({
+        where: { id: receptionist.userId },
+        data: {
+          ...(data.status !== undefined && { status: data.status }),
+          ...(data.email !== undefined && { email: data.email.toLowerCase() }),
+        },
+      });
+      return result;
+    }, { isolationLevel: 'Serializable' });
 
     await logAudit({
       clinicId,

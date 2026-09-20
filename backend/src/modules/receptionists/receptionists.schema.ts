@@ -17,6 +17,7 @@ export const updateReceptionistSchema = z.object({
   }),
   body: z.object({
     name: z.string().optional(),
+    email: z.string().trim().email('Enter a valid email address').optional(),
     mobile: mobileSchema.optional(),
     status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
   }),
