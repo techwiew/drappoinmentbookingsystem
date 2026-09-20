@@ -1,3 +1,6 @@
+import { ExportDataButton } from '../../components/shared/ExportDataButton.js';
+import { financialSheets } from '../reports/exportData.js';
+import { clinicDateAndTime } from '../../utils/clinicTime.js';
 import React, { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
@@ -52,7 +55,7 @@ export const BillingPage: React.FC = () => {
     }
   };
 
-  const { data: payments, isLoading } = useQuery({
+  const { data: payments, isLoading, isError: paymentsError } = useQuery({
     queryKey: ['payments', search, statusFilter],
     queryFn: async () => {
       const res = await apiClient.get('/payments', {
@@ -66,7 +69,7 @@ export const BillingPage: React.FC = () => {
     refetchInterval: 15000,
   });
 
-  const { data: pendingApts } = useQuery({
+  const { data: pendingApts, isLoading: pendingLoading, isError: pendingError } = useQuery({
     queryKey: ['pending-payment-apts'],
     queryFn: async () => {
       const res = await apiClient.get('/appointments', {
@@ -189,6 +192,7 @@ export const BillingPage: React.FC = () => {
         </div>
       </div>
 
+      <ExportDataButton title="Financial Report" context={`Payment filter: ${statusFilter || 'All'} | Search: ${search || 'None'} | Displayed payments and today's awaiting-payment list`} sheets={() => financialSheets(payments || [], pendingApts || [])} filename={`financial-${clinicDateAndTime().date}`} disabled={isLoading || pendingLoading || paymentsError || pendingError} />
       {/* Pending Payments Alert Banner */}
       {totalPending > 0 && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3">

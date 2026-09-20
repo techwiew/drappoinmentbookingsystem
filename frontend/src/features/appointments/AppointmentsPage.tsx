@@ -1,3 +1,7 @@
+import { AppointmentCalendar } from './AppointmentCalendar.js';
+import { calendarDates, shiftDate } from './calendar.js';
+import { fetchAppointmentsForDate } from '../../api/appointments.js';
+import { OpenConsultationButton } from '../../components/shared/OpenConsultationButton.js';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
@@ -47,8 +51,12 @@ export const AppointmentsPage: React.FC = () => {
     !!searchParams.get("patientId"),
   );
   const [dateFilter, setDateFilter] = useState(getTodayDate);
+  const [view, setView] = useState<'day' | 'week' | 'list'>('week');
+  const [scheduleDoctor, setScheduleDoctor] = useState('');
+  const dates = calendarDates(dateFilter, view === 'week');
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [patientSearch, setPatientSearch] = useState("");
   const [isNewPatient, setIsNewPatient] = useState(false);
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
@@ -77,22 +85,22 @@ export const AppointmentsPage: React.FC = () => {
     reasonForVisit: "",
   });
 
-  const { data: appointments, isLoading } = useQuery({
-    queryKey: ["appointments", dateFilter, statusFilter, doctorId, role],
+  const { data: appointments, isLoading, isError: scheduleError } = useQuery({
+    queryKey: ['appointments', dates, statusFilter, doctorId, role, scheduleDoctor],
     queryFn: async () => {
-      const params: any = { date: dateFilter };
-      if (statusFilter) params.status = statusFilter;
-      if (role === "DOCTOR" && doctorId) params.doctorId = doctorId;
-      const res = await apiClient.get("/appointments", { params });
-      return res.data.data;
+      const filters: Record<string, string> = {};
+      if (statusFilter) filters.status = statusFilter;
+      if (role === 'DOCTOR' && doctorId) filters.doctorId = doctorId;
+      else if (scheduleDoctor) filters.doctorId = scheduleDoctor;
+      return (await Promise.all(dates.map((date) => fetchAppointmentsForDate(date, filters)))).flat();
     },
     refetchInterval: 15000,
   });
 
   const { data: patients } = useQuery({
-    queryKey: ["patients-list", search],
+    queryKey: ["patients-list", patientSearch],
     queryFn: async () => {
-      const res = await apiClient.get("/patients", { params: { search } });
+      const res = await apiClient.get("/patients", { params: { search: patientSearch } });
       return res.data.data;
     },
     enabled: isBookModalOpen,
@@ -104,7 +112,7 @@ export const AppointmentsPage: React.FC = () => {
       const res = await apiClient.get("/doctors");
       return res.data.data;
     },
-    enabled: isBookModalOpen && role !== "DOCTOR",
+    enabled: role !== "DOCTOR",
   });
 
   const bookMutation = useMutation({
@@ -146,17 +154,6 @@ export const AppointmentsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["live-queue"] });
       queryClient.invalidateQueries({ queryKey: ["reception-queue"] });
     },
-  });
-
-  const startConsultationMutation = useMutation({
-    mutationFn: async (id: string) => (await apiClient.post(`/queue/${id}/start`)).data.data,
-    onSuccess: (appointment: any) => {
-      queryClient.invalidateQueries({ queryKey: ['live-queue'] });
-      queryClient.invalidateQueries({ queryKey: ['doctor-kpis'] });
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      navigate(`/queue/${appointment.id}/consult`);
-    },
-    onError: (error: any) => setBookingError(error.response?.data?.error?.message || 'Unable to start consultation.'),
   });
 
   const confirmFollowUpMutation = useMutation({
@@ -295,13 +292,7 @@ export const AppointmentsPage: React.FC = () => {
             Appointment Schedule
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            {filteredApts.length} appointment(s) for{" "}
-            {new Date(dateFilter).toLocaleDateString(undefined, {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {filteredApts.length} appointment(s) | {view === 'week' ? `${dates[0]} to ${dates[6]}` : dateFilter}
           </p>
         </div>
         <Button
@@ -319,7 +310,7 @@ export const AppointmentsPage: React.FC = () => {
           <Input
             type="date"
             value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
+            onChange={(e) => { if (e.target.value) setDateFilter(e.target.value); }}
             className="w-full sm:w-44"
           />
           <div className="flex-1 relative">
@@ -338,7 +329,7 @@ export const AppointmentsPage: React.FC = () => {
             className="w-full sm:w-44 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="">All Statuses</option>
-            <option value="WAITING">Waiting</option>
+            <option value="CHECKED_IN">Checked In</option><option value="READY_FOR_DOCTOR">Ready for Doctor</option><option value="SKIPPED">Skipped</option><option value="NO_SHOW">No Show</option><option value="WAITING">Waiting</option>
             <option value="IN_CONSULTATION">In Consultation</option>
             <option value="COMPLETED">Completed</option>
             <option value="BOOKED">Booked</option>
@@ -348,8 +339,15 @@ export const AppointmentsPage: React.FC = () => {
         </div>
       </Card>
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2"><Button variant="outline" onClick={() => setDateFilter(shiftDate(dateFilter, view === 'week' ? -7 : -1))}>Previous</Button><Button variant="outline" onClick={() => setDateFilter(getTodayDate())}>Today</Button><Button variant="outline" onClick={() => setDateFilter(shiftDate(dateFilter, view === 'week' ? 7 : 1))}>Next</Button></div>
+        {role !== 'DOCTOR' && <select aria-label="Filter calendar by doctor" className="rounded-lg border p-2 text-sm" value={scheduleDoctor} onChange={(event) => setScheduleDoctor(event.target.value)}><option value="">All doctors</option>{doctors?.map((doctor: any) => <option key={doctor.id} value={doctor.id}>{doctor.name}</option>)}</select>}
+        <div className="flex gap-1">{(['day', 'week', 'list'] as const).map((mode) => <Button key={mode} variant={view === mode ? 'primary' : 'outline'} aria-pressed={view === mode} onClick={() => setView(mode)}>{mode[0].toUpperCase() + mode.slice(1)}</Button>)}</div>
+      </div>
+      {scheduleError && <p role="alert" className="text-rose-700">Unable to load the schedule. Please retry.</p>}
+      {view !== 'list' && !scheduleError && <AppointmentCalendar dates={dates} appointments={filteredApts} loading={isLoading} />}
       {/* Appointments Table */}
-      <Card className="p-0 overflow-hidden">
+      {view === 'list' && <Card className="p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
@@ -461,17 +459,7 @@ export const AppointmentsPage: React.FC = () => {
                           Confirm Visit
                         </Button>
                       )}
-                      {role === 'DOCTOR' && ['BOOKED', 'CHECKED_IN', 'READY_FOR_DOCTOR', 'WAITING', 'IN_CONSULTATION', 'COMPLETED'].includes(apt.status) && (
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          className="text-[11px]"
-                          isLoading={startConsultationMutation.isPending}
-                          onClick={() => ['BOOKED', 'CHECKED_IN', 'READY_FOR_DOCTOR', 'WAITING'].includes(apt.status) ? startConsultationMutation.mutate(apt.id) : navigate(`/queue/${apt.id}/consult`)}
-                        >
-                          {apt.status === 'COMPLETED' ? 'View Consultation' : 'Open Consultation'}
-                        </Button>
-                      )}
+                      <OpenConsultationButton patientId={apt.patientId} appointment={apt} />
                       {(apt.status === "READY_FOR_DOCTOR" ||
                         apt.status === "CHECKED_IN" ||
                         apt.status === "WAITING" ||
@@ -493,7 +481,7 @@ export const AppointmentsPage: React.FC = () => {
             </tbody>
           </table>
         </div>
-      </Card>
+      </Card>}
 
       {/* Book Appointment Modal */}
       <Modal
@@ -534,7 +522,7 @@ export const AppointmentsPage: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Search patient by name or mobile..."
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => setPatientSearch(e.target.value)}
                     className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>

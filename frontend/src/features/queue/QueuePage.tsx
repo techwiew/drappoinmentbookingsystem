@@ -1,3 +1,4 @@
+import { AppointmentList } from '../../components/shared/AppointmentList.js';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
@@ -44,7 +45,7 @@ export const QueuePage: React.FC = () => {
 
   const queueDoctorId = role === 'DOCTOR' ? doctorId : selectedDoctorId;
 
-  const { data: queueData, isLoading } = useQuery({
+  const { data: queueData, isLoading, isError } = useQuery({
     queryKey: ['live-queue', queueDoctorId, queueDate],
     queryFn: async () => {
       const params: any = {};
@@ -160,6 +161,8 @@ export const QueuePage: React.FC = () => {
         </div>
       </div>
 
+      {isError && <p role="alert" className="text-rose-700">Unable to load the queue. Please refresh and try again.</p>}
+      {isLoading ? <p>Loading appointments...</p> : !isError && <AppointmentList title="All Appointments" appointments={queueData?.allQueue || []} />}
       {/* Summary Stat Row */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
@@ -393,7 +396,7 @@ export const QueuePage: React.FC = () => {
                             isLoading={startMutation.isPending}
                             onClick={() => startMutation.mutate(apt.id)}
                           >
-                            Start Consult
+                            Open Consultation
                           </Button>}
                           {role === 'DOCTOR' && <Button
                             size="sm"
@@ -455,7 +458,7 @@ export const QueuePage: React.FC = () => {
                       navigate(`/queue/${apt.id}/consult`);
                     }}
                   >
-                    View Consultation
+                    Open Consultation
                   </Button>
                 )}
                 <StatusBadge

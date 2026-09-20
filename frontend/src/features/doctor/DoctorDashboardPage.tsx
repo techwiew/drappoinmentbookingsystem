@@ -1,3 +1,6 @@
+import { AppointmentList } from '../../components/shared/AppointmentList.js';
+import { OpenConsultationButton } from '../../components/shared/OpenConsultationButton.js';
+import { clinicDateAndTime } from '../../utils/clinicTime.js';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
@@ -36,10 +39,10 @@ export const DoctorDashboardPage: React.FC = () => {
     refetchInterval: 3000,
   });
 
-  const { data: queueData, isLoading: queueLoading } = useQuery({
-    queryKey: ['live-queue', doctorId],
+  const { data: queueData, isLoading: queueLoading, isError: queueError } = useQuery({
+    queryKey: ['live-queue', doctorId, clinicDateAndTime().date],
     queryFn: async () => {
-      const res = await apiClient.get(`/queue?doctorId=${doctorId}`);
+      const res = await apiClient.get(`/queue?doctorId=${doctorId}&date=${clinicDateAndTime().date}`);
       return res.data.data;
     },
     enabled: !!doctorId,
@@ -54,7 +57,7 @@ export const DoctorDashboardPage: React.FC = () => {
       return res.data.data;
     },
     onSuccess: (appointment) => {
-      queryClient.invalidateQueries({ queryKey: ['live-queue', doctorId] });
+      queryClient.invalidateQueries({ queryKey: ['live-queue', doctorId, clinicDateAndTime().date] });
       queryClient.invalidateQueries({ queryKey: ['doctor-kpis', doctorId] });
       navigate(`/queue/${appointment.id}/consult`);
     },
@@ -149,6 +152,8 @@ export const DoctorDashboardPage: React.FC = () => {
         />
       </div>
 
+      {queueError && <p role="alert" className="text-rose-700">Unable to load appointments. Please refresh and try again.</p>}
+      {queueLoading ? <p>Loading appointments...</p> : !queueError && <AppointmentList title="Today's Appointments" appointments={queueData?.allQueue || []} />}
       {/* Main Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Live Queue Hero Widget */}
@@ -248,7 +253,7 @@ export const DoctorDashboardPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2"><StatusBadge status={pt.status} size="sm" />{pt.patientMobile && <a href={`tel:${pt.patientMobile}`} onClick={(event) => event.stopPropagation()} className="text-emerald-700" title={`Call ${pt.patientName}`}><Phone className="h-3.5 w-3.5" /></a>}</div>
+                    <div className="flex items-center gap-2"><OpenConsultationButton patientId={pt.patientId} appointment={pt} /><StatusBadge status={pt.status} size="sm" />{pt.patientMobile && <a href={`tel:${pt.patientMobile}`} onClick={(event) => event.stopPropagation()} className="text-emerald-700" title={`Call ${pt.patientName}`}><Phone className="h-3.5 w-3.5" /></a>}</div>
                   </div>
                 ))}
               </div>
@@ -259,7 +264,7 @@ export const DoctorDashboardPage: React.FC = () => {
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {awaitingReception.map((patient: any) => <div key={patient.id} className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5 text-xs">
                 <span>#{patient.tokenNumber} {patient.patientName} · {patient.appointmentTime || 'Time to confirm'}</span>
-                <StatusBadge status={patient.status} size="sm" />
+                <OpenConsultationButton patientId={patient.patientId} appointment={patient} />
               </div>)}
             </div>
           </Card>}

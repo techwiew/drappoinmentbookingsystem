@@ -1,8 +1,8 @@
 import { prisma } from '../../lib/prisma.js';
 import { logAudit } from '../../middlewares/audit.js';
-import { getCurrentAppointmentTime, normalizeAppointmentTime } from '../../utils/time.js';
+import { clinicDateKey, dateOnlyRange, getCurrentAppointmentTime, normalizeAppointmentTime } from '../../utils/time.js';
 
-const ACTIVE_APPOINTMENT_STATUSES = ['BOOKED', 'CHECKED_IN', 'WAITING', 'IN_CONSULTATION'] as const;
+const ACTIVE_APPOINTMENT_STATUSES = ['BOOKED', 'CHECKED_IN', 'READY_FOR_DOCTOR', 'WAITING', 'IN_CONSULTATION'] as const;
 
 const toNullableString = (value: unknown) => {
   if (value === undefined) {
@@ -287,10 +287,7 @@ export class ConsultationService {
         // A next-visit date is an appointment in its own right. When no slot is
         // selected it remains visible for the team to call and confirm later.
         if (data.nextVisitDate) {
-          const followUpDate = new Date(data.nextVisitDate);
-          followUpDate.setHours(0, 0, 0, 0);
-          const nextDay = new Date(followUpDate);
-          nextDay.setDate(nextDay.getDate() + 1);
+          const { gte: followUpDate, lt: nextDay } = dateOnlyRange(data.nextVisitDate.slice(0, 10));
           const existingFollowUp = await tx.appointment.findFirst({
             where: {
               clinicId,
@@ -377,10 +374,7 @@ export class ConsultationService {
       throw { statusCode: 403, code: 'DOCTOR_MISMATCH', message: 'Only the assigned doctor can open this consultation' };
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const nextDay = new Date(today);
-    nextDay.setDate(today.getDate() + 1);
+    const { gte: today, lt: nextDay } = dateOnlyRange(clinicDateKey(new Date()));
 
     const requestedDoctorId = actor.doctorId;
 
@@ -680,10 +674,7 @@ export class ConsultationService {
         }
 
         if (data.nextVisitDate) {
-          const followUpDate = new Date(data.nextVisitDate);
-          followUpDate.setHours(0, 0, 0, 0);
-          const nextDay = new Date(followUpDate);
-          nextDay.setDate(nextDay.getDate() + 1);
+          const { gte: followUpDate, lt: nextDay } = dateOnlyRange(data.nextVisitDate.slice(0, 10));
           const existingFollowUp = await tx.appointment.findFirst({
             where: {
               clinicId,

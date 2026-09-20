@@ -1,3 +1,6 @@
+import { ExportDataButton } from '../../components/shared/ExportDataButton.js';
+import { reportSheets } from './exportData.js';
+import { clinicDateAndTime } from '../../utils/clinicTime.js';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
@@ -16,9 +19,9 @@ import {
 } from 'lucide-react';
 
 export const ReportsPage: React.FC = () => {
-  const { doctorId } = useAuth();
+  const { doctorId, user } = useAuth();
 
-  const { data: doctorData, isLoading } = useQuery({
+  const { data: doctorData, isLoading, isError } = useQuery({
     queryKey: ['reports-doctor-dash', doctorId],
     queryFn: async () => {
       const res = await apiClient.get('/reports/doctor-dashboard', {
@@ -42,6 +45,8 @@ export const ReportsPage: React.FC = () => {
         </p>
       </div>
 
+      <ExportDataButton title="Financial & Clinical Analytics" context={`${user?.clinic?.name || 'Clinic'} | ${user?.doctor?.name || 'Doctor'} | ${clinicDateAndTime().date} (IST); IPD trend: last 7 days, clinic-wide`} sheets={() => reportSheets(doctorData)} filename={`reports-${clinicDateAndTime().date}`} disabled={isLoading || isError || !doctorData} />
+      {isError && <p role="alert" className="text-rose-700">Unable to load reports. Please retry.</p>}
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard

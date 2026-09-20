@@ -1,3 +1,4 @@
+import { OpenConsultationButton } from '../../components/shared/OpenConsultationButton.js';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client.js';
@@ -220,7 +221,7 @@ export const PatientsPage: React.FC = () => {
                     <div className="text-[11px] font-mono text-slate-400">{patient.patientNumber}</div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 shrink-0 text-slate-300" />
+                <OpenConsultationButton patientId={patient.id} />
               </div>
 
               <div className="mt-4 space-y-2 text-xs min-w-0">

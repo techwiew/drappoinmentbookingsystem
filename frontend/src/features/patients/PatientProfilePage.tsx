@@ -1,3 +1,4 @@
+import { OpenConsultationButton } from '../../components/shared/OpenConsultationButton.js';
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -27,7 +28,6 @@ export const PatientProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     "overview" | "consultations" | "prescriptions" | "billing"
   >("overview");
-  const [isOpeningConsultation, setIsOpeningConsultation] = useState(false);
 
   const { data: patient, isLoading } = useQuery({
     queryKey: ["patient", id],
@@ -55,27 +55,6 @@ export const PatientProfilePage: React.FC = () => {
     },
     enabled: !!id && activeTab === "billing",
   });
-
-  const handleOpenConsultation = async () => {
-    if (!id) return;
-
-    try {
-      setIsOpeningConsultation(true);
-      const res = await apiClient.post("/consultations/open", {
-        patientId: id,
-        doctorId: doctorId || undefined,
-      });
-      const { appointmentId } = res.data.data;
-      navigate(`/queue/${appointmentId}/consult`);
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        "Unable to open consultation for this patient.";
-      window.alert(message);
-    } finally {
-      setIsOpeningConsultation(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -181,18 +160,7 @@ export const PatientProfilePage: React.FC = () => {
                 Admit to IPD
               </Button>
             )}
-            {role === "DOCTOR" && (
-              <Button
-                size="sm"
-                className="bg-brand-500 text-white hover:bg-brand-400 border border-brand-400"
-                variant="primary"
-                isLoading={isOpeningConsultation}
-                onClick={handleOpenConsultation}
-                leftIcon={<Stethoscope className="w-3.5 h-3.5" />}
-              >
-                Open Consultation
-              </Button>
-            )}
+            <OpenConsultationButton patientId={patient.id} />
             <Button
               size="sm"
               className="bg-white/10 border-white/20 text-white hover:bg-white/20"
