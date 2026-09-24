@@ -1,5 +1,5 @@
 import React, { FormEvent, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   ArrowRight,
   BarChart3,
@@ -158,15 +158,7 @@ export const LandingPage: React.FC = () => {
                 </span>
               </span>
             </a>
-            <a
-              href={LANDING_COPY.nativeNode.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm font-semibold text-[#00685f] hover:text-[#008378]"
-            >
-              {LANDING_COPY.nativeNode.name}
-            </a>
-          </div>
+                      </div>
 
           <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
             {LANDING_NAV_LINKS.map(([label, id]) => (
@@ -761,9 +753,12 @@ export const LandingPage: React.FC = () => {
               <a href="#demo" className="block hover:text-[#00685f]">
                 {LANDING_COPY.footer.demo}
               </a>
-              <a href="/faq" className="block hover:text-[#00685f]">
+              <button
+                onClick={() => navigate("/faq")}
+                className="block hover:text-[#00685f] text-left p-0 m-0 bg-none border-none"
+              >
                 {LANDING_COPY.footer.faq}
-              </a>
+              </button>
             </div>
           </div>
           <div>
@@ -789,6 +784,9 @@ export const LandingPage: React.FC = () => {
           <span>{LANDING_COPY.footer.copyright}</span>
           <span className="flex items-center gap-2">
             <ShieldCheck className="h-3.5 w-3.5 text-[#00685f]" /> {LANDING_COPY.footer.secure}
+          </span>
+          <span className="flex items-center gap-2 text-xs text-[#3d4947]">
+            Powered by <a href={LANDING_COPY.nativeNode.url} target="_blank" rel="noopener noreferrer" className="text-[#00685f] hover:underline">{LANDING_COPY.nativeNode.name}</a>
           </span>
         </div>
       </footer>
