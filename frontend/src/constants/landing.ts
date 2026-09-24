@@ -14,12 +14,17 @@ export const LANDING_COPY = {
     tagline: "A calmer operating system for care",
     portal: "Launch Clinic Portal",
   },
+  nativeNode: {
+    name: "NativeNode",
+    url: "https://www.nativenodes.com/",
+  },
   navigation: {
     features: "Features",
     solutions: "Solutions",
     about: "About",
     contact: "Contact",
     demo: "Book a Demo",
+    faq: "FAQ",
   },
   hero: {
     badge: "Built for doctors, reception teams, and growing clinics/hospitals",
@@ -114,6 +119,7 @@ export const LANDING_COPY = {
     billing: "Clinic billing",
     about: "About MediNovel",
     demo: "Book a demo",
+    faq: "FAQ",
     supportEmail: "info@medinovel.com",
     supportPhones: "+91 9923569431 / +91 7875433447",
     whatsappPhone: "+91 9834007250",
@@ -216,5 +222,6 @@ export const LANDING_NAV_LINKS = [
   ["Features", "features"],
   ["Solutions", "solutions"],
   ["About", "about"],
-  ["Contact", "demo"],
+  ["FAQ", "faq"],
+  ["Contact", "contact"],
 ];

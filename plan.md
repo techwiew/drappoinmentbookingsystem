@@ -1,106 +1,200 @@
-# MediNovel password reset, email delivery, and Prisma process plan
+# MediNovel Improvement Plan
 
-## Objective
+This plan addresses all the issues and feature requests mentioned by the user. Each item includes the files that will be created or modified.
 
-Replace the existing identity-question password reset screen with a secure email OTP flow, make demo-request notifications deliver from `info@medinovel.com`, and reduce avoidable Prisma runtime processes and Tokio threads on LiteSpeed without changing clinic workflows.
+## 1. UI Breaking at Mobile View - Dashboard Book Appointment Button Not Visible Clearly
 
-## Tasks
+**Issue**: The "Book Appointment" button on doctor and reception dashboards is not clearly visible on mobile views.
 
-### T01 — SMTP configuration and reusable delivery service
+**Files to Modify**:
+- `frontend/src/features/doctor/DoctorDashboardPage.tsx` - Fix responsive layout for button visibility
+- `frontend/src/features/receptionist/ReceptionistDashboardPage.tsx` - Fix responsive layout for button visibility
+- `frontend/src/components/ui/Button.tsx` - Ensure button styling works well on mobile (if needed)
+- `frontend/src/index.css` or Tailwind config - Add mobile-specific responsive classes if needed
 
-- Configure SMTP for `mail.medinovel.com`, port `465`, SSL/TLS enabled, authenticated as `info@medinovel.com`.
-- Keep the mailbox password only in `SMTP_PASS` on the server; never commit it or return it through an API.
-- Create one reusable mail service with connection verification, HTML and text alternatives, sender display name, clear error logging, and startup-safe lazy initialization.
-- Replace the contact module's Gmail default, invalid telephone `Reply-To`, and external hard-coded recipients. Route demo notifications to `CONTACT_NOTIFY_EMAILS`, defaulting to `info@medinovel.com`.
+**Solution**:
+- Adjust the flex layout and button classes to ensure proper visibility on mobile screens
+- Consider using responsive utility classes (sm:, md:, lg:) from Tailwind CSS
+- Ensure buttons have adequate touch targets (minimum 44x44px) for mobile
 
-### T02 — Email OTP password reset API
+## 2. Forget Password OTP Not Sent - 500 Internal Server Error
 
-- `POST /auth/forgot-password`: validate the email, reject unknown/inactive users with a visible `USER_NOT_FOUND` error, generate a cryptographically random six-digit OTP, store only its hash, and expire it after ten minutes.
-- Send a branded MediNovel email from `info@medinovel.com` with subject `Your MediNovel password reset code` and the OTP. Never include the OTP in an API response or log.
-- `POST /auth/verify-reset-otp`: validate the OTP, enforce expiry and a bounded attempt count, then issue a short-lived reset proof.
-- Reuse the existing reset-password endpoint with the proof; update the password, revoke refresh sessions, and clear all reset state atomically.
-- Update both Prisma schemas, SQL artifacts, and a forward migration for OTP attempt tracking.
+**Issue**: POST request to `/api/auth/forgot-password` returns 500 error with message "Something went wrong. Please try again later." (User reports SMTP configuration appears correct in backend/.env)
 
-### T03 — Password reset interface
+**Root Cause**: Despite correct SMTP configuration in backend/.env, the email service may still fail due to: environment variables not being loaded by the Node.js process, incorrect file path/working directory, SMTP server connection/authentication issues, or environment variable caching.
 
-- Step 1: email entry. Show an on-screen error when no active account exists.
-- Step 2: six-digit OTP entry with a banner asking the user to check their inbox and Spam folder.
-- Step 3: new password and confirmation fields, each with an eye control and accessible labels. Return to sign-in after success.
-- Preserve clear loading, error, expiry, and invalid-code messages. Do not show the password or OTP after a completed reset.
+**Files to Examine/Modify**:
+- `backend/src/index.ts` or `backend/src/server.ts` - Verify dotenv configuration loading
+- `backend/src/services/email.service.ts` - Email sending implementation
+- `backend/src/modules/auth/auth.service.ts` - Forgot password implementation
+- `.env` file location and loading mechanism
+- SMTP server connectivity and credentials
 
-### T04 — Demo request notification
+**Solution**:
+- Verify that `require('dotenv').config()` or `import 'dotenv/config'` is at the very top of the server entry file (before any imports that use environment variables)
+- Check the actual working directory of the Node.js process and confirm `.env` file location is correct
+- Add temporary logging to see what environment values the application actually sees (remove after debugging)
+- Test SMTP connectivity from the server: `telnet mail.medinovel.com 465` or `openssl s_client -connect mail.medinovel.com:465`
+- Verify SMTP credentials with email provider (sometimes SMTP password differs from login password)
+- Check if using multiple environment files (.env.production, etc.) or platform-specific configs that might override
+- Restart the application completely after any changes to ensure environment variables are reloaded
+- Consider adding better error handling/logging in email.service.ts to identify exact failure point
 
-- Keep the inquiry record as the source of truth and send a branded notification to the configured recipient after it is stored.
-- Include clinic name, phone, clinic type, city, submission time, and a direct reply/contact action where an email is available.
-- Surface a delivery configuration failure in server logs without exposing SMTP details to visitors.
+## 3. Add NativeNode Link on Home Page and Footer
 
-### T05 — Prisma/LiteSpeed NPROC mitigation
+**Issue**: Need to add link to parent company website (https://www.nativenodes.com/) on home page and footer.
 
-- Keep one Prisma Client per Node process by retaining the singleton globally in every environment.
-- Explicitly select the Prisma library engine and set a conservative configurable Tokio worker count before the client loads.
-- Document required LiteSpeed process limits: one persistent Node application instance and no request-spawned `lsnode` children. The host must restart the application after deployment so stale processes release old engines.
-- Add deployment environment variables and an operational verification checklist. Do not switch to Prisma's binary engine, which adds a child process per application instance.
+**Files to Modify**:
+- `frontend/src/features/landing/LandingPage.tsx` - Add link in header/footer
+- `frontend/src/constants/landing.ts` - Add NativeNode link to LANDING_COPY
 
-### T06 — Verification
+**Solution**:
+- Add NativeNode logo/link in landing page header (near MediNovel logo)
+- Add NativeNode link in landing page footer section
+- Update constants to include the link text and URL
 
-- Add focused tests for existing user, nonexistent user, expired/invalid OTP, verified reset, and contact delivery payloads.
-- Run Prisma validation, backend/frontend typechecks, targeted tests, and production frontend build.
-- Verify SMTP with the supplied mailbox password only in the deployed server environment or a local secret file excluded from Git.
+## 4. Add FAQ Section for SEO
 
-## Completion conditions
+**Issue**: Need to add FAQ section to improve search engine optimization.
 
-- Active users reset their password through a ten-minute email OTP and no account can reset without a valid verification.
-- Demo submissions are stored and notify `info@medinovel.com` through the configured SMTP account.
-- Prisma runs one client per Node process and deployment configuration prevents unnecessary process/thread multiplication.
+**Files to Create/Modify**:
+- `frontend/src/features/faq/` - New directory for FAQ feature
+- `frontend/src/features/faq/FaqPage.tsx` - New FAQ page component
+- `frontend/src/routes/` - Add FAQ route
+- `frontend/src/constants/landing.ts` - Add FAQ navigation link
+- `frontend/src/features/landing/LandingPage.tsx` - Add FAQ link in footer/navigation
 
-## Implementation status
+**Solution**:
+- Create new FAQ feature with common questions about MediNovel
+- Implement schema.org FAQ structured data for SEO benefits
+- Add to site navigation and footer
 
-T01-T05 are implemented. SMTP authentication to `mail.medinovel.com:465` has been verified with the configured mailbox credentials. Apply the OTP migration, run `prisma generate` in the deployed backend, set the documented environment variables in MilesWeb, and restart the Node application before enabling the feature in production.
+## 5. Remove Badges from Website (HSPPAA NABH Certified Dr and Rece Login Next to Call Option)
 
----
+**Issue**: Need to remove specific badges that appear next to call options for doctor and receptionist login.
 
-# Appointment, prescription, and reception work (2026-09-20)
+**Files to Examine**:
+- Search for HSPPAA/NABH references in the codebase (need to locate where these badges are displayed)
+- Likely in doctor/receptionist profile components or patient consultation views
+- Possibly in `frontend/src/components/shared/` or feature-specific components
 
-## Implemented tasks T07–T13
+**Solution**:
+- Locate where HSPPAA/NABH badges are rendered
+- Remove the badge display logic or conditional rendering
+- Ensure removing these doesn't break layout or remove important information
 
-- T07: Replace the 10-digit Indian mobile rule with digits only, maximum 12, across patient, doctor, receptionist, clinic, and appointment forms and API validation.
-- T08: Keep calendar and list views; open the appointment page in day calendar view and order list entries with active appointments before finished ones.
-- T09: Allow assigned doctors to edit clinic prescriptions; allow doctor and reception roles to view, print, and download PDF copies from the archive.
-- T10: Store and display before/after/with food timing for medicines through a forward migration, API, consultation form, archive, and document output.
-- T11: Show in-consultation and queued counts separately, with appointment status changes invalidating the dashboard queries.
-- T12: Let reception complete an appointment in `READY_FOR_DOCTOR` and open its billing form; keep clinical edits with the assigned doctor.
-- T13: Local checks passed for TypeScript, Prisma schema, frontend build and tests, and focused backend workflow tests. The full backend API suite currently stops at its demo receptionist login fixture returning 401. The local backend build's Prisma generation step is blocked by a Windows DLL file lock; deployment must apply the food-timing migration and regenerate the client.
+## 6. Add WhatsApp Icon for Doctor and Reception (Patient WhatsApp Messaging)
 
-## New tasks: reception route and appointment ordering
+**Issue**: Add WhatsApp icon where doctor and reception can click on a patient to open WhatsApp for easy messaging.
 
-### T14 — Verify and stabilize reception completion route
+**Files to Modify**:
+- `frontend/src/components/shared/AppointmentList.tsx` - Add WhatsApp icon in appointment items
+- `frontend/src/features/doctor/DoctorDashboardPage.tsx` - Add in current patient and waiting list sections
+- `frontend/src/features/receptionist/ReceptionistDashboardPage.tsx` - Add in queue table
+- `frontend/src/features/appointments/AppointmentsPage.tsx` - Add in appointments table
+- `frontend/src/components/ui/` - Possibly create a WhatsAppButton component or use existing Button with WhatsApp icon
 
-- Reproduce the reported `POST /api/queue/:id/reception-complete` 404 with the browser's authenticated session and compare responses directly from port 5000 and through Vite on port 5173.
-- Confirm `queue.routes.ts` is mounted at `/api/queue`, the receptionist role is authorized, and the running backend process has loaded the current source/build. Restart the backend when an old process still serves a route table without this endpoint. If a deployed build is used, rebuild it before restart.
-- Distinguish a missing route (404 `Route ... not found`) from an absent appointment (404 `NOT_FOUND`), missing login (401), wrong role (403), or invalid state (409). Show the returned error on the reception screen and keep the payment redirect only after success.
-- Add an authenticated route test for receptionist success, wrong role, other clinic, and second submission. Verify the appointment is completed once and the billing form opens for its ID.
+**Solution**:
+- Add WhatsApp icon Button component next to existing phone call icons
+- Use WhatsApp URL format: `https://wa.me/[phone-number]?text=[pre-filled-message]`
+- Extract patient mobile number from data and format correctly for WhatsApp
+- Use existing lucide-react MessageSquare icon or similar
 
-### T15 — Descending Appointment Schedule with completed last
+## 7. In Prescription Page - Send PDF via WhatsApp When Clicking WhatsApp Icon
 
-- Define a shared display order: active/queued/in-consultation appointments first; completed at the bottom; cancelled/no-show after active records. Within each group, show newest appointment date/time first, then token number descending as a tie breaker. Keep calendar placement chronological by slot, since a calendar cannot reverse time meaningfully.
-- Apply this order to the `/appointments` List view after date, doctor, search, and status filters. Preserve the selected day/week and list controls and keep records from the selected date only.
-- Add a mixed-status ordering test, including duplicate times and appointments from different doctors. Confirm the list refreshes immediately after Send to Dr, completion, cancellation, and booking.
+**Issue**: On prescription page, clicking WhatsApp icon should send the prescription PDF via WhatsApp.
 
-### T16 — Move doctor dashboard appointment list to the bottom
+**Files to Modify**:
+- `frontend/src/features/prescription/` - Prescription feature files
+- Likely `frontend/src/features/prescription/PrescriptionViewPage.tsx` or similar
+- Need to generate PDF and trigger WhatsApp share with PDF attachment
 
-- Move `Today's Appointments (n)` below the dashboard's queue, current patient, follow-up, and stats sections.
-- Apply the same display order to the shared appointment list on the doctor dashboard: pending/queue/in consultation at the top in descending time order, completed at the bottom. Keep the count and action buttons correct.
-- Check the queue page's use of the shared `AppointmentList` so the new sorting does not disturb its live queue priority. If necessary, pass an explicit order mode from the doctor dashboard.
-- Verify desktop and mobile layouts and run frontend typecheck, focused tests, and production build.
+**Solution**:
+- Add WhatsApp icon/button on prescription view page
+- When clicked, generate PDF of prescription (using existing print/download functionality)
+- Trigger WhatsApp share with the PDF attached (may require Web Share API or similar approach)
+- Note: Direct PDF attachment via WhatsApp URL may have limitations - might need to share a link to the PDF instead
 
-## Current finding
+## 8. Admin Login - Edit Clinic with Enhanced Functionality
 
-The route is present in `backend/src/modules/queue/queue.routes.ts`. At plan time, an unauthenticated POST to both `localhost:5000` and `localhost:5173/api` returned 401, showing the live route is registered through the proxy. The earlier browser 404 needs confirmation with the current authenticated session and backend process version.
+**Issue**: For admin login, edit clinic should allow editing all clinic details, adding/removing receptionists and doctors, handling data appropriately when removed, and adding total patient count per doctor.
 
-## Status
+**Files to Modify**:
+- `backend/src/modules/super-admin/` - Super admin module for clinic management
+- `frontend/src/features/super-admin/` - Super admin frontend features
+- Specifically clinic edit functionality
 
-T14–T16 are implemented. The completion route is registered and a route test covers receptionist success, unauthenticated and doctor requests, another clinic, and repeat submissions; the service now distinguishes a missing clinic appointment (404) from an invalid state (409). The reception screen explains a route-level 404 as an outdated backend process. Both appointment list views use a shared descending date/time order, with active entries first and completed entries last. The doctor dashboard appointment list is at the bottom. Focused backend and frontend tests, both TypeScript checks, and the frontend production build pass. A browser with an existing authenticated session still needs to be used for the final live completion/payment check.
+**Solution**:
+- Enhance clinic edit API to handle adding/removing doctors/receptionists
+- Implement proper data handling when staff is removed (reassign patients to clinic/admin or handle per business rules)
+- Add patient count per doctor to clinic edit view
+- Update frontend forms and displays to show patient counts
+- Ensure proper validation and error handling
 
-### 2026-09-20 route-level 404 resolution
+## 9. Staff Roster Page - Add Doctor and Reception Buttons Not Visible
 
-The local backend on port 5000 was running `node dist/index.js` from an older compiled build. The source route existed, but `backend/dist/modules/queue/queue.routes.js` did not contain `reception-complete`. Unauthenticated requests returned 401 at the router's shared authentication middleware, which had masked the missing route during earlier probes. Recompiled the backend with TypeScript and restarted the Node process. The compiled route now includes `reception-complete`. An authenticated receptionist request through the Vite proxy to a deliberately nonexistent appointment reaches the handler and returns 404 `Appointment not found in this clinic`, confirming the route-level 404 is resolved. The reported appointment `a997b8bf-871f-4c4f-a199-a01744c2537b` exists and is `READY_FOR_DOCTOR`, so reception can now click Complete & Record Payment. The actual appointment/payment flow remains for the user to exercise in the browser.
+**Issue**: On Staff Roster page, add doctor and reception buttons are not visible.
+
+**Files to Examine**:
+- `frontend/src/features/staff/` - Staff feature directory
+- Likely `frontend/src/features/staff/StaffRosterPage.tsx` or similar
+
+**Solution**:
+- Locate the Staff Roster page component
+- Identify why add doctor/reception buttons are not visible (CSS, conditional rendering, permissions)
+- Fix visibility issue and ensure proper styling
+- Verify that buttons have correct functionality and permissions
+
+## Estimated Effort and Priority
+
+**High Priority** (Critical functionality):
+1. Forget Password OTP fix (2-4 hours) - prevents user access
+2. Mobile view button visibility (2-3 hours) - affects core usability
+
+**Medium Priority** (Important enhancements):
+3. WhatsApp messaging for patients (4-6 hours) - improves communication
+4. Admin clinic edit enhancements (6-8 hours) - improves management capabilities
+5. Staff Roster button visibility (2-3 hours) - fixes admin UI
+
+**Lower Priority** (Enhancements/SEO):
+6. NativeNode links (1-2 hours) - branding
+7. FAQ section for SEO (3-4 hours) - improves discoverability
+8. Remove HSPPAA/NABH badges (1-2 hours) - compliance/cleanup
+9. Prescription PDF via WhatsApp (4-6 hours) - advanced feature
+
+## Implementation Notes
+
+1. **Environment Variables**: The forgot password issue likely requires checking production environment variables, not code changes.
+
+2. **Responsive Design**: For mobile button issues, use Tailwind's responsive prefixes (sm:, md:, lg:) to adjust layouts.
+
+3. **WhatsApp Integration**: Use standard WhatsApp web URLs: `https://wa.me/[phone-number]?text=[url-encoded-message]`
+
+4. **PDF Handling**: For prescription PDF sharing, consider generating a shareable link rather than direct attachment due to WhatsApp URL limitations.
+
+5. **Data Integrity**: When removing doctors/receptionists from clinics, implement proper data handling policies (reassign to admin, mark as unassigned, etc.)
+
+6. **Testing**: Each fix should include verification on both desktop and mobile views where applicable.
+
+## Files That Will Be Created
+
+- `frontend/src/features/faq/` (new directory)
+- `frontend/src/features/faq/FaqPage.tsx` (new component)
+- Possibly `frontend/src/components/ui/WhatsAppButton.tsx` (new component if needed)
+
+## Files That Will Be Modified
+
+**Frontend**:
+- `frontend/src/features/doctor/DoctorDashboardPage.tsx`
+- `frontend/src/features/receptionist/ReceptionistDashboardPage.tsx`
+- `frontend/src/features/landing/LandingPage.tsx`
+- `frontend/src/constants/landing.ts`
+- `frontend/src/features/appointments/AppointmentsPage.tsx`
+- `frontend/src/features/staff/StaffRosterPage.tsx` (or similar)
+- `frontend/src/features/super-admin/` clinic edit components
+- `frontend/src/features/prescription/` prescription view components
+- `frontend/src/components/shared/AppointmentList.tsx`
+
+**Backend** (if environment fix needed):
+- Deployment/configuration files for setting SMTP_PASS in production
+- Possibly `backend/src/services/email.service.ts` for enhanced error handling

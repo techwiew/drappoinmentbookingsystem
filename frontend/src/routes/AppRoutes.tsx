@@ -23,6 +23,7 @@ const StaffPage = lazy(() => import('../features/staff/StaffPage.js').then((modu
 const ReportsPage = lazy(() => import('../features/reports/ReportsPage.js').then((module) => ({ default: module.ReportsPage })));
 const ClinicSettingsPage = lazy(() => import('../features/settings/ClinicSettingsPage.js').then((module) => ({ default: module.ClinicSettingsPage })));
 const AdmissionsPage = lazy(() => import('../features/admissions/AdmissionsPage.js').then((module) => ({ default: module.AdmissionsPage })));
+const FaqPage = lazy(() => import('../features/faq/FaqPage.tsx').then((module) => ({ default: module.FaqPage })));
 import { Loader2 } from "lucide-react";
 
 const LoadingScreen = () => (
@@ -62,6 +63,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/admin" element={<LoginPage adminOnly />} />
       <Route path="/forgot-password" element={<PasswordResetPage />} />
       <Route path="/reset-password" element={<PasswordResetPage />} />
+      <Route path="/faq" element={<FaqPage />} />
 
       {/* Home redirect */}
       <Route path="/" element={<HomeRedirect />} />

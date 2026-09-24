@@ -95,7 +95,7 @@ export const ReceptionistDashboardPage: React.FC = () => {
               {user?.receptionist?.name || user?.name} • {user?.clinic?.name} • {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm"
               variant="secondary"

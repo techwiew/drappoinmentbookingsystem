@@ -143,21 +143,30 @@ export const LandingPage: React.FC = () => {
     <div className="landing-page min-h-screen overflow-x-clip bg-[#f5faf8] text-[#171d1c]">
       <header className="sticky top-0 z-50 border-b border-[#bcc9c6]/50 bg-white/95 shadow-sm backdrop-blur-md">
         <div className="mx-auto flex h-[76px] max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-8">
-          <a
-            href="#home"
-            className="flex items-center gap-3"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            <img src="/Medinovel_logo.png" alt="MediNovel" className="brand-logo h-11 w-11 rounded-xl object-contain" />
-            <span className="flex shrink-0 flex-col">
-              <span className="flex items-center gap-2 whitespace-nowrap text-base font-extrabold tracking-tight text-[#00685f] sm:text-lg">
-                {LANDING_COPY.brand.name}
+          <div className="flex items-center gap-3">
+            <a
+              href="#home"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <img src="/Medinovel_logo.png" alt="MediNovel" className="brand-logo h-11 w-11 rounded-xl object-contain" />
+              <span className="flex shrink-0 flex-col">
+                <span className="flex items-center gap-2 whitespace-nowrap text-base font-extrabold tracking-tight text-[#00685f] sm:text-lg">
+                  {LANDING_COPY.brand.name}
+                </span>
+                <span className="hidden text-[11px] leading-none text-[#3d4947] md:block">
+                  {LANDING_COPY.brand.tagline}
+                </span>
               </span>
-              <span className="hidden text-[11px] leading-none text-[#3d4947] md:block">
-                {LANDING_COPY.brand.tagline}
-              </span>
-            </span>
-          </a>
+            </a>
+            <a
+              href={LANDING_COPY.nativeNode.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm font-semibold text-[#00685f] hover:text-[#008378]"
+            >
+              {LANDING_COPY.nativeNode.name}
+            </a>
+          </div>
 
           <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
             {LANDING_NAV_LINKS.map(([label, id]) => (
@@ -224,6 +233,14 @@ export const LandingPage: React.FC = () => {
                   {label}
                 </a>
               ))}
+              <a
+                href={LANDING_COPY.nativeNode.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 flex items-center justify-center gap-2 rounded-lg border border-[#00685f]/20 bg-[#00685f]/10 px-3 py-2.5 text-sm font-semibold text-[#00685f] hover:bg-[#00685f]/20"
+              >
+                {LANDING_COPY.nativeNode.name}
+              </a>
               <a
                 href="https://wa.me/919834007250?text=Hello%20Team%2C%20Can%20you%20please%20share%20the%20plan%20details%3F"
                 target="_blank"
@@ -642,6 +659,41 @@ export const LandingPage: React.FC = () => {
           </div>
         </section>
 
+        <section id="contact" className="border-t border-[#bcc9c6]/50 px-4 py-20 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[1280px]">
+            <div className="mx-auto mb-12 max-w-2xl text-center">
+              <span className="inline-flex rounded-full bg-[#89f5e7] px-3 py-1 text-xs font-extrabold text-[#005049]">
+                Contact
+              </span>
+              <h2 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
+                Get in Touch
+              </h2>
+              <p className="mt-4 text-base leading-7 text-[#3d4947]">
+                Have questions? We're here to help. Reach out to us via email, phone, or WhatsApp.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="text-xl font-bold text-[#00685f]">Contact Information</h3>
+                <p className="mt-4 text-sm leading-6 text-[#3d4947]">
+                  <p>Email: <a href="mailto:info@medinovel.com" className="text-[#00685f] hover:underline">info@medinovel.com</a></p>
+                  <p>Phone: +91 9923569431 / +91 7875433447</p>
+                  <p>WhatsApp: <a href="https://wa.me/919834007250?text=Hello%20Team%2C%20Can%20you%20please%20share%20the%20plan%20details%3F" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 hover:underline">+91 9834007250</a></p>
+                </p>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-[#00685f]">Support Hours</h3>
+                <p className="mt-4 text-sm leading-6 text-[#3d4947]">
+                  Mon-Sat, 9:00 AM - 8:00 PM IST
+                </p>
+                <p className="mt-4 text-sm leading-6 text-[#3d4947]">
+                  For urgent support, please visit our <a href="#demo" className="text-[#00685f] hover:underline">demo request page</a> or contact us directly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="border-y border-[#bcc9c6]/60 bg-[#eaefed] px-4 py-16 text-center sm:px-6 lg:px-8">
           <HeartPulse className="mx-auto h-10 w-10 rounded-xl bg-[#00685f] p-2 text-white" />
           <h2 className="mt-5 text-2xl font-extrabold sm:text-3xl">
@@ -673,6 +725,14 @@ export const LandingPage: React.FC = () => {
             <div className="mt-5 flex items-center gap-2 text-xs font-bold text-[#3d4947]">
               <ShieldCheck className="h-4 w-4 text-[#00685f]" /> {LANDING_COPY.footer.privacy}
             </div>
+            <a
+              href={LANDING_COPY.nativeNode.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 block text-sm font-semibold text-[#00685f] hover:text-[#008378]"
+            >
+              {LANDING_COPY.nativeNode.name}
+            </a>
           </div>
           <div>
             <h3 className="text-xs font-extrabold uppercase tracking-[0.08em]">
@@ -700,6 +760,9 @@ export const LandingPage: React.FC = () => {
               </a>
               <a href="#demo" className="block hover:text-[#00685f]">
                 {LANDING_COPY.footer.demo}
+              </a>
+              <a href="/faq" className="block hover:text-[#00685f]">
+                {LANDING_COPY.footer.faq}
               </a>
             </div>
           </div>

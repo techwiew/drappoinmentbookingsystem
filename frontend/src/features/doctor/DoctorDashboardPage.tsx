@@ -86,7 +86,7 @@ export const DoctorDashboardPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="secondary"
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm"
@@ -105,7 +105,7 @@ export const DoctorDashboardPage: React.FC = () => {
             </Button>
             <Button
               variant="primary"
-              className="ml-3 bg-white text-brand-700 hover:bg-brand-50 shadow-md"
+              className="bg-white text-brand-700 hover:bg-brand-50 shadow-md"
               onClick={() => navigate('/appointments')}
               leftIcon={<Users className="w-4 h-4" />}
             >
