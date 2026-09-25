@@ -1,6 +1,8 @@
 import fetch from 'node-fetch';
 
 async function test() {
+  const password = process.env.TEST_SUPER_ADMIN_PASSWORD;
+  if (!password) throw new Error('Missing required environment variable: TEST_SUPER_ADMIN_PASSWORD');
   try {
     console.log('🚀 Starting End-to-End API Tests...');
     
@@ -11,11 +13,11 @@ async function test() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: 'superadmin@medinovel.com',
-        password: 'SuperAdmin@123'
+        password
       })
     });
     const loginData = await loginRes.json();
-    console.log('Login Response:', JSON.stringify(loginData, null, 2));
+    console.log('Login response received');
     
     if (!loginData.success || !loginData.data?.accessToken) {
       console.log('❌ Login failed. Stopping tests.');
@@ -31,7 +33,7 @@ async function test() {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     const healthData = await healthRes.json();
-    console.log('Health Response:', JSON.stringify(healthData, null, 2));
+    console.log('Health response received');
     
     if (healthData.success) {
       console.log('✅ Health check passed.');
@@ -40,7 +42,7 @@ async function test() {
     }
 
   } catch (err) {
-    console.error('🚨 Error during testing:', err);
+    console.error('🚨 Error during testing');
   }
 }
 

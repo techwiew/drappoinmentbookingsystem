@@ -32,7 +32,7 @@ if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
       process.on('SIGINT', () => shutdown('SIGINT'));
     })
     .catch((error) => {
-      console.error('❌ Failed to start server due to database connection error:', error);
+      console.error('❌ Failed to start server due to database connection error');
       process.exit(1);
     });
 }

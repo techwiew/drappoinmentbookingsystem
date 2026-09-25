@@ -778,14 +778,14 @@ VALUES
 (
     'user-super-admin',
     'admin@MediNovel.com',
-    '$2a$10$nfs/SPS0UZyedMYEDP9PAuFyFgcpHhitibbyTk/5gNOb5obbjJbDC',
+    'PASSWORD_HASH_PLACEHOLDER',
     'SUPER_ADMIN',
     'ACTIVE'
 ),
 (
     'user-super-admin-2',
     'superadmin@MediNovel.com',
-    '$2a$10$dxWpcmL0CNr5HuENUz.7SuPZ4EPgZ1ZscM4aQP5P2fu6Qjl2JWO5C',
+    'PASSWORD_HASH_PLACEHOLDER',
     'SUPER_ADMIN',
     'ACTIVE'
 )
@@ -868,7 +868,7 @@ ON DUPLICATE KEY UPDATE
 
 -- =========================================================
 -- SEED: DOCTOR 1
--- Password: Doctor@123
+-- Password hash is deployment-managed.
 -- =========================================================
 
 INSERT INTO `users`
@@ -883,7 +883,7 @@ VALUES
 (
     'user-dr-raj',
     'dr.raj@sharmaclinic.com',
-    '$2a$10$SBJw0PZgPw3bIod7pwZpKOd5vhkiLDGtXcCw0axj.mCemJMMwJygu',
+    'PASSWORD_HASH_PLACEHOLDER',
     'DOCTOR',
     'ACTIVE'
 )
@@ -947,7 +947,7 @@ ON DUPLICATE KEY UPDATE
 
 -- =========================================================
 -- SEED: DOCTOR 2
--- Password: Doctor@123
+-- Password hash is deployment-managed.
 -- =========================================================
 
 INSERT INTO `users`
@@ -962,7 +962,7 @@ VALUES
 (
     'user-dr-priya',
     'dr.priya@sharmaclinic.com',
-    '$2a$10$SBJw0PZgPw3bIod7pwZpKOd5vhkiLDGtXcCw0axj.mCemJMMwJygu',
+    'PASSWORD_HASH_PLACEHOLDER',
     'DOCTOR',
     'ACTIVE'
 )
@@ -1025,7 +1025,7 @@ ON DUPLICATE KEY UPDATE
 
 -- =========================================================
 -- SEED: RECEPTIONISTS
--- Password: Reception@123
+-- Password hash is deployment-managed.
 -- =========================================================
 
 INSERT INTO `users`
@@ -1040,14 +1040,14 @@ VALUES
 (
     'user-rec-anjali',
     'reception@sharmaclinic.com',
-    '$2a$10$O6xi3LjIxxG4uDMm/wUZreluB5N7SF82vnRh037VFJogNTGrhruoG',
+    'PASSWORD_HASH_PLACEHOLDER',
     'RECEPTIONIST',
     'ACTIVE'
 ),
 (
     'user-rec-vikram',
     'vikram@sharmaclinic.com',
-    '$2a$10$O6xi3LjIxxG4uDMm/wUZreluB5N7SF82vnRh037VFJogNTGrhruoG',
+    'PASSWORD_HASH_PLACEHOLDER',
     'RECEPTIONIST',
     'ACTIVE'
 )

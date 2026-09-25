@@ -42,7 +42,7 @@ export class AuthService {
         where: { id: user.id },
         data: { passwordResetTokenHash: null, passwordResetExpiresAt: null, passwordResetAttempts: 0 } as any,
       });
-      console.error('[password-reset] OTP email delivery failed', error);
+      console.error('[password-reset] OTP email delivery failed');
       throw { statusCode: 503, code: 'EMAIL_UNAVAILABLE', message: 'We could not send the verification email. Please try again shortly.' };
     }
     return { email: normalizedEmail, expiresInMinutes: 10 };
@@ -155,6 +155,7 @@ export class AuthService {
       ipAddress,
     });
 
+    // Return user data with tokens (tokens will be set as cookies by controller)
     return {
       accessToken,
       refreshToken,
@@ -237,9 +238,41 @@ export class AuthService {
         data: { refreshTokenHash: newRefreshHash },
       });
 
+      // Return user data with tokens (tokens will be set as cookies by controller)
       return {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          isOwner: clinicUser?.isOwner ?? false,
+          status: user.status,
+          name: user.doctor?.name || user.receptionist?.name || (user.role === 'SUPER_ADMIN' ? 'Super Admin' : user.email),
+          clinic: clinicUser?.clinic
+            ? {
+                id: clinicUser.clinic.id,
+                name: clinicUser.clinic.name,
+                slug: clinicUser.clinic.slug,
+                logo: clinicUser.clinic.logo,
+                tokenPrefix: clinicUser.clinic.tokenPrefix,
+              }
+            : null,
+          doctor: user.doctor
+            ? {
+                id: user.doctor.id,
+                name: user.doctor.name,
+                specialization: user.doctor.specialization,
+                consultationFee: user.doctor.consultationFee,
+              }
+            : null,
+          receptionist: user.receptionist
+            ? {
+                id: user.receptionist.id,
+                name: user.receptionist.name,
+              }
+            : null,
+        },
       };
     } catch (e: any) {
       if (e?.code === 'CLINIC_SUSPENDED') throw e;
@@ -400,5 +433,45 @@ export class AuthService {
     await logAudit({ userId: user.id, action: 'PASSWORD_CHANGED_WITH_VERIFICATION', entityType: 'User', entityId: user.id });
 
     return true;
+  }
+
+  static async deleteAccount(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { doctor: true, receptionist: true },
+    });
+    if (!user) {
+      throw { statusCode: 404, code: 'USER_NOT_FOUND', message: 'User not found' };
+    }
+
+    const anonymizedEmail = `deleted-${user.id}@deleted.invalid`;
+    const anonymizedHash = await hashPassword(randomBytes(32).toString('hex'));
+
+    await prisma.$transaction(async (tx) => {
+      await tx.auditLog.updateMany({
+        where: { userId },
+        data: { userId: null, ipAddress: null, metadata: null },
+      });
+      await tx.doctor.updateMany({
+        where: { userId },
+        data: { name: 'Deleted User', email: anonymizedEmail, mobile: '0000000000' },
+      });
+      await tx.receptionist.updateMany({
+        where: { userId },
+        data: { name: 'Deleted User', email: anonymizedEmail, mobile: '0000000000' },
+      });
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          email: anonymizedEmail,
+          passwordHash: anonymizedHash,
+          refreshTokenHash: null,
+          passwordResetTokenHash: null,
+          passwordResetExpiresAt: null,
+          passwordResetAttempts: 0,
+          status: 'INACTIVE',
+        },
+      });
+    });
   }
 }

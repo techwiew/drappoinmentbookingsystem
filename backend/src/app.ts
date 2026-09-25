@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './middlewares/error.js';
 import { requestLogger } from './utils/logger.js';
+import { authLimiter, otpLimiter, apiLimiter, authenticatedUserLimiter } from './middlewares/rateLimit.js';
 
 // Route imports
 import authRoutes from './modules/auth/auth.routes.js';
@@ -49,6 +50,22 @@ export const createApp = (): Express => {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());
 
+  // Rate Limiting
+  // Apply strict rate limiting to auth endpoints
+  app.use('/api/auth', authLimiter);
+  
+  // Apply even stricter rate limiting to OTP-specific endpoints
+  app.use('/api/auth/forgot-password', otpLimiter);
+  app.use('/api/auth/verify-reset-otp', otpLimiter);
+  app.use('/api/auth/reset-password', otpLimiter);
+  
+  // Apply general API rate limiting to all other routes
+  app.use('/api/', apiLimiter);
+  
+  // Apply authenticated user rate limiting (this will override the general API limiter for authenticated users due to order)
+  // We'll apply this after more specific limiters but before the routes
+  app.use('/api/', authenticatedUserLimiter);
+
   // API Routes
   app.use('/api/health', healthRoutes);
   app.use('/api/contact', contactRoutes);
@@ -74,7 +91,7 @@ export const createApp = (): Express => {
       success: false,
       error: {
         code: 'NOT_FOUND',
-        message: `Route ${req.originalUrl} not found`,
+        message: 'The requested route was not found',
       },
     });
   });

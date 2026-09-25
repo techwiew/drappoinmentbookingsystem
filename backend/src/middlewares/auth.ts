@@ -4,6 +4,7 @@ import { verifyAccessToken } from '../utils/jwt.js';
 import { sendError } from '../utils/response.js';
 import { prisma } from '../lib/prisma.js';
 import { RoleType } from '../constants/index.js';
+import { getTokenFromCookie } from '../utils/cookie.js';
 
 export const authenticate = async (
   req: Request,
@@ -11,17 +12,24 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return sendError(res, 'UNAUTHORIZED', 'Missing or invalid authorization header', 401);
+    // Try to get token from cookie first, then from Authorization header (for backward compatibility)
+    let token = getTokenFromCookie(req, 'accessToken');
+
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
     }
 
-    const token = authHeader.split(' ')[1];
     if (!token) {
       return sendError(res, 'UNAUTHORIZED', 'Access token is required', 401);
     }
 
     const payload = verifyAccessToken(token);
+    if (!payload) {
+      return sendError(res, 'UNAUTHORIZED', 'Access token is required', 401);
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },

@@ -41,7 +41,7 @@ const sendInquiryNotification = async (payload: {
       html: `<div style="font-family:Arial,sans-serif;color:#17201f"><h2 style="color:#00685f">New MediNovel demo request</h2><table cellpadding="8"><tr><td><b>Name</b></td><td>${escapeHtml(payload.name)}</td></tr><tr><td><b>Phone</b></td><td>${escapeHtml(payload.phone)}</td></tr><tr><td><b>Clinic type</b></td><td>${escapeHtml(payload.clinicType)}</td></tr><tr><td><b>City</b></td><td>${escapeHtml(payload.city)}</td></tr></table><p style="color:#52605d">Submitted at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST</p></div>`,
     });
   } catch (error) {
-    console.error('[contact-email] Failed to send demo request notification:', error);
+    console.error('[contact-email] Failed to send demo request notification');
   }
 };
 
@@ -68,6 +68,6 @@ export class ContactService {
       city: inquiry.city,
     });
 
-    return inquiry;
+    return { submitted: true };
   }
 }

@@ -4,6 +4,17 @@ import { createApp } from '../app.js';
 
 const app = createApp();
 
+const requiredTestEnv = (name: string): string => {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required test environment variable: ${name}`);
+  return value;
+};
+
+const superAdminPassword = requiredTestEnv('TEST_SUPER_ADMIN_PASSWORD');
+const doctorPassword = requiredTestEnv('TEST_DOCTOR_PASSWORD');
+const receptionistPassword = requiredTestEnv('TEST_RECEPTIONIST_PASSWORD');
+const invalidPassword = requiredTestEnv('TEST_INVALID_PASSWORD');
+
 let superAdminToken = '';
 let doctorTokenClinicA = '';
 let receptionistTokenClinicA = '';
@@ -20,7 +31,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
     // 1. Authenticate Super Admin
     const saRes = await request(app).post("/api/auth/login").send({
       email: "admin@MediNovel.com",
-      password: "Admin@123",
+      password: superAdminPassword,
     });
     expect(saRes.status).toBe(200);
     superAdminToken = saRes.body.data.accessToken;
@@ -28,7 +39,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
     // 2. Authenticate Doctor from Clinic A (Sharma Clinic)
     const docRes = await request(app).post("/api/auth/login").send({
       email: "dr.raj@sharmaclinic.com",
-      password: "Doctor@123",
+      password: doctorPassword,
     });
     expect(docRes.status).toBe(200);
     doctorTokenClinicA = docRes.body.data.accessToken;
@@ -38,7 +49,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
     // 3. Authenticate Receptionist from Clinic A
     const recRes = await request(app).post("/api/auth/login").send({
       email: "reception@sharmaclinic.com",
-      password: "Reception@123",
+      password: receptionistPassword,
     });
     expect(recRes.status).toBe(200);
     receptionistTokenClinicA = recRes.body.data.accessToken;
@@ -72,7 +83,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
         maxReceptionists: 1,
         adminName: "Dr. Vikram Apollo",
         adminEmail: docBEmail,
-        adminPassword: "Doctor@123",
+        adminPassword: doctorPassword,
         adminMobile: "9988776655",
         specialization: "Neurology",
         qualification: "MBBS, DM",
@@ -86,7 +97,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
     // Login as Doctor from Clinic B
     const docBLogin = await request(app).post("/api/auth/login").send({
       email: docBEmail,
-      password: "Doctor@123",
+      password: doctorPassword,
     });
     expect(docBLogin.status).toBe(200);
     doctorTokenClinicB = docBLogin.body.data.accessToken;
@@ -97,7 +108,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
     it("rejects invalid password", async () => {
       const res = await request(app).post("/api/auth/login").send({
         email: "admin@MediNovel.com",
-        password: "WrongPassword!",
+        password: invalidPassword,
       });
       expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
@@ -134,7 +145,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
         .send({
           name: "Invalid Mobile Doctor",
           email: `badmobile.${Date.now()}@example.com`,
-          password: "Doctor@123",
+          password: doctorPassword,
           mobile: "98765",
           specialization: "Orthopedics",
           qualification: "MBBS",
@@ -436,7 +447,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
     it("blocks doctors and receptionists from logging in or using existing sessions until reactivated", async () => {
       const doctorLogin = await request(app).post('/api/auth/login').send({
         email: 'dr.raj@sharmaclinic.com',
-        password: 'Doctor@123',
+        password: doctorPassword,
       });
       expect(doctorLogin.status).toBe(200);
 
@@ -448,8 +459,8 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
 
       try {
         for (const credentials of [
-          { email: 'dr.raj@sharmaclinic.com', password: 'Doctor@123' },
-          { email: 'reception@sharmaclinic.com', password: 'Reception@123' },
+          { email: 'dr.raj@sharmaclinic.com', password: doctorPassword },
+          { email: 'reception@sharmaclinic.com', password: receptionistPassword },
         ]) {
           const login = await request(app).post('/api/auth/login').send(credentials);
           expect(login.status).toBe(403);
@@ -482,7 +493,7 @@ describe("🏥 MediNovel Multi-Tenant Full-Stack API Test Suite", () => {
 
       const loginAgain = await request(app).post('/api/auth/login').send({
         email: 'dr.raj@sharmaclinic.com',
-        password: 'Doctor@123',
+        password: doctorPassword,
       });
       expect(loginAgain.status).toBe(200);
     });

@@ -1,5 +1,18 @@
 import { Response } from 'express';
 
+const sensitiveField = /^(password|passwordHash|refreshTokenHash|passwordResetTokenHash)$/i;
+
+const sanitizeResponse = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(sanitizeResponse);
+  if (!value || typeof value !== 'object') return value;
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !sensitiveField.test(key))
+      .map(([key, entry]) => [key, sanitizeResponse(entry)])
+  );
+};
+
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -16,7 +29,7 @@ export const sendSuccess = <T>(
 ) => {
   return res.status(statusCode).json({
     success: true,
-    data,
+    data: sanitizeResponse(data),
     ...(message ? { message } : {}),
     ...(meta ? { meta } : {}),
   });
@@ -35,7 +48,7 @@ export const sendError = (
     error: {
       code,
       message,
-      ...(details ? { details } : {}),
+      ...(details ? { details: sanitizeResponse(details) } : {}),
     },
   });
 };

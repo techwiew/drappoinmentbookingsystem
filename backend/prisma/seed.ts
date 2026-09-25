@@ -3,6 +3,12 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+const requiredEnv = (name: string): string => {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+};
+
 async function main() {
   console.log('🌱 Starting database seed...');
 
@@ -24,10 +30,10 @@ async function main() {
   await prisma.clinic.deleteMany();
   await prisma.user.deleteMany();
 
-  const superAdminPassword = await bcrypt.hash('Admin@123', 10);
-  const realSuperAdminPassword = await bcrypt.hash("SuperAdmin@123", 10);
-  const doctorPassword = await bcrypt.hash('Doctor@123', 10);
-  const receptionistPassword = await bcrypt.hash('Reception@123', 10);
+  const superAdminPassword = await bcrypt.hash(requiredEnv('SEED_SUPER_ADMIN_PASSWORD'), 10);
+  const realSuperAdminPassword = await bcrypt.hash(requiredEnv('SEED_REAL_SUPER_ADMIN_PASSWORD'), 10);
+  const doctorPassword = await bcrypt.hash(requiredEnv('SEED_DOCTOR_PASSWORD'), 10);
+  const receptionistPassword = await bcrypt.hash(requiredEnv('SEED_RECEPTIONIST_PASSWORD'), 10);
 
   // 1. Create Super Admin
   const superAdmin = await prisma.user.create({
@@ -38,7 +44,7 @@ async function main() {
       status: "ACTIVE",
     },
   });
-  console.log("✅ Super Admin created: admin@MediNovel.com");
+  console.log('✅ Super Admin created');
 
   await prisma.user.create({
     data: {
@@ -48,7 +54,7 @@ async function main() {
       status: "ACTIVE",
     },
   });
-  console.log("✅ Real Super Admin created: superadmin@MediNovel.com");
+  console.log('✅ Real Super Admin created');
 
   // 2. Create Subscription Plans
   const starterPlan = await prisma.subscriptionPlan.create({
@@ -632,7 +638,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    console.error('❌ Seeding failed');
     process.exit(1);
   })
   .finally(async () => {

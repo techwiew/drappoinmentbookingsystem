@@ -22,7 +22,7 @@ async function checkDatabaseConnection() {
     if (clinic) console.log(`Clinic staff limits: ${clinic.maxDoctors} doctors, ${clinic.maxReceptionists} receptionists`);
   } catch (error) {
     console.error('Database connection: FAILED');
-    console.error(error instanceof Error ? error.message : error);
+    console.error('Database health check failed');
     process.exitCode = 1;
   } finally {
     await prisma.$disconnect();

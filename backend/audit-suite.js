@@ -2,6 +2,8 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 
 async function runFullAudit() {
+  const password = process.env.TEST_SUPER_ADMIN_PASSWORD;
+  if (!password) throw new Error('Missing required environment variable: TEST_SUPER_ADMIN_PASSWORD');
   console.log('🚀 STARTING FULL END-TO-END SYSTEM AUDIT...');
   const results = [];
 
@@ -16,7 +18,7 @@ async function runFullAudit() {
     const loginRes = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'superadmin@medinovel.com', password: 'SuperAdmin@123' })
+      body: JSON.stringify({ email: 'superadmin@medinovel.com', password })
     });
     const loginData = await loginRes.json();
     
@@ -92,7 +94,7 @@ async function runFullAudit() {
     }
 
   } catch (err) {
-    console.error('🚨 Fatal Test Error:', err);
+    console.error('🚨 Fatal Test Error');
   }
 
   // Write results to a file for the user

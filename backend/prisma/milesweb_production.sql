@@ -474,12 +474,10 @@ INSERT INTO `subscription_plans` (`id`, `name`, `code`, `price`, `billingCycle`,
 ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
 
 -- 2. Super Admin Users
--- Passwords:
--- admin@medinovel.com -> Admin@123
--- superadmin@medinovel.com -> SuperAdmin@123
+-- Password hashes must be generated from deployment-managed seed credentials.
 INSERT INTO `users` (`id`, `email`, `passwordHash`, `role`, `status`) VALUES
-('user-super-admin', 'admin@medinovel.com', '$2a$10$Z8GFHZ/CWC8C5zhjJXC5reamyVA1jcI2CccMS22j2zPJKuyjx6VBW', 'SUPER_ADMIN', 'ACTIVE'),
-('user-super-admin-2', 'superadmin@medinovel.com', '$2a$10$BYobe0v4eickV3IJTpBqy.tIVO6FRBUCMr1UeoqLzSTsrYEIDb3jK', 'SUPER_ADMIN', 'ACTIVE')
+('user-super-admin', 'admin@medinovel.com', 'PASSWORD_HASH_PLACEHOLDER', 'SUPER_ADMIN', 'ACTIVE'),
+('user-super-admin-2', 'superadmin@medinovel.com', 'PASSWORD_HASH_PLACEHOLDER', 'SUPER_ADMIN', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `status`=VALUES(`status`);
 
 -- 3. Demo Clinic: Sharma Healthcare & Polyclinic
@@ -493,9 +491,9 @@ INSERT INTO `subscriptions` (`id`, `clinicId`, `planId`, `status`, `startDate`, 
 ON DUPLICATE KEY UPDATE `status`=VALUES(`status`);
 
 -- 4. Doctors
--- Doctor 1: Dr. Raj Sharma (Password: Doctor@123)
+-- Doctor 1: Dr. Raj Sharma
 INSERT INTO `users` (`id`, `email`, `passwordHash`, `role`, `status`) VALUES
-('user-dr-raj', 'dr.raj@sharmaclinic.com', '$2a$10$leEGwyfq9zvNcg2oLLJOOuIXDvurrTtBzVGQhFlAMi0YXWX9x.92q', 'DOCTOR', 'ACTIVE')
+('user-dr-raj', 'dr.raj@sharmaclinic.com', 'PASSWORD_HASH_PLACEHOLDER', 'DOCTOR', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `status`=VALUES(`status`);
 
 INSERT INTO `clinic_users` (`id`, `clinicId`, `userId`, `role`, `isOwner`) VALUES
@@ -506,9 +504,9 @@ INSERT INTO `doctors` (`id`, `clinicId`, `userId`, `name`, `email`, `mobile`, `s
 ('doc-raj', 'clinic-sharma', 'user-dr-raj', 'Dr. Raj Sharma', 'dr.raj@sharmaclinic.com', '+91 98200 11223', 'Cardiology & Internal Medicine', 'MBBS, MD (Cardiology), FACC', 'MCI-2012-45892', 700.00, 'ACTIVE', '["MON","TUE","WED","THU","FRI","SAT"]', '{"start":"09:00","end":"17:00"}')
 ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
 
--- Doctor 2: Dr. Priya Patel (Password: Doctor@123)
+-- Doctor 2: Dr. Priya Patel
 INSERT INTO `users` (`id`, `email`, `passwordHash`, `role`, `status`) VALUES
-('user-dr-priya', 'dr.priya@sharmaclinic.com', '$2a$10$leEGwyfq9zvNcg2oLLJOOuIXDvurrTtBzVGQhFlAMi0YXWX9x.92q', 'DOCTOR', 'ACTIVE')
+('user-dr-priya', 'dr.priya@sharmaclinic.com', 'PASSWORD_HASH_PLACEHOLDER', 'DOCTOR', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `status`=VALUES(`status`);
 
 INSERT INTO `clinic_users` (`id`, `clinicId`, `userId`, `role`, `isOwner`) VALUES
@@ -519,10 +517,10 @@ INSERT INTO `doctors` (`id`, `clinicId`, `userId`, `name`, `email`, `mobile`, `s
 ('doc-priya', 'clinic-sharma', 'user-dr-priya', 'Dr. Priya Patel', 'dr.priya@sharmaclinic.com', '+91 98200 44556', 'Consultant Physician & Diabetologist', 'MBBS, DNB (Family Medicine)', 'MCI-2016-89123', 500.00, 'ACTIVE', '["MON","TUE","WED","THU","FRI"]', '{"start":"10:00","end":"18:00"}')
 ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
 
--- 5. Receptionists (Password: Reception@123)
+-- 5. Receptionists
 INSERT INTO `users` (`id`, `email`, `passwordHash`, `role`, `status`) VALUES
-('user-rec-anjali', 'reception@sharmaclinic.com', '$2a$10$yOo9vZAULK6DJKZSKE8BZ.5JE3YaNSWAgjnWV723t8nO5XV//.cdu', 'RECEPTIONIST', 'ACTIVE'),
-('user-rec-vikram', 'vikram@sharmaclinic.com', '$2a$10$yOo9vZAULK6DJKZSKE8BZ.5JE3YaNSWAgjnWV723t8nO5XV//.cdu', 'RECEPTIONIST', 'ACTIVE')
+('user-rec-anjali', 'reception@sharmaclinic.com', 'PASSWORD_HASH_PLACEHOLDER', 'RECEPTIONIST', 'ACTIVE'),
+('user-rec-vikram', 'vikram@sharmaclinic.com', 'PASSWORD_HASH_PLACEHOLDER', 'RECEPTIONIST', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `status`=VALUES(`status`);
 
 INSERT INTO `clinic_users` (`id`, `clinicId`, `userId`, `role`, `isOwner`) VALUES

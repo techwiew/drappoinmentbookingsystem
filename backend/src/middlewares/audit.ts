@@ -19,11 +19,11 @@ export const logAudit = async (params: AuditParams) => {
         action: params.action,
         entityType: params.entityType,
         entityId: params.entityId,
-        metadata: params.metadata ? JSON.stringify(params.metadata) : null,
-        ipAddress: params.ipAddress,
+        metadata: null,
+        ipAddress: null,
       },
     });
   } catch (error) {
-    console.error('[Audit Logging Failed]', error);
+    console.error('[Audit Logging Failed]');
   }
 };

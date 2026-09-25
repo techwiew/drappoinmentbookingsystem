@@ -1,13 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service.js';
 import { sendSuccess } from '../../utils/response.js';
+import { setAuthCookies } from '../../utils/cookie.js';
 
 export class AuthController {
   static async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body;
       const result = await AuthService.login(email, password, req.ip);
-      return sendSuccess(res, result, 'Login successful');
+
+      // Set auth cookies
+      setAuthCookies(res, result.accessToken, result.refreshToken);
+
+      // Return user data without tokens
+      return sendSuccess(res, { user: result.user }, 'Login successful');
     } catch (error) {
       next(error);
     }
@@ -17,7 +23,12 @@ export class AuthController {
     try {
       const { refreshToken } = req.body;
       const result = await AuthService.refresh(refreshToken);
-      return sendSuccess(res, result, 'Token refreshed');
+
+      // Set auth cookies
+      setAuthCookies(res, result.accessToken, result.refreshToken);
+
+      // Return user data without tokens
+      return sendSuccess(res, { user: result.user }, 'Token refreshed');
     } catch (error) {
       next(error);
     }
@@ -85,6 +96,15 @@ export class AuthController {
       const { email, mobile, oldPassword, newPassword } = req.body;
       await AuthService.verifyAndChangePassword(email, mobile, oldPassword, newPassword);
       return sendSuccess(res, { updated: true }, 'Password changed successfully. Please sign in with your new password.');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteAccount(req: Request, res: Response, next: NextFunction) {
+    try {
+      await AuthService.deleteAccount(req.user!.userId);
+      return sendSuccess(res, { deleted: true }, 'Account deleted successfully');
     } catch (error) {
       next(error);
     }

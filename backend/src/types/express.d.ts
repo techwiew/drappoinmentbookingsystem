@@ -23,3 +23,18 @@ declare global {
     }
   }
 }
+
+declare module '../utils/cookie.js' {
+  export const setAuthCookies: (
+    res: import('express').Response,
+    accessToken: string,
+    refreshToken: string
+  ) => void;
+  
+  export const clearAuthCookies: (res: import('express').Response) => void;
+  
+  export const getTokenFromCookie: (
+    req: import('express').Request,
+    cookieName: string
+  ) => string | null;
+}

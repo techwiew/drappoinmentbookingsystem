@@ -18,7 +18,6 @@ export const errorHandler = (
     path: req.route?.path ? `${req.baseUrl}${req.route.path}` : req.path,
     statusCode,
     errorCode: err?.code || 'INTERNAL_SERVER_ERROR',
-    message: statusCode < 500 ? err?.message : undefined,
     clinicId: req.tenant?.clinicId,
     userId: req.user?.userId,
     role: req.user?.role,

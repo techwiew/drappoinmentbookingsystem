@@ -11,7 +11,7 @@ describe('demo notification', () => {
     mocks.create.mockResolvedValue({ id: 'demo-1', name: 'Clinic A', phone: '123456789012', clinicType: 'Polyclinic', city: 'Delhi' });
     mocks.send.mockResolvedValue({});
     const result = await ContactService.createInquiry({ name: ' Clinic A ', phone: '123456789012', clinicType: 'Polyclinic', city: 'Delhi' });
-    expect(result.id).toBe('demo-1');
+    expect(result).toEqual({ submitted: true });
     expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({ subject: 'New Demo Request - MediNovel', text: expect.stringContaining('Clinic A') }));
   });
 });

@@ -20,7 +20,10 @@ function appendQueryParams(url: string, params: Record<string, string | number>)
 }
 
 // Get database URL from environment
-const databaseUrl = process.env.DATABASE_URL || "";
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error('Missing required environment variable: DATABASE_URL');
+}
 // Add connection limit and timeout parameters
 const connectionOptions = {
   connectionLimit: 10, // Max number of connections in the pool
@@ -71,13 +74,13 @@ export async function connectWithRetry(
       retries++;
       if (retries > maxRetries) {
         console.error('❌ Failed to connect to database after', maxRetries, 'attempts');
-        console.error('Error:', error);
+        console.error('Database connection failed after all retries');
         throw error;
       }
       const delay = baseDelay * 2 ** (retries - 1); // Exponential backoff
       console.warn(
         `⚠️ Database connection attempt ${retries} failed. Retrying in ${delay}ms...`,
-        error
+        'Database connection attempt failed'
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
     }

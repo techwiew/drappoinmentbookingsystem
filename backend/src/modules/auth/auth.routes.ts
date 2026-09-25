@@ -12,6 +12,7 @@ router.post('/verify-reset-otp', validateRequest(verifyResetOtpSchema), AuthCont
 router.post('/reset-password', validateRequest(resetPasswordSchema), AuthController.resetPassword);
 router.post('/refresh', validateRequest(refreshSchema), AuthController.refresh);
 router.post('/logout', authenticate, AuthController.logout);
+router.delete('/account', authenticate, AuthController.deleteAccount);
 router.get('/me', authenticate, AuthController.me);
 router.post(
   '/change-password',
