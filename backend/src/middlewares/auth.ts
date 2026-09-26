@@ -13,7 +13,7 @@ export const authenticate = async (
 ) => {
   try {
     // Try to get token from cookie first, then from Authorization header (for backward compatibility)
-    let token = getTokenFromCookie(req, 'accessToken');
+    let token = getTokenFromCookie(req);
 
     if (!token) {
       const authHeader = req.headers.authorization;

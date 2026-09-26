@@ -7,7 +7,7 @@ import { COOKIE_OPTIONS } from '../constants/index.js';
  * @param {string} accessToken - JWT access token
  * @param {string} refreshToken - JWT refresh token
  */
-export const setAuthCookies = (res: Response, accessToken: string, refreshToken: string) => {
+export const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie('accessToken', accessToken, {
     ...COOKIE_OPTIONS,
     httpOnly: true,
@@ -21,7 +21,7 @@ export const setAuthCookies = (res: Response, accessToken: string, refreshToken:
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    maxAge: 60 * 60 * 1000 // 60 minutes
   });
 };
 
@@ -29,17 +29,30 @@ export const setAuthCookies = (res: Response, accessToken: string, refreshToken:
  * Clear authentication cookies
  * @param {Response} res - Express response object
  */
-export const clearAuthCookies = (res: Response) => {
-  res.clearCookie('accessToken', COOKIE_OPTIONS);
-  res.clearCookie('refreshToken', COOKIE_OPTIONS);
+export const clearAuthCookies = (res) => {
+  res.cookie('accessToken', '', {
+    ...COOKIE_OPTIONS,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 0
+  });
+
+  res.cookie('refreshToken', '', {
+    ...COOKIE_OPTIONS,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 0
+  });
 };
 
 /**
- * Extract token from cookies
+ * Get token from cookie
  * @param {Request} req - Express request object
- * @param {string} cookieName - Name of the cookie ('accessToken' or 'refreshToken')
- * @returns {string|null} Token value or null if not found
+ * @returns {string|null}
  */
-export const getTokenFromCookie = (req: Request, cookieName: string): string | null => {
-  return req.cookies[cookieName] || null;
+export const getTokenFromCookie = (req) => {
+  const token = req.cookies?.accessToken;
+  return token ? token : null;
 };
